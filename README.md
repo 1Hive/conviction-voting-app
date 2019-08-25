@@ -1,18 +1,28 @@
-# Aragon React Boilerplate
+# Aragon Conviction Voting Application
+The process of allocating funds in DAOs that are being used today feels very clunky, typically requiring a series of yes/no votes evaluated independently. These organizations also suffer from a number of challenges like 51% attacks, low participation, and overall inability to effectively prioritize and decide when there are many potential options all competing for consideration at once.
 
-> 🕵️ [Find more boilerplates using GitHub](https://github.com/search?q=topic:aragon-boilerplate) |
-> ✨ [Official boilerplates](https://github.com/search?q=topic:aragon-boilerplate+org:aragon)
+[Conviction voting](https://medium.com/giveth/conviction-voting-a-novel-continuous-decision-making-alternative-to-governance-aa746cfb9475) as proposed by Commons Stack and Block Science  provides an interesting solution, that feels more organic and DAO-like than other methods we have seen proposed.
 
-React boilerplate for Aragon applications.
+## What it does
+Our implementation of Conviction Voting as an Aragon application is intended to be used to collectively allocate funds from a shared treasury. It does not currently support voting on other types of proposals.
 
-This boilerplate includes a fully working example app, complete with a background worker and a front-end in React (with Aragon UI). Also comes with a DAO Template which will allow for using your app to interact with other Aragon apps like the Voting app. You can read more about DAO Template [here](https://hack.aragon.org/docs/templates-intro).
+Proposals can be submitted for consideration at any time and do not have an explicit expiration.
+
+A user can vote for a single proposal at a time, when they do their token-weighted balance adds conviction to that proposal. In this way we can think of voting for a proposal a bit like the emission of a signal directed towards a specific proposal, when the signal is moved it takes time to fully arrive on the new proposal, and at same time the remnants of the signal can still be felt at the previous proposal for some time after the source of the signal has been redirected.
+
+Proposals can be executed only if there is enough accumulated conviction. The threshold at which a proposal can be execute is dependent on the proportion of the funds requested relative to the available funds in the shared treasury. This relationship between the funds requested and available funds means that the threshold at which a proposal can be executed depends on the state of the system at any given time. As proposals pass and remove funds from the treasury, the remaining proposals will become harder to pass (because they now represent a larger proportion of the shared treasury), conversely, as new funds are added to the share treasury the threshold for passing existing proposals will decrease. This provides some natural self regulation to the spending rate of the organization relative to its income.
+
+The time based accumulation forces voters to prioritize where they place their conviction and may encourage members to more effectively converge on a mutually acceptable compromise to most effectively leverage their influence on the DAOs fund allocations.
+
+Unfortunately, we were not able to complete the application during the hackathon, we were able to get the basic contract into a mostly complete state as an Aragon App. We are confident the approach will work at this point, but some cleanup still needs to be done, and the threshold function still needs to be implemented. On the front-end we were able to come up with a [design](https://www.figma.com/file/MH2ntFCnKC1O91HS8lWmDb/Conviction-Voting?node-id=1%3A2280) and start to implement using mock data.
 
 ## Usage
 
-To setup use the command `create-aragon-app`:
+To use this Aragon application, set it up using a token and a vault using:
 
 ```sh
-npx create-aragon-app <app-name> react
+npm install
+npm run start:ipfs:template
 ```
 
 ## Structure
@@ -25,7 +35,7 @@ root
 ├ ├── src
 ├ └── package.json
 ├── contracts
-├ ├── CounterApp.sol
+├ ├── ConvictionVotingApp.sol
 ├ └── Template.sol
 ├── migration
 ├── test
@@ -39,7 +49,7 @@ root
   - **src**: Source files.
   - [**package.json**](https://docs.npmjs.com/creating-a-package-json-file): Frontend npm configuration file.
 - **contracts**: Smart Constracts folder.
-  - `CounterApp.sol`: Aragon app contract example.
+  - `ConvictionApp.sol`: Aragon app contract.
   - `Template.sol`: [Aragon Template](https://hack.aragon.org/docs/templates-intro) to deploy a fully functional DAO.
 - [**migrations**](https://truffleframework.com/docs/truffle/getting-started/running-migrations): Migrations folder.
 - **test**: Tests folder.
@@ -48,78 +58,10 @@ root
 - [**truffle.js**](https://truffleframework.com/docs/truffle/reference/configuration): Truffle configuration file.
 - [**package.json**](https://docs.npmjs.com/creating-a-package-json-file): Main npm configuration file.
 
-## Make the template work with your app
+## Contributors
 
-- Edit the roles defined in the template to configure your DAO as you want!
-
-## Run the template
-
-```sh
-npx aragon run --template Template --template-init @ARAGON_ENS
-```
-
-## Running your app
-
-### Using HTTP
-
-Running your app using HTTP will allow for a faster development process of your app's front-end, as it can be hot-reloaded without the need to execute `aragon run` every time a change is made.
-
-- First start your app's development server running `npm run start:app`, and keep that process running. By default it will rebuild the app and reload the server when changes to the source are made.
-
-- After that, you can run `npm run start:http` or `npm run start:http:template` which will compile your app's contracts, publish the app locally and create a DAO. You will need to stop it and run it again after making changes to your smart contracts.
-
-Changes to the app's background script (`app/script.js`) cannot be hot-reloaded, after making changes to the script, you will need to either restart the development server (`npm run start:app`) or rebuild the script `npm run build:script`.
-
-### Using IPFS
-
-Running your app using IPFS will mimic the production environment that will be used for running your app. `npm run start:ipfs` will run your app using IPFS. Whenever a change is made to any file in your front-end, a new version of the app needs to be published, so the command needs to be restarted.
-
-## What's in this boilerplate?
-
-### npm Scripts
-
-- **start** or **start:ipfs**: Runs your app inside a DAO served from IPFS
-- **start:http**: Runs your app inside a DAO served with HTTP (hot reloading)
-- **start:ipfs:template**: Creates a DAO with the [Template](https://github.com/aragon/aragon-react-boilerplate/blob/master/contracts/Template.sol) and serves the app from IPFS
-- **start:http:template**: Creates a DAO with the [Template](https://github.com/aragon/aragon-react-boilerplate/blob/master/contracts/Template.sol) and serves the app with HTTP (hot reloading)
-- **prepare**: Installs dependencies of the front-end
-- **start:app**: Starts a development server for your app
-- **compile**: Compiles the smart contracts
-- **build**: Builds the front-end and background script
-- **test**: Runs tests for the contracts
-- **publish:patch**: Releases a patch version to aragonPM (only frontend/content changes allowed)
-- **publish:minor**: Releases a minor version to aragonPM (only frontend/content changes allowed)
-- **publish:major**: Releases a major version to aragonPM (frontend **and** contract changes)
-- **versions**: Checks the currently installed versions of the app
-- **lint**: Checks the app and the contracts for linting errors
-- **lint:fix**: Fixes the lint errors that can be resolved automatically
-- **coverage**: Runs the tests for the contracts and creates a report
-
-### Libraries
-
-- [**@aragon/os**](https://github.com/aragon/aragonos): Aragon interfaces
-- [**@aragon/api**](https://github.com/aragon/aragon.js/tree/master/packages/aragon-api): Wrapper for Aragon application RPC
-- [**@aragon/ui**](https://github.com/aragon/aragon-ui): Aragon UI components (in React)
-
-## What you can do with this boilerplate?
-
-### Publish
-
-You can publish you app on [aragonPM](https://hack.aragon.org/docs/apm). See how in our [publish guide](https://hack.aragon.org/docs/guides-publish).
-
-> **Note**<br>
-> The [Template](https://github.com/aragon/aragon-react-boilerplate/blob/master/contracts/Template.sol) will not be published.
-
-### Using a different Ethereum account
-
-You can use a different account to interact with you app. [Check the documentation](https://hack.aragon.org/docs/guides-faq#set-a-private-key).
-
-### Propagate content
-
-You can propagate the content of your app on IPFS. Learn more in our [troubleshooting guide](https://hack.aragon.org/docs/guides-faq#propagating-your-content-hash-through-ipfs) or use the `aragon ipfs propagate` command:
-
-```
-npx aragon ipfs propagate <cid>
-```
-
-Where `cid` is your content id hash (this will be displayed after publishing).
+- Luke - 1Hive
+- Pati - Aragon One
+- Sem - P2P Models
+- Yalda - Autark
+- Deem - Aragon Black
