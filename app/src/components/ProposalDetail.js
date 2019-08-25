@@ -2,7 +2,14 @@ import React from 'react'
 import styled from 'styled-components'
 import { Text, useTheme, IdentityBadge, Timer, GU, Button } from '@aragon/ui'
 
-const ProposalDetail = ({ description, creator, recipient }) => {
+const ProposalDetail = ({
+  description,
+  creator,
+  recipient,
+  onStake,
+  onWithdraw,
+  isStaked = false,
+}) => {
   const theme = useTheme()
 
   const NOW = Date.now()
@@ -30,7 +37,13 @@ const ProposalDetail = ({ description, creator, recipient }) => {
         </h2>
         {description}
         <div>
-          <Button mode="strong">Vote for this proposal</Button>
+          {!isStaked ? (
+            <Button mode="strong" onClick={onStake}>
+              Vote for this proposal
+            </Button>
+          ) : (
+            <Button onClick={onWithdraw}>Revoke conviction</Button>
+          )}
         </div>
       </DetailsGroup>
       <DetailsGroup>

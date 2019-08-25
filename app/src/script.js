@@ -46,14 +46,36 @@ api.store(
     switch (event.event) {
       case INITIALIZATION_TRIGGER:
         newState = mockState
+        break
+      case 'ProposalAdded': {
+        const { id, title, amount } = event.returnValues
+        const newProposal = {
+          id,
+          name: title,
+          description: 'Lorem ipsum...',
+          requestedToken: 'DAI', // token address?
+          requestedAmount: parseInt(amount),
+          stakedConviction: 0.57,
+          neededConviction: 0.72,
+          creator: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+          recipient: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+        }
+        newState = { ...state, proposals: [...state.proposals, newProposal] }
+        break
+      }
+      case 'Staked': {
+        const { id } = event.returnValues
+        newState = {
+          ...state,
+          myStake: { ...state.myStake, proposal: parseInt(id) },
+        }
         console.log(newState)
         break
-      case 'Increment':
-        newState = { count: await getValue() }
+      }
+      case 'Withdrawn': {
+        newState = { ...state, myStake: null }
         break
-      case 'Decrement':
-        newState = { count: await getValue() }
-        break
+      }
       default:
         newState = state
     }
@@ -65,7 +87,3 @@ api.store(
     of({ event: INITIALIZATION_TRIGGER }),
   ]
 )
-
-async function getValue() {
-  return parseInt(await api.call('value').toPromise(), 10)
-}

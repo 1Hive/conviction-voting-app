@@ -57,11 +57,13 @@ function App() {
             <Box heading="Vault balance">
               <Balances balances={balances} />
             </Box>
-            <Box heading="My conviction proposal">
-              <ProposalInfo
-                {...proposals.filter(({ id }) => id === myStake.proposal)[0]}
-              />
-            </Box>
+            {myStake && (
+              <Box heading="My conviction proposal">
+                <ProposalInfo
+                  {...proposals.filter(({ id }) => id === myStake.proposal)[0]}
+                />
+              </Box>
+            )}
           </div>
           <div css="width: 75%">
             <DataView
@@ -77,7 +79,14 @@ function App() {
                 <Amount {...proposal} />,
                 <ConvictionBar {...proposal} theme={theme} />,
               ]}
-              renderEntryChild={proposal => <ProposalDetail {...proposal} />}
+              renderEntryChild={proposal => (
+                <ProposalDetail
+                  {...proposal}
+                  onStake={() => api.stakeAllToProposal(proposal.id)}
+                  onWithdraw={() => api.widthdrawAllFromProposal(proposal.id)}
+                  isStaked={myStake && proposal.id === myStake.proposal}
+                />
+              )}
             />
           </div>
         </Wrapper>
@@ -88,7 +97,8 @@ function App() {
         >
           <AddProposalPanel
             onSubmit={({ title, description, amount, recipient }) => {
-              api.createProposal(title, description, amount, recipient)
+              api.addProposal(title, amount, recipient)
+              // TODO Store description on IPFS
               setProposalPanel(false)
             }}
           />
@@ -109,7 +119,11 @@ const IdAndTitle = ({ id, name, description, theme }) => (
 
 const Amount = ({ requestedAmount = 0, requestedToken = 'DAI' }) => (
   <div>
-    <BalanceToken amount={requestedAmount} symbol={requestedToken} verified />
+    <BalanceToken
+      amount={parseInt(requestedAmount)}
+      symbol={requestedToken}
+      verified
+    />
   </div>
 )
 

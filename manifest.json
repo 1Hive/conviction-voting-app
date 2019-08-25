@@ -7,7 +7,7 @@
   "icons": [
     {
       "src": "/meta/icon.svg",
-      "sizes": "56x56"
+      "sizes": "72x72"
     }
   ],
   "screenshots": [{ "src": "/meta/screenshot-1.png" }],
