@@ -24,6 +24,7 @@ const ProposalDetail = ({
         justify-content: space-between;
         width: 100%;
         flex-direction: ${'row'};
+        margin: ${3 * GU}px 0;
       `}
     >
       <DetailsGroup>

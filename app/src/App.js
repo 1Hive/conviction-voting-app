@@ -73,13 +73,12 @@ function App() {
                 { label: 'Conviction progress', priority: 2 },
               ]}
               entries={proposals}
-              tableRowHeight={32 * GU}
               renderEntry={proposal => [
                 <IdAndTitle {...proposal} theme={theme} />,
                 <Amount {...proposal} />,
                 <ConvictionBar {...proposal} theme={theme} />,
               ]}
-              renderEntryChild={proposal => (
+              renderEntryExpansion={proposal => (
                 <ProposalDetail
                   {...proposal}
                   onStake={() => api.stakeAllToProposal(proposal.id)}
