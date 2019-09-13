@@ -6,7 +6,6 @@ import {
   SidePanel,
   Box,
   DataView,
-  GU,
   useTheme,
   Text,
 } from '@aragon/ui'
@@ -95,8 +94,8 @@ function App() {
           onClose={() => setProposalPanel(false)}
         >
           <AddProposalPanel
-            onSubmit={({ title, description, amount, recipient }) => {
-              api.addProposal(title, amount, recipient)
+            onSubmit={({ title, description, amount, beneficiary }) => {
+              api.addProposal(title, amount, beneficiary)
               // TODO Store description on IPFS
               setProposalPanel(false)
             }}

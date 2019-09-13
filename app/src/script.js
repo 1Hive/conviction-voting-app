@@ -18,7 +18,7 @@ const mockState = {
       stakedConviction: 0.57,
       neededConviction: 0.72,
       creator: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-      recipient: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+      beneficiary: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
     },
     {
       id: 2,
@@ -29,7 +29,7 @@ const mockState = {
       stakedConviction: 0.57,
       neededConviction: 0.72,
       creator: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-      recipient: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+      beneficiary: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
     },
   ],
   myStake: {
@@ -40,15 +40,15 @@ const mockState = {
 }
 
 api.store(
-  async (state, event) => {
+  async (state, { event, returnValues, address }) => {
     let newState
 
-    switch (event.event) {
+    switch (event) {
       case INITIALIZATION_TRIGGER:
         newState = mockState
         break
       case 'ProposalAdded': {
-        const { id, title, amount } = event.returnValues
+        const { entity, id, title, amount, beneficiary } = returnValues
         const newProposal = {
           id,
           name: title,
@@ -57,14 +57,14 @@ api.store(
           requestedAmount: parseInt(amount),
           stakedConviction: 0.57,
           neededConviction: 0.72,
-          creator: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-          recipient: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+          creator: entity,
+          beneficiary: beneficiary,
         }
         newState = { ...state, proposals: [...state.proposals, newProposal] }
         break
       }
       case 'Staked': {
-        const { id } = event.returnValues
+        const { id } = returnValues
         newState = {
           ...state,
           myStake: { ...state.myStake, proposal: parseInt(id) },

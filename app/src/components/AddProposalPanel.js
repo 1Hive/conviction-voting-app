@@ -6,11 +6,11 @@ const AddProposalPanel = ({ onSubmit }) => {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('Lorem ipsum...')
   const [amount, setAmount] = useState(0)
-  const [recipient, setRecipient] = useState('')
+  const [beneficiary, setBeneficiary] = useState('')
   const disabled = false // TODO Disable when empty or invalid fields
   const onFormSubmit = event => {
     event.preventDefault()
-    onSubmit({ title, description, amount, recipient })
+    onSubmit({ title, description, amount, beneficiary })
   }
   return (
     <form onSubmit={onFormSubmit}>
@@ -31,7 +31,8 @@ const AddProposalPanel = ({ onSubmit }) => {
         />
       </Field>
       <Field label="Requested Amount">
-        <TextInput.Number
+        <TextInput
+          type="number"
           value={amount}
           onChange={event => setAmount(event.target.value)}
           min={0}
@@ -40,10 +41,10 @@ const AddProposalPanel = ({ onSubmit }) => {
           wide
         />
       </Field>
-      <Field label="Recipient">
+      <Field label="Beneficiary">
         <TextInput
-          onChange={event => setRecipient(event.target.value)}
-          value={recipient}
+          onChange={event => setBeneficiary(event.target.value)}
+          value={beneficiary}
           wide
           required
         />

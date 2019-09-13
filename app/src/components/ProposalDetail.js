@@ -5,7 +5,7 @@ import { Text, useTheme, IdentityBadge, Timer, GU, Button } from '@aragon/ui'
 const ProposalDetail = ({
   description,
   creator,
-  recipient,
+  beneficiary,
   onStake,
   onWithdraw,
   isStaked = false,
@@ -66,7 +66,7 @@ const ProposalDetail = ({
             Recipient
           </Text>
         </h2>
-        <IdentityBadge entity={recipient} />
+        <IdentityBadge entity={beneficiary} />
       </DetailsGroup>
     </div>
   )
