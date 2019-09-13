@@ -19,9 +19,11 @@ class Balances extends React.Component {
   componentDidMount() {
     this.updateConvertedRates(this.props)
   }
+
   componentWillReceiveProps(nextProps) {
     this.updateConvertedRates(nextProps)
   }
+
   updateConvertedRates = throttle(async ({ balances }) => {
     const verifiedSymbols = balances
       .filter(({ verified }) => verified)
@@ -35,6 +37,7 @@ class Balances extends React.Component {
     const convertRates = await res.json()
     this.setState({ convertRates })
   }, CONVERT_THROTTLE_TIME)
+
   render() {
     const { balances } = this.props
     const { convertRates } = this.state

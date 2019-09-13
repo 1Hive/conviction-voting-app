@@ -39,7 +39,7 @@ module.exports = async (
   const Kernel = artifacts.require('Kernel')
   const Vault = artifacts.require('Vault')
 
-  //get Vault contract
+  // get Vault contract
   const daoAddress = process.argv.slice(4)[0]
 
   const kernel = await Kernel.at(daoAddress)
@@ -52,7 +52,7 @@ module.exports = async (
   const { toWei, fromWei } = web3.utils || web3
 
   try {
-    let data = []
+    const data = []
     // Deposit test tokens
     let tokenContract
     for (const { amount, ...token } of tokens) {
@@ -61,7 +61,7 @@ module.exports = async (
       await tokenContract.approve(vaultAddress, amount)
       await vault.deposit(tokenContract.address, amount)
 
-      let balance = await tokenContract.balanceOf(vaultAddress)
+      const balance = await tokenContract.balanceOf(vaultAddress)
       data.push([token.symbol, tokenContract.address, fromWei(balance)])
     }
 
