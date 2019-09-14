@@ -8,6 +8,7 @@ import {
   DataView,
   useTheme,
   Text,
+  Badge,
 } from '@aragon/ui'
 import styled from 'styled-components'
 import AppHeader from './components/AppHeader'
@@ -19,7 +20,14 @@ import AddProposalPanel from './components/AddProposalPanel'
 
 function App() {
   const { api, appState } = useAragonApi()
-  const { proposals, myStake } = appState
+  const { proposals, convictionStakes } = appState
+  const you = '0xD41b2558691d4A39447b735C23E6c98dF6cF4409' // TODO get from accounts
+  const myStake =
+    convictionStakes &&
+    convictionStakes
+      .filter(({ entity }) => entity === you)
+      .reduce((last, current) => (last.time > current.time ? last : current))
+
   const theme = useTheme()
   const balances = [
     {
@@ -60,6 +68,7 @@ function App() {
               <Box heading="My conviction proposal">
                 <ProposalInfo
                   {...proposals.filter(({ id }) => id === myStake.proposal)[0]}
+                  myStake={myStake}
                 />
               </Box>
             )}
@@ -142,13 +151,13 @@ const ConvictionBar = ({ stakedConviction, neededConviction, theme }) => (
   </div>
 )
 
-const ProposalInfo = proposal => {
+const ProposalInfo = props => {
   const theme = useTheme()
   return (
     <div>
-      <IdAndTitle {...proposal} theme={theme} />
-      <Amount {...proposal} />
-      <ConvictionBar {...proposal} theme={theme} />
+      <IdAndTitle {...props} theme={theme} />
+      <Badge>{`✓ Voted with ${props.myStake.tokensStaked} TKN`}</Badge>
+      <ConvictionBar {...props} theme={theme} />
     </div>
   )
 }
