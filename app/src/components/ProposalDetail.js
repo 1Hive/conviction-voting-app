@@ -1,16 +1,27 @@
 import React from 'react'
 import styled from 'styled-components'
 import { Text, useTheme, IdentityBadge, Timer, GU, Button } from '@aragon/ui'
+import Chart from './Chart'
 
 const ProposalDetail = ({
   description,
   creator,
   beneficiary,
+  requestedAmount,
   onStake,
   onWithdraw,
   isStaked = false,
+  stakes,
+  globalParams: { supply, funds } = {},
 }) => {
   const theme = useTheme()
+
+  const chartProps = {
+    requested: requestedAmount,
+    stakes,
+    supply,
+    funds,
+  }
 
   const NOW = Date.now()
   const DAY = 1000 * 60 * 60 * 24
@@ -46,6 +57,7 @@ const ProposalDetail = ({
             <Button onClick={onWithdraw}>Revoke conviction</Button>
           )}
         </div>
+        <Chart {...chartProps} />
       </DetailsGroup>
       <DetailsGroup>
         <h2>

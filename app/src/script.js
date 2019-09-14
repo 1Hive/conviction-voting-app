@@ -7,6 +7,53 @@ const INITIALIZATION_TRIGGER = Symbol('INITIALIZATION_TRIGGER')
 
 const api = new AragonApi()
 
+function addMockStakes(events, proposal) {
+  events.push(
+    ...[
+      {
+        event: 'Staked',
+        returnValues: {
+          entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+          id: proposal,
+          time: 20,
+          tokensStaked: 1000,
+          conviction: 0,
+        },
+      },
+      {
+        event: 'Withdrawn',
+        returnValues: {
+          entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+          id: proposal,
+          time: 50,
+          tokensStaked: 0,
+          conviction: 0,
+        },
+      },
+      {
+        event: 'Staked',
+        returnValues: {
+          entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
+          id: proposal,
+          time: 30,
+          tokensStaked: 1000,
+          conviction: 0,
+        },
+      },
+      {
+        event: 'Staked',
+        returnValues: {
+          entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
+          id: proposal,
+          time: 60,
+          tokensStaked: 7000,
+          conviction: 0,
+        },
+      },
+    ]
+  )
+}
+
 const mockEvents = [
   {
     event: 'ProposalAdded',
@@ -28,47 +75,10 @@ const mockEvents = [
       beneficiary: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
     },
   },
-  {
-    event: 'Staked',
-    returnValues: {
-      entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-      id: 1,
-      time: 20,
-      tokensStaked: 1000,
-      conviction: 0,
-    },
-  },
-  {
-    event: 'Withdrawn',
-    returnValues: {
-      entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-      id: 1,
-      time: 50,
-      tokensStaked: 0,
-      conviction: 0,
-    },
-  },
-  {
-    event: 'Staked',
-    returnValues: {
-      entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-      id: 1,
-      time: 30,
-      tokensStaked: 1000,
-      conviction: 0,
-    },
-  },
-  {
-    event: 'Staked',
-    returnValues: {
-      entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-      id: 1,
-      time: 60,
-      tokensStaked: 7000,
-      conviction: 0,
-    },
-  },
 ]
+
+addMockStakes(mockEvents, 1)
+addMockStakes(mockEvents, 2)
 
 api.store(
   async (state, { event, returnValues }) => {
@@ -77,9 +87,11 @@ api.store(
     switch (event) {
       case INITIALIZATION_TRIGGER:
         newState = {
-          alpha: 90,
-          funds: 15000,
-          supply: 45000,
+          globalParams: {
+            alpha: 90,
+            funds: 15000,
+            supply: 45000,
+          },
           proposals: [],
           convictionStakes: [],
         }

@@ -20,7 +20,7 @@ import AddProposalPanel from './components/AddProposalPanel'
 
 function App() {
   const { api, appState } = useAragonApi()
-  const { proposals, convictionStakes } = appState
+  const { proposals, convictionStakes, globalParams } = appState
   const you = '0xD41b2558691d4A39447b735C23E6c98dF6cF4409' // TODO get from accounts
   const myStake =
     convictionStakes &&
@@ -92,6 +92,10 @@ function App() {
                   onStake={() => api.stakeAllToProposal(proposal.id)}
                   onWithdraw={() => api.widthdrawAllFromProposal(proposal.id)}
                   isStaked={myStake && proposal.id === myStake.proposal}
+                  stakes={convictionStakes.filter(
+                    stake => stake.proposal === proposal.id
+                  )}
+                  globalParams={globalParams}
                 />
               )}
             />
