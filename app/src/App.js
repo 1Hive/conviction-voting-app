@@ -8,27 +8,31 @@ import {
   DataView,
   useTheme,
   Text,
-  Badge,
+  Tag,
 } from '@aragon/ui'
 import styled from 'styled-components'
 import AppHeader from './components/AppHeader'
-import SummaryBar from './components/SummaryBar'
 import Balances from './components/Balances'
 import BalanceToken from './components/BalanceToken'
 import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
+import { ConvictionBar } from './components/ConvictionVisuals'
 
 function App() {
-  const { api, appState } = useAragonApi()
-  const { proposals, convictionStakes, globalParams } = appState
-  const you = '0xD41b2558691d4A39447b735C23E6c98dF6cF4409' // TODO get from accounts
-  const myStake =
-    convictionStakes &&
-    convictionStakes
-      .filter(({ entity }) => entity === you)
-      .reduce((last, current) => (last.time > current.time ? last : current))
+  const { api, appState, connectedAccount } = useAragonApi()
+  const { proposals, convictionStakes } = appState
+  const myStakes =
+    (convictionStakes &&
+      convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
+    []
 
-  const theme = useTheme()
+  const myLastStakes = getLastOf(myStakes, 'proposal').filter(
+    ({ tokensStaked }) => tokensStaked > 0
+  )
+
+  const isStaked = proposal =>
+    myStakes.find(stake => stake.proposal === proposal.id)
+
   const balances = [
     {
       name: 'Dai Stablecoin v1.0',
@@ -64,14 +68,17 @@ function App() {
             <Box heading="Vault balance">
               <Balances balances={balances} />
             </Box>
-            {myStake && (
-              <Box heading="My conviction proposal">
-                <ProposalInfo
-                  {...proposals.filter(({ id }) => id === myStake.proposal)[0]}
-                  myStake={myStake}
-                />
-              </Box>
-            )}
+            {myLastStakes.length > 0 &&
+              myLastStakes.map(stake => (
+                <Box heading="My conviction proposal">
+                  <ProposalInfo
+                    proposal={
+                      proposals.filter(({ id }) => id === stake.proposal)[0]
+                    }
+                    stake={stake}
+                  />
+                </Box>
+              ))}
           </div>
           <div css="width: 75%">
             <DataView
@@ -82,20 +89,16 @@ function App() {
               ]}
               entries={proposals}
               renderEntry={proposal => [
-                <IdAndTitle {...proposal} theme={theme} />,
+                <IdAndTitle {...proposal} />,
                 <Amount {...proposal} />,
-                <ConvictionBar {...proposal} theme={theme} />,
+                <ConvictionBar proposal={proposal} />,
               ]}
               renderEntryExpansion={proposal => (
                 <ProposalDetail
-                  {...proposal}
+                  proposal={proposal}
                   onStake={() => api.stakeAllToProposal(proposal.id)}
                   onWithdraw={() => api.widthdrawAllFromProposal(proposal.id)}
-                  isStaked={myStake && proposal.id === myStake.proposal}
-                  stakes={convictionStakes.filter(
-                    stake => stake.proposal === proposal.id
-                  )}
-                  globalParams={globalParams}
+                  isStaked={isStaked(proposal)}
                 />
               )}
             />
@@ -119,14 +122,29 @@ function App() {
   )
 }
 
-const IdAndTitle = ({ id, name, description, theme }) => (
-  <div>
-    <Text color={theme.surfaceContent}>#{id}</Text>{' '}
-    <Text color={theme.surfaceContentSecondary}>{name}</Text>
-    <br />
-    <Text color={theme.surfaceContentSecondary}>{description}</Text>
-  </div>
-)
+function getLastOf(arr, comp) {
+  arr = [...arr].reverse()
+  const unique = arr
+    .map(e => e[comp])
+    // store the keys of the unique objects
+    .map((e, i, final) => final.indexOf(e) === i && i)
+    // eliminate the dead keys & store unique objects
+    .filter(e => arr[e])
+    .map(e => arr[e])
+  return unique
+}
+
+const IdAndTitle = ({ id, name, description }) => {
+  const theme = useTheme()
+  return (
+    <div>
+      <Text color={theme.surfaceContent}>#{id}</Text>{' '}
+      <Text color={theme.surfaceContentSecondary}>{name}</Text>
+      <br />
+      <Text color={theme.surfaceContentSecondary}>{description}</Text>
+    </div>
+  )
+}
 
 const Amount = ({ requestedAmount = 0, requestedToken = 'DAI' }) => (
   <div>
@@ -138,30 +156,12 @@ const Amount = ({ requestedAmount = 0, requestedToken = 'DAI' }) => (
   </div>
 )
 
-const ConvictionBar = ({ stakedConviction, neededConviction, theme }) => (
-  <div>
-    <SummaryBar
-      positiveSize={stakedConviction}
-      requiredSize={neededConviction}
-    />
-    <div>
-      <Text color={theme.surfaceContent}>
-        {Math.round(stakedConviction * 100)}%
-      </Text>{' '}
-      <Text color={theme.surfaceContentSecondary}>
-        ({Math.round(neededConviction * 100)}% conviction needed)
-      </Text>
-    </div>
-  </div>
-)
-
-const ProposalInfo = props => {
-  const theme = useTheme()
+const ProposalInfo = ({ proposal, stake }) => {
   return (
     <div>
-      <IdAndTitle {...props} theme={theme} />
-      <Badge>{`✓ Voted with ${props.myStake.tokensStaked} TKN`}</Badge>
-      <ConvictionBar {...props} theme={theme} />
+      <IdAndTitle {...proposal} />
+      <Tag>{`✓ Voted with ${stake.tokensStaked} TKN`}</Tag>
+      <ConvictionBar proposal={proposal} />
     </div>
   )
 }

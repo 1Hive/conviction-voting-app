@@ -16,18 +16,9 @@ function addMockStakes(events, proposal) {
           entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
           id: proposal,
           time: 20,
+          amount: 1000,
           tokensStaked: 1000,
-          conviction: 0,
-        },
-      },
-      {
-        event: 'Withdrawn',
-        returnValues: {
-          entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-          id: proposal,
-          time: 50,
-          tokensStaked: 0,
-          conviction: 0,
+          totalTokensStaked: 1000,
         },
       },
       {
@@ -36,8 +27,9 @@ function addMockStakes(events, proposal) {
           entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
           id: proposal,
           time: 30,
+          amount: 1000,
           tokensStaked: 1000,
-          conviction: 0,
+          totalTokensStaked: 2000,
         },
       },
       {
@@ -46,8 +38,9 @@ function addMockStakes(events, proposal) {
           entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
           id: proposal,
           time: 60,
+          amount: 6000,
           tokensStaked: 7000,
-          conviction: 0,
+          totalTokensStaked: 8000,
         },
       },
     ]
@@ -104,8 +97,6 @@ api.store(
           description: 'Lorem ipsum...',
           requestedToken: 'DAI', // token address?
           requestedAmount: parseInt(amount),
-          stakedConviction: 0.57,
-          neededConviction: 0.72,
           creator: entity,
           beneficiary,
         }
@@ -114,15 +105,25 @@ api.store(
       }
       case 'Staked':
       case 'Withdrawn': {
-        const { entity, id, tokensStaked, time } = returnValues
+        const {
+          entity,
+          id,
+          amount,
+          tokensStaked,
+          totalTokensStaked,
+          time,
+        } = returnValues
         newState = {
           ...state,
           convictionStakes: [
             ...state.convictionStakes,
             {
+              event,
               entity,
               proposal: parseInt(id),
+              amount: event === 'Staked' ? parseInt(amount) : -parseInt(amount),
               tokensStaked: parseInt(tokensStaked),
+              totalTokensStaked: parseInt(totalTokensStaked),
               time, // ?
             },
           ],

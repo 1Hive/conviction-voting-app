@@ -2,6 +2,7 @@
 // const PADD = 10
 // const CONV_ALPHA = 9 * PADD
 
+const defaultAlpha = 0.9
 const defaultBeta = 0.2 // maximum share of funds a proposal can take
 const defaultRho = 0.5 * defaultBeta ** 2 // tuning param for the trigger function
 
@@ -34,7 +35,7 @@ export function getConviction(
   lastConv,
   oldAmount,
   newAmount,
-  alpha
+  alpha = defaultAlpha
 ) {
   const t = timePassed
   const y0 = lastConv
@@ -85,10 +86,6 @@ export function calcConviction(stakes) {
       oldAmount = action.tokensStaked
       timePassed = 0
       lastConv = currentConv
-
-      console.log(
-        `${action.entity} changes stake to ${action.tokensStaked} at ${t}`
-      )
     }
 
     timePassed++
@@ -96,7 +93,7 @@ export function calcConviction(stakes) {
   return data
 }
 
-export function getTreshold(
+export function getThreshold(
   requested,
   funds,
   supply,
@@ -109,4 +106,8 @@ export function getTreshold(
   } else {
     return Number.POSITIVE_INFINITY
   }
+}
+
+export function getMaxConviction(supply, alpha = defaultAlpha) {
+  return supply / (1 - alpha)
 }

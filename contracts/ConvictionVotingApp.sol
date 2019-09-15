@@ -9,8 +9,8 @@ contract ConvictionVotingApp is AragonApp {
 
     /// Events
     event ProposalAdded(address entity, uint256 id, string title, uint256 amount, address beneficiary);
-    event Staked(address entity, uint256 id, uint256 stakedTokens, uint256 conviction);
-    event Withdrawn(address entity, uint256 id, uint256 stakedTokens, uint256 conviction);
+    event Staked(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event Withdrawn(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalPassed(uint256 id, uint256 conviction);
 
     /// State
@@ -84,13 +84,14 @@ contract ConvictionVotingApp is AragonApp {
         }
         stakesPerVoter[msg.sender] += amount;
         calculateAndSetConviction(id, oldStaked);
-        emit Staked(msg.sender, id, proposal.stakedTokens, proposal.convictionLast);
+        emit Staked(msg.sender, id, amount, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 
     function stakeAllToProposal(uint256 id) external {
         // TODO call to stakeToProposal(uint256 id, uint256 amount)
         Proposal storage proposal = proposals[id];
-        emit Staked(msg.sender, id, proposal.stakedTokens, proposal.convictionLast);
+        uint amount = 0;
+        emit Staked(msg.sender, id, amount, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 
     function withdrawFromProposal(uint256 id, uint256 amount) external {
@@ -102,13 +103,14 @@ contract ConvictionVotingApp is AragonApp {
         proposal.stakedTokens -= amount;
         stakesPerVoter[msg.sender] -= amount;
         calculateAndSetConviction(id, oldStaked);
-        emit Withdrawn(msg.sender, id, proposal.stakedTokens, proposal.convictionLast);
+        emit Withdrawn(msg.sender, id, amount, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 
     function widthdrawAllFromProposal(uint256 id) external {
         // TODO Call to withdrawFromProposal(uint256 id, uint256 amount)
         Proposal storage proposal = proposals[id];
-        emit Withdrawn(msg.sender, id, proposal.stakedTokens, proposal.convictionLast);
+        uint256 amount = 0;
+        emit Withdrawn(msg.sender, id, amount, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 
     // TODO Use the vault
