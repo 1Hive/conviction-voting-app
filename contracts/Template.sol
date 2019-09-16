@@ -67,6 +67,8 @@ contract Template is TemplateBase {
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
 
         address root = msg.sender;
+        address account2 = 0x8401Eb5ff34cc943f096A32EF3d5113FEbE8D4Eb;
+        address dai = 0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359;
         bytes32 appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
         bytes32 tokenManagerAppId = apmNamehash("token-manager");
         bytes32 vaultAppId = apmNamehash("vault");
@@ -80,11 +82,12 @@ contract Template is TemplateBase {
 
         // Initialize apps
         vault.initialize();
-        app.initialize(token, vault);
+        app.initialize(token, vault, dai);
         tokenManager.initialize(token, true, 0);
 
         acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
-        tokenManager.mint(root, 1); // Give one token to root
+        tokenManager.mint(root, 30000);
+        tokenManager.mint(account2, 15000);
 
         acl.createPermission(ANY_ENTITY, app, app.CREATE_PROPOSALS_ROLE(), root);
         acl.grantPermission(root, tokenManager, tokenManager.MINT_ROLE());
