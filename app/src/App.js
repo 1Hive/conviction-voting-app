@@ -16,7 +16,7 @@ import Balances from './components/Balances'
 import BalanceToken from './components/BalanceToken'
 import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
-import { ConvictionBar } from './components/ConvictionVisuals'
+import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
 
 function App() {
   const { api, appState, connectedAccount } = useAragonApi()
@@ -86,12 +86,14 @@ function App() {
                 { label: 'Proposal', priority: 1 },
                 { label: 'Requested', priority: 4 },
                 { label: 'Conviction progress', priority: 2 },
+                { label: 'Trend', priority: 5 },
               ]}
               entries={proposals}
               renderEntry={proposal => [
                 <IdAndTitle {...proposal} />,
                 <Amount {...proposal} />,
                 <ConvictionBar proposal={proposal} />,
+                <ConvictionTrend proposal={proposal} />,
               ]}
               renderEntryExpansion={proposal => (
                 <ProposalDetail

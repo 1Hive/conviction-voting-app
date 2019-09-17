@@ -1,6 +1,7 @@
 import React from 'react'
 import { useAragonApi } from '@aragon/api-react'
 import { LineChart, Timer, Text, Button, useTheme } from '@aragon/ui'
+import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
 import {
   getConvictionHistory,
@@ -11,6 +12,7 @@ import {
   getRemainingTimeToPass,
   getCurrentConviction,
   getCurrentConvictionByEntity,
+  getConvictionTrend,
 } from '../lib/conviction'
 
 function getStakesAndThreshold(proposal = {}) {
@@ -130,4 +132,25 @@ function ConvictionCountdown({ proposal }) {
   )
 }
 
-export { ConvictionChart, ConvictionBar, ConvictionCountdown }
+function ConvictionTrend({ proposal }) {
+  const theme = useTheme()
+  const { stakes, max } = getStakesAndThreshold(proposal)
+  const trend = getConvictionTrend(stakes, max)
+  const percentage =
+    trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
+  return (
+    <Centered>
+      <Text>{trend > 0 ? '↑ Upwards' : '↓ Downwards'}</Text>
+      <Text.Block size="xxlarge" color={percentage < 0 && theme.negative}>
+        {percentage > 0 && '+'}
+        {percentage}%
+      </Text.Block>
+    </Centered>
+  )
+}
+
+const Centered = styled.div`
+  text-align: center;
+`
+
+export { ConvictionChart, ConvictionBar, ConvictionCountdown, ConvictionTrend }
