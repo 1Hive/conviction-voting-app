@@ -8,43 +8,83 @@ const INITIALIZATION_TRIGGER = Symbol('INITIALIZATION_TRIGGER')
 const api = new AragonApi()
 
 function addMockStakes(events, proposal) {
-  events.push(
-    ...[
-      {
-        event: 'Staked',
-        returnValues: {
-          entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-          id: proposal,
-          time: 20,
-          amount: 1000,
-          tokensStaked: 1000,
-          totalTokensStaked: 1000,
+  if (proposal < 3) {
+    events.push(
+      ...[
+        {
+          event: 'Staked',
+          returnValues: {
+            entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+            id: proposal,
+            time: 20,
+            amount: 1000,
+            tokensStaked: 1000,
+            totalTokensStaked: 1000,
+          },
         },
-      },
-      {
-        event: 'Staked',
-        returnValues: {
-          entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-          id: proposal,
-          time: 30,
-          amount: 1000,
-          tokensStaked: 1000,
-          totalTokensStaked: 2000,
+        {
+          event: 'Staked',
+          returnValues: {
+            entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
+            id: proposal,
+            time: 30,
+            amount: 1000,
+            tokensStaked: 1000,
+            totalTokensStaked: 2000,
+          },
         },
-      },
-      {
-        event: 'Staked',
-        returnValues: {
-          entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-          id: proposal,
-          time: 60,
-          amount: 6000,
-          tokensStaked: 7000,
-          totalTokensStaked: 8000,
+        {
+          event: 'Widthdrawn',
+          returnValues: {
+            entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+            id: proposal,
+            time: 40,
+            amount: 1000,
+            tokensStaked: 0,
+            totalTokensStaked: 1000,
+          },
         },
-      },
-    ]
-  )
+        {
+          event: 'Staked',
+          returnValues: {
+            entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
+            id: proposal,
+            time: 60,
+            amount: 6000,
+            tokensStaked: 7000,
+            totalTokensStaked: 7000,
+          },
+        },
+      ]
+    )
+  } else {
+    events.push(
+      ...[
+        {
+          event: 'Staked',
+          returnValues: {
+            entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+            id: proposal,
+            time: 80,
+            amount: 3000,
+            tokensStaked: 3000,
+            totalTokensStaked: 3000,
+          },
+        },
+        {
+          event: 'Staked',
+          returnValues: {
+            entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
+            id: proposal,
+            time: 90,
+            amount: 3000,
+            tokensStaked: 3000,
+            totalTokensStaked: 6000,
+          },
+        },
+      ]
+    )
+  }
 }
 
 const mockEvents = [
@@ -68,10 +108,21 @@ const mockEvents = [
       beneficiary: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
     },
   },
+  {
+    event: 'ProposalAdded',
+    returnValues: {
+      entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+      id: 3,
+      title: 'Aragon Button',
+      amount: 1000,
+      beneficiary: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
+    },
+  },
 ]
 
 addMockStakes(mockEvents, 1)
 addMockStakes(mockEvents, 2)
+addMockStakes(mockEvents, 3)
 
 api.store(
   async (state, { event, returnValues }) => {
@@ -112,6 +163,7 @@ api.store(
           tokensStaked,
           totalTokensStaked,
           time,
+          conviction,
         } = returnValues
         newState = {
           ...state,
@@ -125,6 +177,7 @@ api.store(
               tokensStaked: parseInt(tokensStaked),
               totalTokensStaked: parseInt(totalTokensStaked),
               time, // ?
+              conviction: parseInt(conviction),
             },
           ],
         }

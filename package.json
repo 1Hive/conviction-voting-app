@@ -30,7 +30,6 @@
     "solidity-coverage": "^0.6.2"
   },
   "scripts": {
-    "prepublishOnly": "aragon contracts compile",
     "start": "npm run start:ipfs",
     "start:ipfs": "aragon run --files dist",
     "start:http": "aragon run --http localhost:8001 --http-served-from ./dist",

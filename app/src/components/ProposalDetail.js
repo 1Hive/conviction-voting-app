@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Text, useTheme, IdentityBadge, Timer, GU, Button } from '@aragon/ui'
-import { ConvictionChart } from './ConvictionVisuals'
+import { Text, useTheme, IdentityBadge, GU, Button } from '@aragon/ui'
+import { ConvictionChart, ConvictionCountdown } from './ConvictionVisuals'
 
 const ProposalDetail = ({
   proposal,
@@ -11,10 +11,6 @@ const ProposalDetail = ({
 }) => {
   const theme = useTheme()
   const { description, creator, beneficiary } = proposal
-
-  const NOW = Date.now()
-  const DAY = 1000 * 60 * 60 * 24
-  const endDate = new Date(NOW + 5 * DAY)
 
   return (
     <div
@@ -54,8 +50,7 @@ const ProposalDetail = ({
             Status
           </Text>
         </h2>
-        <Text color={theme.positive}> ✓ Will pass</Text>
-        <Timer end={endDate} />
+        <ConvictionCountdown proposal={proposal} />
         <h2>
           <Text color={theme.textSecondary} smallcaps>
             Created by
