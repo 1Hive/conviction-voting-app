@@ -80,10 +80,10 @@ const ConvictionBar = ({ proposal }) => {
         compact
       />
       <div>
-        <Text color={theme.surfaceContent}>
+        <Text color={theme.surfaceContent.toString()}>
           {Math.round(stakedConviction * 100)}%
         </Text>{' '}
-        <Text color={theme.surfaceContentSecondary}>
+        <Text color={theme.surfaceContentSecondary.toString()}>
           ({Math.round(neededConviction * 100)}% conviction needed)
         </Text>
       </div>
@@ -109,7 +109,7 @@ function ConvictionCountdown({ proposal }) {
   const endDate = new Date(NOW + time * DAY)
   return minTokensNeeded > lastStake.totalTokensStaked ? (
     <>
-      <Text color={theme.negative}> ✘ More stakes required</Text>
+      <Text color={theme.negative.toString()}> ✘ More stakes required</Text>
       <div>
         <Text>
           At least {minTokensNeeded} TKN more needs to be staked in order for
@@ -119,12 +119,12 @@ function ConvictionCountdown({ proposal }) {
     </>
   ) : time > 0 ? (
     <>
-      <Text color={theme.positive}> ✓ Will pass</Text>
+      <Text color={theme.positive.toString()}> ✓ Will pass</Text>
       <Timer end={endDate} />
     </>
   ) : (
     <>
-      <Text color={theme.positive}> ✓ Has passed</Text>
+      <Text color={theme.positive.toString()}> ✓ Has passed</Text>
       <Button mode="strong" wide onClick={() => api.enactProposal(proposal.id)}>
         Enact proposal
       </Button>
@@ -141,7 +141,10 @@ function ConvictionTrend({ proposal }) {
   return (
     <Centered>
       <Text>{trend > 0 ? '↑ Upwards' : '↓ Downwards'}</Text>
-      <Text.Block size="xxlarge" color={percentage < 0 && theme.negative}>
+      <Text.Block
+        size="xxlarge"
+        color={percentage < 0 ? theme.negative.toString() : ''}
+      >
         {percentage > 0 && '+'}
         {percentage}%
       </Text.Block>

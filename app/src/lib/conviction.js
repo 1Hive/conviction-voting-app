@@ -52,9 +52,19 @@ export function getCurrentConviction(
     },
     [0, 0, 0] // Initial conviction, time, and amount to 0
   )
-  const { time, totalTokensStaked } = [...stakes].pop()
-  // Calculate from last stake to now
-  return getConviction(currentTime - time, conviction, totalTokensStaked, alpha)
+  const lastStake = [...stakes].pop()
+  if (lastStake) {
+    const { time, totalTokensStaked } = lastStake
+    // Calculate from last stake to now
+    return getConviction(
+      currentTime - time,
+      conviction,
+      totalTokensStaked,
+      alpha
+    )
+  } else {
+    return 0
+  }
 }
 
 /**

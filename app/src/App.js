@@ -140,10 +140,12 @@ const IdAndTitle = ({ id, name, description }) => {
   const theme = useTheme()
   return (
     <div>
-      <Text color={theme.surfaceContent}>#{id}</Text>{' '}
-      <Text color={theme.surfaceContentSecondary}>{name}</Text>
+      <Text color={theme.surfaceContent.toString()}>#{id}</Text>{' '}
+      <Text color={theme.surfaceContentSecondary.toString()}>{name}</Text>
       <br />
-      <Text color={theme.surfaceContentSecondary}>{description}</Text>
+      <Text color={theme.surfaceContentSecondary.toString()}>
+        {description}
+      </Text>
     </div>
   )
 }
