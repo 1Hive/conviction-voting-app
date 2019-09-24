@@ -31,7 +31,7 @@ function App() {
   )
 
   const isStaked = proposal =>
-    myStakes.find(stake => stake.proposal === proposal.id)
+    myLastStakes.find(stake => stake.proposal === proposal.id)
 
   const balances = [
     {
@@ -99,7 +99,7 @@ function App() {
                 <ProposalDetail
                   proposal={proposal}
                   onStake={() => api.stakeAllToProposal(proposal.id)}
-                  onWithdraw={() => api.widthdrawAllFromProposal(proposal.id)}
+                  onWithdraw={() => api.withdrawAllFromProposal(proposal.id)}
                   isStaked={isStaked(proposal)}
                 />
               )}
@@ -113,7 +113,7 @@ function App() {
         >
           <AddProposalPanel
             onSubmit={({ title, description, amount, beneficiary }) => {
-              api.addProposal(title, amount, beneficiary)
+              api.addProposal(title, '0x0', amount, beneficiary)
               // TODO Store description on IPFS
               setProposalPanel(false)
             }}

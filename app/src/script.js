@@ -162,7 +162,7 @@ api.store(
           amount,
           tokensStaked,
           totalTokensStaked,
-          time,
+          time = 99,
           conviction,
         } = returnValues
         newState = {
