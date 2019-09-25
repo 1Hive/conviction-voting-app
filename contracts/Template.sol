@@ -86,8 +86,8 @@ contract Template is TemplateBase {
         tokenManager.initialize(token, true, 0);
 
         acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
-        tokenManager.mint(root, 30000);
-        tokenManager.mint(account2, 15000);
+        tokenManager.mint(this, 30000);
+        tokenManager.mint(root, 15000);
 
         acl.createPermission(ANY_ENTITY, app, app.CREATE_PROPOSALS_ROLE(), root);
         acl.grantPermission(root, tokenManager, tokenManager.MINT_ROLE());
@@ -104,5 +104,11 @@ contract Template is TemplateBase {
         acl.setPermissionManager(root, acl, acl.CREATE_PERMISSIONS_ROLE());
 
         emit DeployInstance(dao);
+
+        // Test inital transactions
+        app.addProposal('Aragon Sidechain', '0x0', 2000, 0xD41b2558691d4A39447b735C23E6c98dF6cF4409);
+        app.addProposal('Conviction Voting', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
+        app.addProposal('Aragon Button', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
+        app.stakeToProposal(1, 20000);
     }
 }

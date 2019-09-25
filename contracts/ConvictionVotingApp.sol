@@ -9,8 +9,8 @@ contract ConvictionVotingApp is AragonApp {
 
     // Events
     event ProposalAdded(address entity, uint256 id, string title, bytes ipfsHash, uint256 amount, address beneficiary);
-    event Staked(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
-    event Withdrawn(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event Staked(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event Withdrawn(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalEnacted(uint256 id, uint256 conviction);
 
     // Constants
@@ -264,7 +264,7 @@ contract ConvictionVotingApp is AragonApp {
         }
         stakesPerVoter[msg.sender] += amount;
         calculateAndSetConviction(id, oldStaked);
-        emit Staked(msg.sender, id, amount, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
+        emit Staked(msg.sender, id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
@@ -280,6 +280,6 @@ contract ConvictionVotingApp is AragonApp {
         proposal.stakedTokens -= amount;
         stakesPerVoter[msg.sender] -= amount;
         calculateAndSetConviction(id, oldStaked);
-        emit Withdrawn(msg.sender, id, amount, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
+        emit Withdrawn(msg.sender, id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 }

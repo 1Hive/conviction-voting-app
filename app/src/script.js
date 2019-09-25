@@ -1,145 +1,32 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
-import { of } from 'rxjs'
-import AragonApi from '@aragon/api'
+import Aragon, { events } from '@aragon/api'
 
-const INITIALIZATION_TRIGGER = Symbol('INITIALIZATION_TRIGGER')
+const app = new Aragon()
 
-const api = new AragonApi()
+app.store(
+  async (state, { event, returnValues, blockNumber }) => {
+    let nextState = { ...state }
 
-function addMockStakes(events, proposal) {
-  if (proposal < 3) {
-    events.push(
-      ...[
-        {
-          event: 'Staked',
-          returnValues: {
-            entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-            id: proposal,
-            time: 20,
-            amount: 1000,
-            tokensStaked: 1000,
-            totalTokensStaked: 1000,
-          },
+    if (state == null) {
+      nextState = {
+        globalParams: {
+          alpha: 90,
+          funds: 15000,
+          supply: 45000,
         },
-        {
-          event: 'Staked',
-          returnValues: {
-            entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-            id: proposal,
-            time: 30,
-            amount: 1000,
-            tokensStaked: 1000,
-            totalTokensStaked: 2000,
-          },
-        },
-        {
-          event: 'Widthdrawn',
-          returnValues: {
-            entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-            id: proposal,
-            time: 40,
-            amount: 1000,
-            tokensStaked: 0,
-            totalTokensStaked: 1000,
-          },
-        },
-        {
-          event: 'Staked',
-          returnValues: {
-            entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-            id: proposal,
-            time: 60,
-            amount: 6000,
-            tokensStaked: 7000,
-            totalTokensStaked: 7000,
-          },
-        },
-      ]
-    )
-  } else {
-    events.push(
-      ...[
-        {
-          event: 'Staked',
-          returnValues: {
-            entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-            id: proposal,
-            time: 80,
-            amount: 3000,
-            tokensStaked: 3000,
-            totalTokensStaked: 3000,
-          },
-        },
-        {
-          event: 'Staked',
-          returnValues: {
-            entity: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-            id: proposal,
-            time: 90,
-            amount: 3000,
-            tokensStaked: 3000,
-            totalTokensStaked: 6000,
-          },
-        },
-      ]
-    )
-  }
-}
+        proposals: [],
+        convictionStakes: [],
+      }
+    }
 
-const mockEvents = [
-  {
-    event: 'ProposalAdded',
-    returnValues: {
-      entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-      id: 1,
-      title: 'Aragon Sidechain',
-      amount: 2000,
-      beneficiary: '0xD41b2558691d4A39447b735C23E6c98dF6cF4409',
-    },
-  },
-  {
-    event: 'ProposalAdded',
-    returnValues: {
-      entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-      id: 2,
-      title: 'Conviction Voting',
-      amount: 1000,
-      beneficiary: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-    },
-  },
-  {
-    event: 'ProposalAdded',
-    returnValues: {
-      entity: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-      id: 3,
-      title: 'Aragon Button',
-      amount: 1000,
-      beneficiary: '0xb4124cEB3451635DAcedd11767f004d8a28c6eE7',
-    },
-  },
-]
-
-addMockStakes(mockEvents, 1)
-addMockStakes(mockEvents, 2)
-addMockStakes(mockEvents, 3)
-
-api.store(
-  async (state, { event, returnValues }) => {
-    let newState
+    if (event === events.SYNC_STATUS_SYNCING) {
+      return { ...nextState, isSyncing: true }
+    } else if (event === events.SYNC_STATUS_SYNCED) {
+      return { ...nextState, isSyncing: false }
+    }
 
     switch (event) {
-      case INITIALIZATION_TRIGGER:
-        newState = {
-          globalParams: {
-            alpha: 90,
-            funds: 15000,
-            supply: 45000,
-          },
-          proposals: [],
-          convictionStakes: [],
-        }
-        break
       case 'ProposalAdded': {
         const { entity, id, title, amount, beneficiary } = returnValues
         const newProposal = {
@@ -151,7 +38,7 @@ api.store(
           creator: entity,
           beneficiary,
         }
-        newState = { ...state, proposals: [...state.proposals, newProposal] }
+        nextState.proposals.push(newProposal)
         break
       }
       case 'Staked':
@@ -159,39 +46,29 @@ api.store(
         const {
           entity,
           id,
-          amount,
           tokensStaked,
           totalTokensStaked,
-          time = 99,
           conviction,
         } = returnValues
-        newState = {
-          ...state,
-          convictionStakes: [
-            ...state.convictionStakes,
-            {
-              event,
-              entity,
-              proposal: parseInt(id),
-              amount: event === 'Staked' ? parseInt(amount) : -parseInt(amount),
-              tokensStaked: parseInt(tokensStaked),
-              totalTokensStaked: parseInt(totalTokensStaked),
-              time, // ?
-              conviction: parseInt(conviction),
-            },
-          ],
-        }
+        nextState.convictionStakes.push({
+          event,
+          entity,
+          proposal: parseInt(id),
+          tokensStaked: parseInt(tokensStaked),
+          totalTokensStaked: parseInt(totalTokensStaked),
+          time: blockNumber,
+          conviction: parseInt(conviction),
+        })
         break
       }
       default:
-        newState = state
+        nextState = state
     }
 
-    console.log(newState)
-    return newState
+    console.log(nextState)
+    return nextState
   },
-  [
-    // Always initialize the store with our own home-made event
-    of({ event: INITIALIZATION_TRIGGER }, ...mockEvents),
-  ]
+  {
+    init: null,
+  }
 )

@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { AragonApi } from '@aragon/api-react'
 import App from './App'
+import { BlockNumberProvider } from './BlockContext'
 
 const reducer = state => {
   if (state === null) {
@@ -12,7 +13,9 @@ const reducer = state => {
 
 ReactDOM.render(
   <AragonApi reducer={reducer}>
-    <App />
+    <BlockNumberProvider>
+      <App />
+    </BlockNumberProvider>
   </AragonApi>,
   document.getElementById('root')
 )

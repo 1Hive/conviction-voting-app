@@ -17,6 +17,7 @@ import BalanceToken from './components/BalanceToken'
 import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
 import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
+import { useBlockNumber } from './BlockContext'
 
 function App() {
   const { api, appState, connectedAccount } = useAragonApi()
@@ -48,6 +49,8 @@ function App() {
 
   const [proposalPanel, setProposalPanel] = useState(false)
 
+  const blockNumber = useBlockNumber()
+
   return (
     <Main assetsUrl="./">
       <>
@@ -63,6 +66,7 @@ function App() {
             </Button>
           }
         />
+        <p>Current block: {blockNumber}</p>
         <Wrapper>
           <div css="width: 25%; margin-right: 1rem;">
             <Box heading="Vault balance">
