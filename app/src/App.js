@@ -102,8 +102,12 @@ function App() {
               renderEntryExpansion={proposal => (
                 <ProposalDetail
                   proposal={proposal}
-                  onStake={() => api.stakeAllToProposal(proposal.id)}
-                  onWithdraw={() => api.withdrawAllFromProposal(proposal.id)}
+                  onStake={() =>
+                    api.stakeAllToProposal(proposal.id).toPromise()
+                  }
+                  onWithdraw={() =>
+                    api.withdrawAllFromProposal(proposal.id).toPromise()
+                  }
                   isStaked={isStaked(proposal)}
                 />
               )}
@@ -117,7 +121,7 @@ function App() {
         >
           <AddProposalPanel
             onSubmit={({ title, description, amount, beneficiary }) => {
-              api.addProposal(title, '0x0', amount, beneficiary)
+              api.addProposal(title, '0x0', amount, beneficiary).toPromise()
               // TODO Store description on IPFS
               setProposalPanel(false)
             }}

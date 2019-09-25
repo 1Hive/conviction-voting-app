@@ -20,12 +20,6 @@ app.store(
       }
     }
 
-    if (event === events.SYNC_STATUS_SYNCING) {
-      return { ...nextState, isSyncing: true }
-    } else if (event === events.SYNC_STATUS_SYNCED) {
-      return { ...nextState, isSyncing: false }
-    }
-
     switch (event) {
       case 'ProposalAdded': {
         const { entity, id, title, amount, beneficiary } = returnValues
@@ -61,8 +55,12 @@ app.store(
         })
         break
       }
-      default:
-        nextState = state
+      case events.SYNC_STATUS_SYNCING:
+        nextState = { ...nextState, isSyncing: true }
+        break
+      case events.SYNC_STATUS_SYNCED:
+        nextState = { ...nextState, isSyncing: false }
+        break
     }
 
     console.log(nextState)
