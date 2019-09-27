@@ -24,7 +24,7 @@ app.store(
       case 'ProposalAdded': {
         const { entity, id, title, amount, beneficiary } = returnValues
         const newProposal = {
-          id,
+          id: parseInt(id),
           name: title,
           description: 'Lorem ipsum...',
           requestedToken: 'DAI', // token address?

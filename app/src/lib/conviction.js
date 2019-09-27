@@ -28,7 +28,6 @@ export function getConviction(
 
 /**
  * Get current conviction on a proposal
- * TODO: Current time is mocked to 100. It needs to be obtained from web3.
  * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
  * stakes List of token stakes made on a proposal
  * @param {number} currentTime Current block
@@ -37,7 +36,7 @@ export function getConviction(
  */
 export function getCurrentConviction(
   stakes,
-  currentTime = 100,
+  currentTime,
   alpha = defaultAlpha
 ) {
   // TODO: This is not needed because we can obtain `conviction` from last stake.
@@ -95,15 +94,15 @@ export function getCurrentConvictionByEntity(
 }
 
 /**
- * Get total conviction amounts from time 0 to time 100 for a certain proposal.
- * TODO: This function only spans from time 0 to 100. It also does not scale, it
- * needs to be refactored.
+ * Get total conviction amounts for the last 50 blocks for a certain proposal.
+ * TODO: This function does not scale, it needs to be refactored.
  * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
  * stakes List of token stakes made on a proposal
+ * @param {number} time Current block number
  * @param {string} alpha Constant that controls the conviction decay
- * @returns {number[]} Array with conviction amounts from time 0 to 100
+ * @returns {number[]} Array with conviction amounts from time t-50 to time t
  */
-export function getConvictionHistory(stakes, alpha = defaultAlpha) {
+export function getConvictionHistory(stakes, time, alpha = defaultAlpha) {
   let lastConv = 0
   let currentConv = lastConv
   let oldAmount = 0
@@ -112,7 +111,7 @@ export function getConvictionHistory(stakes, alpha = defaultAlpha) {
   let timePassed = 0 // age of current conviction amount, reset every time conviction stake is changed.
   let stakeIndex = 0
 
-  for (let t = 0; t < 100; t++) {
+  for (let t = Math.max(0, time - 50); t < time; t++) {
     // get timeline events for this conviction voting
     currentConv = getConviction(timePassed, lastConv, oldAmount, alpha)
     history.push(currentConv)
@@ -132,15 +131,16 @@ export function getConvictionHistory(stakes, alpha = defaultAlpha) {
 }
 
 /**
- * Get total conviction amounts from time 0 to time 100 for a certain proposal
+ * Get total conviction amounts from time 0 to current time for a certain proposal
  * TODO: It probably needs to be refactored, as #getConvictionHistory.
  * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
  * stakes List of token stakes made on a proposal
  * @param {string} entity Entity by which we will filter the stakes
+ * @param {number} time Current block number
  * @param {string} alpha Constant that controls the conviction decay
- * @returns {number[]} Array with conviction amounts from time 0 to 100
+ * @returns {number[]} Array with conviction amounts from time 0 to `time`
  */
-export function getConvictionHistoryByEntity(stakes, entity, alpha) {
+export function getConvictionHistoryByEntity(stakes, entity, time, alpha) {
   return getConvictionHistory(
     stakes
       .filter(({ entity: _entity }) => entity === _entity)
@@ -148,6 +148,7 @@ export function getConvictionHistoryByEntity(stakes, entity, alpha) {
         time,
         totalTokensStaked: tokensStaked,
       })),
+    time,
     alpha
   )
 }
@@ -180,6 +181,7 @@ export function getRemainingTimeToPass(
  * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
  * stakes List of token stakes made on a proposal
  * @param {number} maxConviction Max conviction possible with current token supply
+ * @param {number} time Current block number
  * @param {number} timeSpan Number of blocks we want to cover
  * @param {number} alpha Constant that controls the conviction decay
  * @returns {number} Number from -1 to 1 that represents the increment or
@@ -188,12 +190,13 @@ export function getRemainingTimeToPass(
 export function getConvictionTrend(
   stakes,
   maxConviction,
-  timeSpan = 20,
+  time,
+  timeSpan = 5,
   alpha
 ) {
-  const history = getConvictionHistory(stakes, alpha)
+  const history = getConvictionHistory(stakes, time, alpha)
   const pastConviction = history[history.length - timeSpan]
-  const currentConviction = getCurrentConviction(stakes, history.length, alpha)
+  const currentConviction = getCurrentConviction(stakes, time, alpha)
   return (currentConviction - pastConviction) / maxConviction
 }
 

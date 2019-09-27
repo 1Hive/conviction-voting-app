@@ -45,6 +45,7 @@ contract ConvictionVotingApp is AragonApp {
 
     // Errors
     string private constant ERROR_STAKED_MORE_THAN_OWNED = "CONVICTION_VOTING_STAKED_MORE_THAN_OWNED";
+    string private constant ERROR_STAKING_ALREADY_STAKED = "CONVICTION_VOTING_STAKING_ALREADY_STAKED";
     string private constant ERROR_WITHDRAWED_MORE_THAN_STAKED = "CONVICTION_VOTING_WITHDRAWED_MORE_THAN_STAKED";
     string private constant ERROR_PROPOSAL_ALREADY_ENACTED = "CONVICTION_VOTING_PROPOSAL_ALREADY_ENACTED";
     string private constant ERROR_INSUFFICIENT_CONVICION_TO_ENACT = "CONVICTION_VOTING_ERROR_INSUFFICIENT_CONVICION_TO_ENACT";
@@ -95,11 +96,11 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @notice Stake all my available tokens on #`id`
+     * @notice Stake all my tokens on #`id`
      * @param id Proposal id
      */
     function stakeAllToProposal(uint256 id) external isInitialized() {
-        // TODO: Should we withdraw tokens from other proposals?
+        // TODO: Should we withdraw tokens from other proposals in just one tx?
         // uint256 i = 0;
         // while (i < proposalCounter && stakesPerVoter[msg.sender] > 0) {
         //     if (proposals[i].stakesPerVoter[msg.sender] > 0) {
@@ -107,7 +108,8 @@ contract ConvictionVotingApp is AragonApp {
         //     }
         //     i++;
         // }
-        stake(id, stakeToken.balanceOf(msg.sender) - stakesPerVoter[msg.sender]);
+        require(stakesPerVoter[msg.sender] == 0, ERROR_STAKING_ALREADY_STAKED);
+        stake(id, stakeToken.balanceOf(msg.sender));
     }
 
     /**
@@ -251,14 +253,13 @@ contract ConvictionVotingApp is AragonApp {
      * @param amount Amount of staked tokens
      */
     function stake(uint256 id, uint256 amount) internal {
-        // make sure user does not stake more than he has
+        // make sure user does not stake more than she has
         require(stakesPerVoter[msg.sender] + amount <= stakeToken.balanceOf(msg.sender), ERROR_STAKED_MORE_THAN_OWNED);
 
         Proposal storage proposal = proposals[id];
         uint256 oldStaked = proposal.stakedTokens;
-        proposal.stakesPerVoter[msg.sender] += amount;
         proposal.stakedTokens += amount;
-
+        proposal.stakesPerVoter[msg.sender] += amount;
         if (proposal.blockLast == 0) {
             proposal.blockLast = block.number - TIME_UNIT;
         }
@@ -273,11 +274,13 @@ contract ConvictionVotingApp is AragonApp {
      * @param amount Amount of withdrawn tokens
      */
     function withdraw(uint256 id, uint256 amount) internal {
-        Proposal storage proposal = proposals[id];
-        require(proposal.stakesPerVoter[msg.sender] >= amount, ERROR_WITHDRAWED_MORE_THAN_STAKED);
+        // make sure voter does not withdraw more than staked on proposal
+        require(proposals[id].stakesPerVoter[msg.sender] >= amount, ERROR_WITHDRAWED_MORE_THAN_STAKED);
 
+        Proposal storage proposal = proposals[id];
         uint256 oldStaked = proposal.stakedTokens;
         proposal.stakedTokens -= amount;
+        proposal.stakesPerVoter[msg.sender] -= amount;
         stakesPerVoter[msg.sender] -= amount;
         calculateAndSetConviction(id, oldStaked);
         emit Withdrawn(msg.sender, id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);

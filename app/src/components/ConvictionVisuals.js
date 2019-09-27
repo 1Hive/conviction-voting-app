@@ -1,6 +1,7 @@
 import React from 'react'
 import { useAragonApi } from '@aragon/api-react'
-import { LineChart, Timer, Text, Button, useTheme } from '@aragon/ui'
+import { Timer, Text, Button, useTheme } from '@aragon/ui'
+import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
 import {
@@ -14,6 +15,7 @@ import {
   getCurrentConvictionByEntity,
   getConvictionTrend,
 } from '../lib/conviction'
+import { useBlockNumber } from '../BlockContext'
 
 function getStakesAndThreshold(proposal = {}) {
   const { appState } = useAragonApi()
@@ -21,7 +23,7 @@ function getStakesAndThreshold(proposal = {}) {
   const { requestedAmount } = proposal
   const { funds, supply } = globalParams
   const stakes = convictionStakes.filter(
-    stake => stake.proposal === proposal.id
+    stake => stake.proposal === parseInt(proposal.id)
   )
   const threshold = getThreshold(requestedAmount, funds, supply)
   const max = getMaxConviction(supply)
@@ -30,14 +32,15 @@ function getStakesAndThreshold(proposal = {}) {
 
 function ConvictionChart({ proposal }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
+  const currentBlock = useBlockNumber()
   const entities = [...new Set(stakes.map(({ entity }) => entity))]
   const lines = entities.map(entity =>
-    getConvictionHistoryByEntity(stakes, entity)
+    getConvictionHistoryByEntity(stakes, entity, currentBlock + 25)
   )
 
   if (lines[0]) {
     // Sum line
-    lines.push(getConvictionHistory(stakes))
+    lines.push(getConvictionHistory(stakes, currentBlock + 25))
     // Threshold line
     if (!Number.isNaN(threshold) && threshold !== Number.POSITIVE_INFINITY) {
       lines.push(lines[0].map(i => threshold))
@@ -54,6 +57,7 @@ function ConvictionChart({ proposal }) {
     <LineChart
       lines={normalize(lines)}
       total={lines[0] && lines[0].length}
+      label={i => i - Math.floor((lines[0].length - 1) / 2)}
       captionsHeight={20}
     />
   )
@@ -61,12 +65,13 @@ function ConvictionChart({ proposal }) {
 
 const ConvictionBar = ({ proposal }) => {
   const { connectedAccount } = useAragonApi()
+  const blockNumber = useBlockNumber()
   const theme = useTheme()
   const { stakes, threshold, max } = getStakesAndThreshold(proposal)
-  const conviction = getCurrentConviction(stakes)
+  const conviction = getCurrentConviction(stakes, blockNumber)
   const myConviction =
     (connectedAccount &&
-      getCurrentConvictionByEntity(stakes, connectedAccount)) ||
+      getCurrentConvictionByEntity(stakes, connectedAccount, blockNumber)) ||
     0
   const myStakedConviction = myConviction / max
   const stakedConviction = conviction / max
@@ -93,10 +98,11 @@ const ConvictionBar = ({ proposal }) => {
 
 function ConvictionCountdown({ proposal }) {
   const { api } = useAragonApi()
+  const blockNumber = useBlockNumber()
   const theme = useTheme()
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const lastStake = [...stakes].pop() || { totalTokensStaked: 0 }
-  const conviction = getCurrentConviction(stakes)
+  const conviction = getCurrentConviction(stakes, blockNumber)
   const minTokensNeeded = getMinNeededStake(threshold)
   const time = getRemainingTimeToPass(
     threshold,
@@ -105,8 +111,8 @@ function ConvictionCountdown({ proposal }) {
   )
   // TODO: Time are blocks, not days
   const NOW = Date.now()
-  const DAY = 1000 * 60 * 60 * 24
-  const endDate = new Date(NOW + time * DAY)
+  const BLOCK_TIME = 1000 * 15
+  const endDate = new Date(NOW + time * BLOCK_TIME)
   return minTokensNeeded > lastStake.totalTokensStaked ? (
     <>
       <Text color={theme.negative.toString()}> ✘ More stakes required</Text>
@@ -135,7 +141,8 @@ function ConvictionCountdown({ proposal }) {
 function ConvictionTrend({ proposal }) {
   const theme = useTheme()
   const { stakes, max } = getStakesAndThreshold(proposal)
-  const trend = getConvictionTrend(stakes, max)
+  const blockNumber = useBlockNumber()
+  const trend = getConvictionTrend(stakes, max, blockNumber)
   const percentage =
     trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
   return (
