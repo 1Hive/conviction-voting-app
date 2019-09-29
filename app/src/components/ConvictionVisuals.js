@@ -1,13 +1,13 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAragonApi } from '@aragon/api-react'
-import { Timer, Text, Button, useTheme } from '@aragon/ui'
+import { Timer, Text, Button, Tag, useTheme } from '@aragon/ui'
 import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
 import {
   getConvictionHistory,
   getConvictionHistoryByEntity,
-  getThreshold,
+  calculateThreshold,
   getMaxConviction,
   getMinNeededStake,
   getRemainingTimeToPass,
@@ -25,7 +25,7 @@ function getStakesAndThreshold(proposal = {}) {
   const stakes = convictionStakes.filter(
     stake => stake.proposal === parseInt(proposal.id)
   )
-  const threshold = getThreshold(requestedAmount, funds, supply)
+  const threshold = calculateThreshold(requestedAmount, funds, supply)
   const max = getMaxConviction(supply)
   return { stakes, threshold, max }
 }
@@ -96,8 +96,7 @@ const ConvictionBar = ({ proposal }) => {
   )
 }
 
-function ConvictionCountdown({ proposal }) {
-  const { api } = useAragonApi()
+function ConvictionCountdown({ proposal, onExecute }) {
   const blockNumber = useBlockNumber()
   const theme = useTheme()
   const { stakes, threshold } = getStakesAndThreshold(proposal)
@@ -109,30 +108,51 @@ function ConvictionCountdown({ proposal }) {
     conviction,
     lastStake.totalTokensStaked
   )
-  // TODO: Time are blocks, not days
+  const WONT_PASS = 0
+  const WILL_PASS = 1
+  const CAN_PASS = 2
+  const [view, setView] = useState(
+    minTokensNeeded > lastStake.totalTokensStaked
+      ? WONT_PASS
+      : time > 0
+      ? WILL_PASS
+      : CAN_PASS
+  )
   const NOW = Date.now()
   const BLOCK_TIME = 1000 * 15
   const endDate = new Date(NOW + time * BLOCK_TIME)
-  return minTokensNeeded > lastStake.totalTokensStaked ? (
+
+  useEffect(() => {
+    if (view === WILL_PASS) {
+      const timer = setTimeout(() => {
+        // TODO: Check with the API if it can be executed
+        setView(CAN_PASS)
+      }, time * BLOCK_TIME)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
+  return view === WONT_PASS ? (
     <>
       <Text color={theme.negative.toString()}> ✘ More stakes required</Text>
       <div>
         <Text>
-          At least {minTokensNeeded} TKN more needs to be staked in order for
-          this proposal to pass at some point.
+          At least{' '}
+          <Tag>{minTokensNeeded - lastStake.totalTokensStaked} TKN</Tag> more
+          needs to be staked in order for this proposal to pass at some point.
         </Text>
       </div>
     </>
-  ) : time > 0 ? (
+  ) : view === WILL_PASS ? (
     <>
       <Text color={theme.positive.toString()}> ✓ Will pass</Text>
       <Timer end={endDate} />
     </>
   ) : (
     <>
-      <Text color={theme.positive.toString()}> ✓ Has passed</Text>
-      <Button mode="strong" wide onClick={() => api.enactProposal(proposal.id)}>
-        Enact proposal
+      <Text color={theme.positive.toString()}> ✓ Can be executed</Text>
+      <Button mode="strong" wide onClick={onExecute}>
+        Execute proposal
       </Button>
     </>
   )

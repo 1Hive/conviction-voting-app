@@ -7,6 +7,7 @@ const ProposalDetail = ({
   proposal,
   onStake,
   onWithdraw,
+  onExecute,
   isStaked = false,
 }) => {
   const theme = useTheme()
@@ -50,7 +51,7 @@ const ProposalDetail = ({
             Status
           </Text>
         </h2>
-        <ConvictionCountdown proposal={proposal} />
+        <ConvictionCountdown proposal={proposal} onExecute={onExecute} />
         <h2>
           <Text color={theme.textSecondary} smallcaps>
             Created by

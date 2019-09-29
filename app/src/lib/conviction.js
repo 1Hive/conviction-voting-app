@@ -12,7 +12,7 @@ const defaultRho = 0.5 * defaultBeta ** 2 // Tuning param for the threshold func
  * @param {number} alpha Constant that controls the conviction decay
  * @return {number} Amount of conviction at time t
  */
-export function getConviction(
+export function calculateConviction(
   timePassed,
   initConv,
   amount,
@@ -39,23 +39,11 @@ export function getCurrentConviction(
   currentTime,
   alpha = defaultAlpha
 ) {
-  // TODO: This is not needed because we can obtain `conviction` from last stake.
-  // Change it when conviction not mocked.
-  const [conviction] = stakes.reduce(
-    ([lastConv, lastTime, oldAmount], stake) => {
-      const amount = stake.totalTokensStaked
-      const timePassed = stake.time - lastTime
-      lastConv = getConviction(timePassed, lastConv, oldAmount, alpha)
-      lastTime = stake.time
-      return [lastConv, lastTime, amount]
-    },
-    [0, 0, 0] // Initial conviction, time, and amount to 0
-  )
   const lastStake = [...stakes].pop()
   if (lastStake) {
-    const { time, totalTokensStaked } = lastStake
+    const { time, totalTokensStaked, conviction } = lastStake
     // Calculate from last stake to now
-    return getConviction(
+    return calculateConviction(
       currentTime - time,
       conviction,
       totalTokensStaked,
@@ -63,6 +51,30 @@ export function getCurrentConviction(
     )
   } else {
     return 0
+  }
+}
+
+// TODO: Move the following code to tests
+export function checkConvictionImplementation(stakes, alpha = defaultAlpha) {
+  const [_conviction] = stakes.reduce(
+    ([lastConv, lastTime, oldAmount], stake) => {
+      const amount = stake.totalTokensStaked
+      const timePassed = stake.time - lastTime
+      lastConv = calculateConviction(timePassed, lastConv, oldAmount, alpha)
+      lastTime = stake.time
+      return [lastConv, lastTime, amount]
+    },
+    [0, 0, 0] // Initial conviction, time, and amount to 0
+  )
+  if (stakes.length > 0) {
+    const solidityConviction = [...stakes].pop().conviction
+    if (solidityConviction !== _conviction) {
+      console.error(
+        'Mismatch between solidity and js code on conviction calculation.',
+        solidityConviction,
+        _conviction
+      )
+    }
   }
 }
 
@@ -84,9 +96,10 @@ export function getCurrentConvictionByEntity(
   return getCurrentConviction(
     stakes
       .filter(({ entity: _entity }) => entity === _entity)
-      .map(({ time, tokensStaked }) => ({
+      .map(({ time, tokensStaked, conviction }) => ({
         time,
         totalTokensStaked: tokensStaked,
+        conviction,
       })),
     currentTime,
     alpha
@@ -113,7 +126,7 @@ export function getConvictionHistory(stakes, time, alpha = defaultAlpha) {
 
   for (let t = Math.max(0, time - 50); t < time; t++) {
     // get timeline events for this conviction voting
-    currentConv = getConviction(timePassed, lastConv, oldAmount, alpha)
+    currentConv = calculateConviction(timePassed, lastConv, oldAmount, alpha)
     history.push(currentConv)
 
     // check if user changed her conviction
@@ -144,9 +157,10 @@ export function getConvictionHistoryByEntity(stakes, entity, time, alpha) {
   return getConvictionHistory(
     stakes
       .filter(({ entity: _entity }) => entity === _entity)
-      .map(({ time, tokensStaked }) => ({
+      .map(({ time, tokensStaked, conviction }) => ({
         time,
         totalTokensStaked: tokensStaked,
+        conviction,
       })),
     time,
     alpha
@@ -201,8 +215,8 @@ export function getConvictionTrend(
 }
 
 /**
- * Get amount of conviction needed for a proposal to pass. It uses the formula:
- * `threshold = (rho * supply) / (beta - (requeted / funds)) ** 2`.
+ * Calculate amount of conviction needed for a proposal to pass. It uses the
+ * formula: `threshold = (rho * supply) / (beta - (requeted / funds)) ** 2`.
  * @param {number} requested Amount of requested funds
  * @param {number} funds Total amount of funds
  * @param {number} supply Supply of the token being staked
@@ -210,7 +224,7 @@ export function getConvictionTrend(
  * @param {number} rho Tuning param to set up the threshold (linearly)
  * @returns {number} Threshold
  */
-export function getThreshold(
+export function calculateThreshold(
   requested,
   funds,
   supply,

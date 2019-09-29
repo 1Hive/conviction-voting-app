@@ -110,19 +110,8 @@ class ModifiedLineChart extends LineChart {
                           `}
                     fill="transparent"
                     stroke={line.color || color(lineIndex, { lines })}
-                    strokeWidth="2"
+                    strokeWidth="3"
                   />
-                  {line.values.slice(1, -1).map((val, index) => (
-                    <circle
-                      key={index}
-                      cx={this.getX(index + 1) * progress}
-                      cy={this.getY(val, progress, chartHeight)}
-                      r={dotRadius}
-                      fill="white"
-                      stroke={line.color || color(lineIndex, { lines })}
-                      strokeWidth="1"
-                    />
-                  ))}
                 </g>
               ))}
               <line

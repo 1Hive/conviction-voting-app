@@ -104,6 +104,7 @@ function App() {
                   onWithdraw={() =>
                     api.withdrawAllFromProposal(proposal.id).toPromise()
                   }
+                  onExecute={() => api.executeProposal(proposal.id).toPromise()}
                   isStaked={isStaked(proposal)}
                 />
               )}

@@ -35,8 +35,7 @@ app.store(
         nextState.proposals.push(newProposal)
         break
       }
-      case 'Staked':
-      case 'Withdrawn': {
+      case 'StakeChanged': {
         const {
           entity,
           id,
@@ -45,7 +44,6 @@ app.store(
           conviction,
         } = returnValues
         nextState.convictionStakes.push({
-          event,
           entity,
           proposal: parseInt(id),
           tokensStaked: parseInt(tokensStaked),

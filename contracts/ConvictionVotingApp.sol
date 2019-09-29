@@ -9,19 +9,18 @@ contract ConvictionVotingApp is AragonApp {
 
     // Events
     event ProposalAdded(address entity, uint256 id, string title, bytes ipfsHash, uint256 amount, address beneficiary);
-    event Staked(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
-    event Withdrawn(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
-    event ProposalEnacted(uint256 id, uint256 conviction);
+    event StakeChanged(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event ProposalExecuted(uint256 id, uint256 conviction);
 
     // Constants
     uint256 public constant TIME_UNIT = 1;
-    uint256 public constant PADD = 10;
-    uint256 public constant CONV_ALPHA = 9 * PADD;
+    uint256 public constant D = 10;
 
     // State
-    uint256 public weight = 5;
-    uint256 public maxFunded = 8;  // from 10
-    uint256 proposalCounter = 1;
+    uint256 public decay;
+    uint256 public weight;
+    uint256 public maxRatio;
+    uint256 public proposalCounter;
     MiniMeToken public stakeToken;
     address public requestToken;
     Vault public vault;
@@ -31,7 +30,7 @@ contract ConvictionVotingApp is AragonApp {
 
     // Structs
     struct Proposal {
-        bool enacted;
+        bool executed;
         uint256 requestedAmount;
         address beneficiary;
         uint256 stakedTokens;
@@ -47,14 +46,30 @@ contract ConvictionVotingApp is AragonApp {
     string private constant ERROR_STAKED_MORE_THAN_OWNED = "CONVICTION_VOTING_STAKED_MORE_THAN_OWNED";
     string private constant ERROR_STAKING_ALREADY_STAKED = "CONVICTION_VOTING_STAKING_ALREADY_STAKED";
     string private constant ERROR_WITHDRAWED_MORE_THAN_STAKED = "CONVICTION_VOTING_WITHDRAWED_MORE_THAN_STAKED";
-    string private constant ERROR_PROPOSAL_ALREADY_ENACTED = "CONVICTION_VOTING_PROPOSAL_ALREADY_ENACTED";
-    string private constant ERROR_INSUFFICIENT_CONVICION_TO_ENACT = "CONVICTION_VOTING_ERROR_INSUFFICIENT_CONVICION_TO_ENACT";
+    string private constant ERROR_PROPOSAL_ALREADY_EXECUTED = "CONVICTION_VOTING_PROPOSAL_ALREADY_EXECUTED";
+    string private constant ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE = "CONVICTION_VOTING_ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE";
 
 
     function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken) public onlyInit {
+        uint256 _decay = 9;
+        uint256 _maxRatio = 2; // 20%
+        uint256 _weight = 2; // 0.5 * maxRatio ^ 2
+        initialize(_stakeToken, _vault, _requestToken, _decay, _maxRatio, _weight);
+    }
+
+    function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken, uint256 _decay, uint256 _maxRatio) public onlyInit {
+        uint256 _weight = 5 * _maxRatio**2 / D;
+        initialize(_stakeToken, _vault, _requestToken, _decay, _maxRatio, _weight);
+    }
+
+    function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken, uint256 _decay, uint256 _maxRatio, uint256 _weight) public onlyInit {
+        proposalCounter = 1;
         stakeToken = _stakeToken;
         requestToken = _requestToken;
         vault = _vault;
+        decay = _decay;
+        maxRatio = _maxRatio;
+        weight = _weight;
         initialized();
     }
 
@@ -130,29 +145,24 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @notice Enact proposal #`id` by sending `proposals[id].requestedAmount` to `proposals[id].beneficiary`
+     * @notice Execute proposal #`id` by sending `proposals[id].requestedAmount` to `proposals[id].beneficiary`
      * @param id Proposal id
      */
-    function enactProposal(uint256 id) external isInitialized() {
+    function executeProposal(uint256 id) external isInitialized() {
         Proposal storage proposal = proposals[id];
-        require(!proposal.enacted, ERROR_PROPOSAL_ALREADY_ENACTED);
-        proposal.enacted = true;
-        uint256 conviction = calculateConviction(
-            block.number - proposal.blockLast,
-            proposal.convictionLast,
-            proposal.stakedTokens,
-            proposal.stakedTokens
-        );
-        require(conviction > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION_TO_ENACT);
-        emit ProposalEnacted(id, conviction);
+        require(!proposal.executed, ERROR_PROPOSAL_ALREADY_EXECUTED);
+        proposal.executed = true;
+        calculateAndSetConviction(id, proposal.stakedTokens);
+        require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE);
+        emit ProposalExecuted(id, proposal.convictionLast);
         // TODO Check if enough funds?
-        vault.transfer(requestToken, proposals[id].beneficiary, proposal.requestedAmount);
+        vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
     }
 
     /**
-     * @dev Get proposal params
+     * @dev Get proposal parameters
      * @param id Proposal id
-     * @return True if proposal has already been enacted
+     * @return True if proposal has already been executed
      * @return Requested amount
      * @return Beneficiary address
      * @return Current total stake of tokens on this proposal
@@ -170,7 +180,7 @@ contract ConvictionVotingApp is AragonApp {
     {
         Proposal storage proposal = proposals[id];
         return (
-            proposal.enacted,
+            proposal.executed,
             proposal.requestedAmount,
             proposal.beneficiary,
             proposal.stakedTokens,
@@ -190,42 +200,37 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @dev Conviction formula
+     * @dev Conviction formula: a^t * y(0) + x * (1 - a^t) / (1 - a)
      * @param timePassed Number of blocks since last conviction record
      * @param lastConv Last conviction record
      * @param oldAmount Amount of tokens staked until now
-     * @param newAmount Amount of tokens staked from now on
      * @return Current conviction
      */
     function calculateConviction(
         uint256 timePassed,
         uint256 lastConv,
-        uint256 oldAmount,
-        uint256 newAmount
+        uint256 oldAmount
     )
-        public pure returns(uint256 conviction)
+        public view returns(uint256 conviction)
     {
-        uint256 steps = timePassed / TIME_UNIT;
-        uint256 i;
-        conviction = lastConv;
-        for (i = 0; i < steps - 1; i++) {
-            conviction = CONV_ALPHA * conviction / PADD / 10 + oldAmount;
-        }
-        conviction = CONV_ALPHA * conviction / PADD / 10 + newAmount;
-        return conviction;
+        uint256 t = timePassed / TIME_UNIT;
+        uint256 aD = decay;
+        uint256 Dt = D**t;
+        uint256 aDt = aD**t;
+        conviction = (aDt * lastConv + (oldAmount * D * (Dt - aDt)) / (D - aD)) / Dt;
     }
 
     /**
      * @dev Formula: wS/(β-r)^2, r = requested/total
      * @param requestedAmount Requested amount of tokens on certain proposal
-     * @return Threshold a proposal's conviction should surpass in order to be able to enact it
+     * @return Threshold a proposal's conviction should surpass in order to be able to executed it
      */
     function calculateThreshold(uint256 requestedAmount) public view returns (uint256 threshold) {
         uint256 totalFunds = vault.balance(requestToken);
         threshold = weight * stakeToken.totalSupply();
         threshold /= (
-            maxFunded -
-            (requestedAmount * PADD / totalFunds)
+            maxRatio -
+            (requestedAmount * D / totalFunds)
         ) ** 2;
     }
 
@@ -240,8 +245,7 @@ contract ConvictionVotingApp is AragonApp {
         uint256 conviction = calculateConviction(
             block.number - proposal.blockLast,
             proposal.convictionLast,
-            oldStaked,
-            proposal.stakedTokens
+            oldStaked
         );
         proposal.blockLast = block.number;
         proposal.convictionLast = conviction;
@@ -261,11 +265,11 @@ contract ConvictionVotingApp is AragonApp {
         proposal.stakedTokens += amount;
         proposal.stakesPerVoter[msg.sender] += amount;
         if (proposal.blockLast == 0) {
-            proposal.blockLast = block.number - TIME_UNIT;
+            proposal.blockLast = block.number;
         }
         stakesPerVoter[msg.sender] += amount;
         calculateAndSetConviction(id, oldStaked);
-        emit Staked(msg.sender, id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeChanged(msg.sender, id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
@@ -283,6 +287,6 @@ contract ConvictionVotingApp is AragonApp {
         proposal.stakesPerVoter[msg.sender] -= amount;
         stakesPerVoter[msg.sender] -= amount;
         calculateAndSetConviction(id, oldStaked);
-        emit Withdrawn(msg.sender, id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeChanged(msg.sender, id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
     }
 }

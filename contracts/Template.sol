@@ -68,7 +68,7 @@ contract Template is TemplateBase {
 
         address root = msg.sender;
         address account2 = 0x8401Eb5ff34cc943f096A32EF3d5113FEbE8D4Eb;
-        address dai = 0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359;
+        address dai = 0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359;
         bytes32 appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
         bytes32 tokenManagerAppId = apmNamehash("token-manager");
         bytes32 vaultAppId = apmNamehash("vault");
