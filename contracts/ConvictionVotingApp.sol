@@ -155,7 +155,7 @@ contract ConvictionVotingApp is AragonApp {
      * @notice Execute proposal #`id` by sending `proposals[id].requestedAmount` to `proposals[id].beneficiary`
      * @param id Proposal id
      */
-    function executeProposal(uint256 id) external isInitialized() {
+    function executeProposal(uint256 id, bool withdraw) external isInitialized() {
         Proposal storage proposal = proposals[id];
         require(!proposal.executed, ERROR_PROPOSAL_ALREADY_EXECUTED);
         proposal.executed = true;
@@ -164,6 +164,9 @@ contract ConvictionVotingApp is AragonApp {
         emit ProposalExecuted(id, proposal.convictionLast);
         // TODO Check if enough funds?
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
+        if (withdraw) {
+          withdraw(id, proposal.stakedTokens);
+        }
     }
 
     /**
@@ -223,9 +226,8 @@ contract ConvictionVotingApp is AragonApp {
         uint256 t = uint256(timePassed).div(TIME_UNIT);
         uint256 aD = decay;
         uint256 Dt = D**t;
-        uint256 aDt_1 = aD**(t-1);
-        uint256 aDt = aDt_1 * t;
-        if (Dt  > D**(t - 1)) { // no overflow
+        uint256 aDt = aD**t;
+        if (t <= MAX_T) { // no overflow
           conviction = aDt.mul(lastConv).add((oldAmount.mul(D).mul(Dt.sub(aDt))).div(D.sub(aD))).div(Dt);
         } else {
           // We neglect lastConv when timePassed is big enough because lim [ a^t ] = 0 when t -> infinity
