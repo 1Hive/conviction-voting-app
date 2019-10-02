@@ -15,17 +15,7 @@ const splitAmount = amount => {
 
 const BalanceToken = ({ amount, symbol, verified, convertedAmount = -1 }) => (
   <React.Fragment>
-    <Token title={symbol || 'Unknown symbol'}>
-      {verified && symbol && (
-        <img
-          alt=""
-          width="16"
-          height="16"
-          src={`https://chasing-coins.com/coin/logo/${symbol}`}
-        />
-      )}
-      {symbol || '?'}
-    </Token>
+    <Token title={symbol || 'Unknown symbol'}>{symbol || '?'}</Token>
     <Wrap>
       <Amount>{splitAmount(amount.toFixed(3))}</Amount>
       <ConvertedAmount>

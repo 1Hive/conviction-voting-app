@@ -154,8 +154,9 @@ contract ConvictionVotingApp is AragonApp {
     /**
      * @notice Execute proposal #`id` by sending `proposals[id].requestedAmount` to `proposals[id].beneficiary`
      * @param id Proposal id
+     * @param _withdraw True if sender's staked tokens should be withdrawed after execution
      */
-    function executeProposal(uint256 id, bool withdraw) external isInitialized() {
+    function executeProposal(uint256 id, bool _withdraw) external isInitialized() {
         Proposal storage proposal = proposals[id];
         require(!proposal.executed, ERROR_PROPOSAL_ALREADY_EXECUTED);
         proposal.executed = true;
@@ -164,7 +165,7 @@ contract ConvictionVotingApp is AragonApp {
         emit ProposalExecuted(id, proposal.convictionLast);
         // TODO Check if enough funds?
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
-        if (withdraw) {
+        if (_withdraw) {
           withdraw(id, proposal.stakedTokens);
         }
     }
@@ -211,6 +212,7 @@ contract ConvictionVotingApp is AragonApp {
 
     /**
      * @dev Conviction formula: a^t * y(0) + x * (1 - a^t) / (1 - a)
+     * Solidity implementation: y = (aDt * y0 + (x*D*(Dt-aDt))/(D-aD)) / Dt
      * @param timePassed Number of blocks since last conviction record
      * @param lastConv Last conviction record
      * @param oldAmount Amount of tokens staked until now
