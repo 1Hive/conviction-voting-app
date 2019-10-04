@@ -56,23 +56,14 @@ export function getCurrentConviction(
 
 // TODO: Move the following code to tests
 export function checkConvictionImplementation(stakes, alpha = defaultAlpha) {
-  const [_conviction] = stakes.reduce(
-    ([lastConv, lastTime, oldAmount], stake) => {
-      const amount = stake.totalTokensStaked
-      const timePassed = stake.time - lastTime
-      lastConv = calculateConviction(timePassed, lastConv, oldAmount, alpha)
-      lastTime = stake.time
-      return [lastConv, lastTime, amount]
-    },
-    [0, 0, 0] // Initial conviction, time, and amount to 0
-  )
+  const { conviction } = convictionFromStakes(stakes, alpha)
   if (stakes.length > 0) {
     const solidityConviction = [...stakes].pop().conviction
-    if (solidityConviction !== _conviction) {
+    if (solidityConviction !== conviction) {
       console.error(
         'Mismatch between solidity and js code on conviction calculation.',
         solidityConviction,
-        _conviction
+        conviction
       )
     }
   }
@@ -91,19 +82,24 @@ export function getCurrentConvictionByEntity(
   stakes,
   entity,
   currentTime,
-  alpha
+  alpha = defaultAlpha
 ) {
-  return getCurrentConviction(
-    stakes
-      .filter(({ entity: _entity }) => entity === _entity)
-      .map(({ time, tokensStaked, conviction }) => ({
-        time,
-        totalTokensStaked: tokensStaked,
-        conviction,
-      })),
-    currentTime,
-    alpha
-  )
+  const entityStakes = stakesByEntity(stakes, entity)
+  if (entityStakes.length > 0) {
+    const { time, totalTokensStaked, conviction } = convictionFromStakes(
+      entityStakes,
+      alpha
+    )
+    // Calculate from last stake to now
+    return calculateConviction(
+      currentTime - time,
+      conviction,
+      totalTokensStaked,
+      alpha
+    )
+  } else {
+    return 0
+  }
 }
 
 /**
@@ -154,17 +150,7 @@ export function getConvictionHistory(stakes, time, alpha = defaultAlpha) {
  * @returns {number[]} Array with conviction amounts from time 0 to `time`
  */
 export function getConvictionHistoryByEntity(stakes, entity, time, alpha) {
-  return getConvictionHistory(
-    stakes
-      .filter(({ entity: _entity }) => entity === _entity)
-      .map(({ time, tokensStaked, conviction }) => ({
-        time,
-        totalTokensStaked: tokensStaked,
-        conviction,
-      })),
-    time,
-    alpha
-  )
+  return getConvictionHistory(stakesByEntity(stakes, entity), time, alpha)
 }
 
 /**
@@ -256,15 +242,40 @@ export function getMinNeededStake(threshold, alpha = defaultAlpha) {
 }
 
 /**
- * Get max conviction possible with current token supply. It is used to state
- * the 100% of conviction in visuals. We obtain this function from the
- * conviction formula, by calculating the limit when time `t` is infinite.
- * @param {number} supply Stake token supply
+ * Get max conviction possible with current staked tokens. It can also be used
+ * to state the 100% of conviction in visuals if the token supply amount is
+ * passed. We obtain this function from the conviction formula, by calculating
+ * the limit when time `t` is infinite.
+ * @param {number} amount Staked tokens
  * @param {number} alpha Constant that controls the decay
  * @returns {number} Max amount of conviction possible
  */
-export function getMaxConviction(supply, alpha = defaultAlpha) {
-  const x = supply
+export function getMaxConviction(amount, alpha = defaultAlpha) {
+  const x = amount
   const a = alpha
   return x / (1 - a)
+}
+
+function convictionFromStakes(stakes, alpha) {
+  const [conviction, time, totalTokensStaked] = stakes.reduce(
+    ([lastConv, lastTime, oldAmount], stake) => {
+      const amount = stake.totalTokensStaked
+      const timePassed = stake.time - lastTime
+      lastConv = calculateConviction(timePassed, lastConv, oldAmount, alpha)
+      lastTime = stake.time
+      return [lastConv, lastTime, amount]
+    },
+    [0, 0, 0] // Initial conviction, time, and amount to 0
+  )
+  return { conviction, time, totalTokensStaked }
+}
+
+function stakesByEntity(stakes, entity) {
+  return stakes
+    .filter(({ entity: _entity }) => entity === _entity)
+    .map(({ time, tokensStaked, conviction }) => ({
+      time,
+      totalTokensStaked: tokensStaked,
+      conviction,
+    }))
 }

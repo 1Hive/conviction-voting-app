@@ -148,7 +148,7 @@ contract ConvictionVotingApp is AragonApp {
      * @param id Proposal id
      */
     function withdrawAllFromProposal(uint256 id) external isInitialized() {
-        withdraw(id, proposals[id].stakedTokens);
+        withdraw(id, proposals[id].stakesPerVoter[msg.sender]);
     }
 
     /**
