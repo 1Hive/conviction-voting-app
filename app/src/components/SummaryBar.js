@@ -5,13 +5,16 @@ import { Spring, animated } from 'react-spring'
 
 function SummaryBar({
   show = true,
-  positiveSize = 0,
-  negativeSize = 0,
+  firstSize = 0,
+  secondSize = 0,
+  thirdSize = 0,
   requiredSize = 0,
   compact = false,
   ...props
 }) {
   const theme = useTheme()
+  // Third part overlaps first and second if it is negative
+  const thirdBegins = firstSize + secondSize + Math.min(thirdSize, 0)
   return (
     <Spring
       from={{ progress: 0 }}
@@ -26,7 +29,7 @@ function SummaryBar({
               style={{
                 backgroundColor: theme.infoSurfaceContent,
                 transform: progress.interpolate(
-                  v => `scale3d(${positiveSize * v}, 1, 1)`
+                  v => `scale3d(${firstSize * v}, 1, 1)`
                 ),
               }}
             />
@@ -35,8 +38,21 @@ function SummaryBar({
                 backgroundColor: theme.info,
                 transform: progress.interpolate(
                   v => `
-                    translate3d(${100 * positiveSize * v}%, 0, 0)
-                    scale3d(${negativeSize * v}, 1, 1)
+                    translate3d(${100 * firstSize * v}%, 0, 0)
+                    scale3d(${secondSize * v}, 1, 1)
+                  `
+                ),
+              }}
+            />
+            <BarPart
+              style={{
+                backgroundColor: thirdSize > 0 ? theme.info : theme.negative,
+                opacity: thirdSize > 0 ? 0.2 : 0.8,
+                transform: progress.interpolate(
+                  v => `
+                    translate3d(
+                      ${100 * thirdBegins * v}%, 0, 0)
+                    scale3d(${Math.abs(thirdSize) * v}, 1, 1)
                   `
                 ),
               }}

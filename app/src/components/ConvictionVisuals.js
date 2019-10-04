@@ -25,9 +25,10 @@ function getStakesAndThreshold(proposal = {}) {
   const stakes = convictionStakes.filter(
     stake => stake.proposal === parseInt(proposal.id)
   )
+  const { totalTokensStaked } = [...stakes].pop() || { totalTokensStaked: 0 }
   const threshold = calculateThreshold(requestedAmount, funds, supply)
   const max = getMaxConviction(supply)
-  return { stakes, threshold, max }
+  return { stakes, totalTokensStaked, threshold, max }
 }
 
 function ConvictionChart({ proposal }) {
@@ -67,20 +68,25 @@ const ConvictionBar = ({ proposal }) => {
   const { connectedAccount } = useAragonApi()
   const blockNumber = useBlockNumber()
   const theme = useTheme()
-  const { stakes, threshold, max } = getStakesAndThreshold(proposal)
+  const { stakes, totalTokensStaked, threshold, max } = getStakesAndThreshold(
+    proposal
+  )
   const conviction = getCurrentConviction(stakes, blockNumber)
   const myConviction =
     (connectedAccount &&
       getCurrentConvictionByEntity(stakes, connectedAccount, blockNumber)) ||
     0
+  const futureConviction = getMaxConviction(totalTokensStaked)
   const myStakedConviction = myConviction / max
   const stakedConviction = conviction / max
+  const futureStakedConviction = futureConviction / max
   const neededConviction = threshold / max
   return (
     <div>
       <SummaryBar
-        positiveSize={myStakedConviction}
-        negativeSize={stakedConviction - myStakedConviction}
+        firstSize={myStakedConviction}
+        secondSize={stakedConviction - myStakedConviction}
+        thirdSize={futureStakedConviction - stakedConviction}
         requiredSize={neededConviction}
         compact
       />
@@ -99,20 +105,17 @@ const ConvictionBar = ({ proposal }) => {
 function ConvictionCountdown({ proposal, onExecute }) {
   const blockNumber = useBlockNumber()
   const theme = useTheme()
-  const { stakes, threshold } = getStakesAndThreshold(proposal)
-  const lastStake = [...stakes].pop() || { totalTokensStaked: 0 }
+  const { stakes, totalTokensStaked, threshold } = getStakesAndThreshold(
+    proposal
+  )
   const conviction = getCurrentConviction(stakes, blockNumber)
   const minTokensNeeded = getMinNeededStake(threshold)
-  const time = getRemainingTimeToPass(
-    threshold,
-    conviction,
-    lastStake.totalTokensStaked
-  )
+  const time = getRemainingTimeToPass(threshold, conviction, totalTokensStaked)
   const WONT_PASS = 0
   const WILL_PASS = 1
   const CAN_PASS = 2
   const [view, setView] = useState(
-    minTokensNeeded > lastStake.totalTokensStaked
+    minTokensNeeded > totalTokensStaked
       ? WONT_PASS
       : time > 0
       ? WILL_PASS
@@ -137,8 +140,7 @@ function ConvictionCountdown({ proposal, onExecute }) {
       <Text color={theme.negative.toString()}> ✘ More stakes required</Text>
       <div>
         <Text>
-          At least{' '}
-          <Tag>{minTokensNeeded - lastStake.totalTokensStaked} TKN</Tag> more
+          At least <Tag>{minTokensNeeded - totalTokensStaked} TKN</Tag> more
           needs to be staked in order for this proposal to pass at some point.
         </Text>
       </div>
