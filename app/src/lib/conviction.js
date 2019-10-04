@@ -177,7 +177,7 @@ export function getRemainingTimeToPass(
 }
 
 /**
- * Gets conviction trend in percentage since last `timeSpan` amount of blocks.
+ * Gets conviction trend in percentage for the next `timeSpan` amount of blocks.
  * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
  * stakes List of token stakes made on a proposal
  * @param {number} maxConviction Max conviction possible with current token supply
@@ -194,10 +194,9 @@ export function getConvictionTrend(
   timeSpan = 5,
   alpha
 ) {
-  const history = getConvictionHistory(stakes, time, alpha)
-  const pastConviction = history[history.length - timeSpan]
   const currentConviction = getCurrentConviction(stakes, time, alpha)
-  return (currentConviction - pastConviction) / maxConviction
+  const futureConviction = getCurrentConviction(stakes, time + timeSpan, alpha)
+  return (futureConviction - currentConviction) / maxConviction
 }
 
 /**
