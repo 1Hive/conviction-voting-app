@@ -110,38 +110,31 @@ function ConvictionCountdown({ proposal, onExecute }) {
   )
   const conviction = getCurrentConviction(stakes, blockNumber)
   const minTokensNeeded = getMinNeededStake(threshold)
+  const neededTokens = parseInt(minTokensNeeded - totalTokensStaked)
   const time = getRemainingTimeToPass(threshold, conviction, totalTokensStaked)
   const WONT_PASS = 0
   const WILL_PASS = 1
   const CAN_PASS = 2
   const [view, setView] = useState(
-    minTokensNeeded > totalTokensStaked
-      ? WONT_PASS
-      : time > 0
-      ? WILL_PASS
-      : CAN_PASS
+    conviction >= threshold ? CAN_PASS : time > 0 ? WILL_PASS : WONT_PASS
   )
   const NOW = Date.now()
   const BLOCK_TIME = 1000 * 15
   const endDate = new Date(NOW + time * BLOCK_TIME)
 
   useEffect(() => {
-    if (view === WILL_PASS) {
-      const timer = setTimeout(() => {
-        // TODO: Check with the API if it can be executed
-        setView(CAN_PASS)
-      }, time * BLOCK_TIME)
-      return () => clearTimeout(timer)
-    }
-  }, [])
+    setView(
+      conviction >= threshold ? CAN_PASS : time > 0 ? WILL_PASS : WONT_PASS
+    )
+  }, [conviction, threshold, time])
 
   return view === WONT_PASS ? (
     <>
       <Text color={theme.negative.toString()}> ✘ More stakes required</Text>
       <div>
         <Text>
-          At least <Tag>{minTokensNeeded - totalTokensStaked} TKN</Tag> more
-          needs to be staked in order for this proposal to pass at some point.
+          At least <Tag>{neededTokens} TKN</Tag> more needs to be staked in
+          order for this proposal to pass at some point.
         </Text>
       </div>
     </>
