@@ -17,6 +17,7 @@ class ModifiedLineChart extends LineChart {
       animDelay,
       color,
       labelColor,
+      threshold,
       ...props
     } = this.props
 
@@ -37,15 +38,6 @@ class ModifiedLineChart extends LineChart {
       <g>
         <rect
           width={width}
-          height={chartHeight}
-          rx="3"
-          ry="3"
-          fill="#ffffff"
-          strokeWidth="1"
-          stroke={borderColor}
-        />
-        <rect
-          width={width / 2}
           height={chartHeight}
           rx="3"
           ry="3"
@@ -97,7 +89,7 @@ class ModifiedLineChart extends LineChart {
                             ${this.getX(0)},
                             ${this.getY(line.values[0], progress, chartHeight)}
 
-                            ${line.values
+                            ${[...line.values]
                               .slice(1)
                               .map(
                                 (val, index) =>
@@ -110,10 +102,49 @@ class ModifiedLineChart extends LineChart {
                           `}
                     fill="transparent"
                     stroke={line.color || color(lineIndex, { lines })}
-                    strokeWidth="3"
+                    strokeWidth="2"
+                    strokeDasharray="10 5"
+                  />
+                  <path
+                    d={`
+                            M
+                            ${this.getX(0)},
+                            ${this.getY(line.values[0], progress, chartHeight)}
+
+                            ${[...line.values]
+                              .slice(1, line.values.length / 2)
+                              .map(
+                                (val, index) =>
+                                  `L
+                                   ${this.getX((index + 1) * progress)},
+                                   ${this.getY(val, progress, chartHeight)}
+                                  `
+                              )
+                              .join('')}
+                          `}
+                    fill="transparent"
+                    stroke={line.color || color(lineIndex, { lines })}
+                    strokeWidth="2"
                   />
                 </g>
               ))}
+              <line
+                x1={0}
+                y1={this.getY(threshold, progress, chartHeight)}
+                x2={width}
+                y2={this.getY(threshold, progress, chartHeight)}
+                stroke="#979797"
+                strokeWidth="1"
+                strokeDasharray="5 5"
+              />
+              <line
+                x1={this.getX(24) * progress}
+                y1="0"
+                x2={this.getX(24) * progress}
+                y2={chartHeight}
+                stroke="#979797"
+                strokeWidth="1"
+              />
               <line
                 x1={this.getX(valuesCount - 1) * progress}
                 y1="0"

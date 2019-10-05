@@ -28,8 +28,8 @@ export function calculateConviction(
 
 /**
  * Get current conviction on a proposal
- * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
- * stakes List of token stakes made on a proposal
+ * @param {{time: number, tokenStaked: number, totalTokensStaked: number, conviction: number}[]} stakes
+ * List of token stakes made on a proposal
  * @param {number} currentTime Current block
  * @param {string} alpha Constant that controls the conviction decay
  * @return {number} Current conviction
@@ -71,8 +71,8 @@ export function checkConvictionImplementation(stakes, alpha = defaultAlpha) {
 
 /**
  * Get current conviction of an entity on a proposal
- * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
- * stakes List of token stakes made on a proposal
+ * @param {{time: number, tokenStaked: number, totalTokensStaked: number, conviction: number}[]} stakes
+ * List of token stakes made on a proposal
  * @param {string} entity Entity by which we will filter the stakes
  * @param {number} currentTime Current block
  * @param {string} alpha Constant that controls the conviction decay
@@ -104,46 +104,58 @@ export function getCurrentConvictionByEntity(
 
 /**
  * Get total conviction amounts for the last 50 blocks for a certain proposal.
- * TODO: This function does not scale, it needs to be refactored.
- * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
- * stakes List of token stakes made on a proposal
- * @param {number} time Current block number
+ * @param {{time: number, tokenStaked: number, totalTokensStaked: number, conviction: number}[]} stakes
+ * List of token stakes made on a proposal
+ * @param {number} currentTime Current block number
  * @param {string} alpha Constant that controls the conviction decay
  * @returns {number[]} Array with conviction amounts from time t-50 to time t
  */
-export function getConvictionHistory(stakes, time, alpha = defaultAlpha) {
-  let lastConv = 0
-  let currentConv = lastConv
-  let oldAmount = 0
+export function getConvictionHistory(
+  stakes,
+  currentTime,
+  alpha = defaultAlpha
+) {
   const history = []
+  let initTime = currentTime - 49
 
+  // Fill the first spots with 0s if currentTime < 50
+  while (initTime < 0) {
+    history.push(0)
+    initTime++
+  }
+
+  const oldStakes = [...stakes].filter(stake => stake.time <= initTime)
+  const recentStakes = [...stakes].filter(stake => stake.time > initTime)
+
+  let { totalTokensStaked: oldAmount, conviction: lastConv, time: lastTime } = [
+    ...oldStakes,
+  ].pop() || { totalTokensStaked: 0, conviction: 0, time: 0 }
+  lastConv = calculateConviction(
+    initTime - lastTime,
+    lastConv,
+    oldAmount,
+    alpha
+  )
   let timePassed = 0 // age of current conviction amount, reset every time conviction stake is changed.
-  let stakeIndex = 0
+  let i = 0
 
-  for (let t = Math.max(0, time - 50); t < time; t++) {
-    // get timeline events for this conviction voting
-    currentConv = calculateConviction(timePassed, lastConv, oldAmount, alpha)
-    history.push(currentConv)
-
-    // check if user changed her conviction
-    if (stakes.length > stakeIndex && stakes[stakeIndex].time <= t) {
-      const action = stakes[stakeIndex]
-      stakeIndex++
-      oldAmount = action.totalTokensStaked
+  for (let t = initTime; t <= currentTime; t++) {
+    history.push(calculateConviction(timePassed, lastConv, oldAmount, alpha))
+    // check if new stakes are made at this time
+    while (recentStakes.length > i && recentStakes[i].time <= t) {
+      oldAmount = recentStakes[i++].totalTokensStaked
       timePassed = 0
-      lastConv = currentConv
+      lastConv = [...history].pop()
     }
-
     timePassed++
   }
   return history
 }
 
 /**
- * Get total conviction amounts from time 0 to current time for a certain proposal
- * TODO: It probably needs to be refactored, as #getConvictionHistory.
- * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
- * stakes List of token stakes made on a proposal
+ * Get entity's conviction amounts for the last 50 blocks for a certain proposal.
+ * @param {{time: number, tokenStaked: number, totalTokensStaked: number, conviction: number}[]} stakes
+ * List of token stakes made on a proposal
  * @param {string} entity Entity by which we will filter the stakes
  * @param {number} time Current block number
  * @param {string} alpha Constant that controls the conviction decay
@@ -178,8 +190,8 @@ export function getRemainingTimeToPass(
 
 /**
  * Gets conviction trend in percentage since last `timeSpan` amount of blocks.
- * @param {{time: number, tokenStaked: number, totalTokensStaked: number}[]}
- * stakes List of token stakes made on a proposal
+ * @param {{time: number, tokenStaked: number, totalTokensStaked: number, conviction: number}[]} stakes
+ * List of token stakes made on a proposal
  * @param {number} maxConviction Max conviction possible with current token supply
  * @param {number} time Current block number
  * @param {number} timeSpan Number of blocks we want to cover
