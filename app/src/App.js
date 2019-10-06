@@ -21,6 +21,7 @@ import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
 function App() {
   const { api, appState, connectedAccount } = useAragonApi()
   const { proposals, convictionStakes, requestToken } = appState
+  const balances = requestToken.address ? [requestToken] : []
   const myStakes =
     (convictionStakes &&
       convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
@@ -53,11 +54,11 @@ function App() {
         <Wrapper>
           <div css="width: 25%; margin-right: 1rem;">
             <Box heading="Vault balance">
-              <Balances balances={[requestToken]} />
+              <Balances balances={balances} />
             </Box>
             {myLastStakes.length > 0 &&
               myLastStakes.map(stake => (
-                <Box heading="My conviction proposal">
+                <Box heading="My conviction proposal" key={stake.proposal}>
                   <ProposalInfo
                     proposal={
                       proposals.filter(({ id }) => id === stake.proposal)[0]

@@ -9,7 +9,7 @@ const reducer = state => {
     return {
       globalParams: {},
       stakeToken: {},
-      requestToken: { numData: {} },
+      requestToken: {},
       proposals: [],
       convictionStakes: [],
       isSyncing: true,

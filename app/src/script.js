@@ -1,8 +1,14 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
+import { addressesEqual } from './lib/web3-utils'
 import { hasLoadedTokenSettings, loadTokenSettings } from './token-settings'
 import tokenAbi from './abi/minimeToken.json'
+import {
+  vaultAbi,
+  getVaultInitializationBlock,
+  updateBalances,
+} from './vault-balance'
 
 const app = new Aragon()
 
@@ -51,26 +57,74 @@ const retryEvery = async (
   return attempt()
 }
 
-// Get the token address to initialize ourselves
+// Get the token addresses and vault to initialize ourselves
 retryEvery(() =>
-  app
-    .call('stakeToken')
-    .toPromise()
+  Promise.all([
+    app.call('stakeToken').toPromise(),
+    app.call('vault').toPromise(),
+    app.call('requestToken').toPromise(),
+  ])
     .then(initialize)
     .catch(err => {
       console.error(
-        'Could not start background script execution due to the contract not loading the stakeToken:',
+        'Could not start background script execution due to the contract not loading the stakeToken, vault, or requestToken:',
         err
       )
       throw err
     })
 )
 
-async function initialize(tokenAddress) {
-  const token = app.external(tokenAddress, tokenAbi)
+async function initialize([
+  stakeTokenAddress,
+  vaultAddress,
+  requestTokenAddress,
+]) {
+  const stakeToken = {
+    contract: app.external(stakeTokenAddress, tokenAbi),
+    address: stakeTokenAddress,
+  }
+  const vault = {
+    contract: app.external(vaultAddress, vaultAbi),
+    address: vaultAddress,
+  }
 
-  function reducer(state, { event, returnValues, blockNumber }) {
+  async function reducer(state, { event, returnValues, blockNumber, address }) {
     let nextState = { ...state }
+
+    if (addressesEqual(address, stakeTokenAddress)) {
+      switch (event) {
+        case 'Transfer':
+          const tokenSupply = await stakeToken.contract
+            .totalSupply()
+            .toPromise()
+          nextState = {
+            ...nextState,
+            stakeToken: {
+              ...nextState.stakeToken,
+              tokenSupply,
+            },
+          }
+          console.log(nextState)
+          return nextState
+        default:
+          return nextState
+      }
+    }
+
+    // Vault event
+    if (addressesEqual(address, vaultAddress)) {
+      if (returnValues.token === requestTokenAddress) {
+        return {
+          ...nextState,
+          balances: await updateBalances(
+            nextState.balances,
+            returnValues.token,
+            app,
+            vault
+          ),
+        }
+      }
+    }
 
     switch (event) {
       case 'ProposalAdded': {
@@ -117,58 +171,63 @@ async function initialize(tokenAddress) {
   }
 
   const storeOptions = {
-    externals: [{ contract: token }],
-    init: initState({ token, tokenAddress }),
+    externals: [
+      { contract: stakeToken.contract, initializationBlock: 0 },
+      {
+        contract: vault.contract,
+        initializationBlock: await getVaultInitializationBlock(vault.contract),
+      },
+    ],
+    init: initState(stakeToken, vault, requestTokenAddress),
   }
 
   return app.store(reducer, storeOptions)
 }
 
-function initState({ token, tokenAddress }) {
+function initState(stakeToken, vault, requestTokenAddress) {
   return async cachedState => {
-    try {
-      const tokenSymbol = await token.symbol().toPromise()
-      app.identify(tokenSymbol)
-    } catch (err) {
-      console.error(
-        `Failed to load token symbol for token at ${tokenAddress} due to:`,
-        err
-      )
-    }
+    const globalParams =
+      (cachedState && cachedState.globalParams) || (await loadGlobalParams())
 
-    const tokenSettings = hasLoadedTokenSettings(cachedState)
-      ? {}
-      : await loadTokenSettings(token)
+    const stakeTokenSettings = hasLoadedTokenSettings(cachedState)
+      ? cachedState.stakeTokenSettings
+      : await loadTokenSettings(stakeToken.contract)
+
+    const requestTokenSettings = await getRequestTokenSettings(
+      requestTokenAddress,
+      vault
+    )
+
+    app.identify(`${stakeToken.tokenSymbol}-${requestTokenSettings.symbol}`)
 
     const inititalState = {
-      globalParams: {
-        alpha: 0.9,
-        maxRatio: 0.2,
-        weight: 0.02,
-      },
-      requestToken: {
-        name: 'Dai Stablecoin v1.0',
-        symbol: 'DAI',
-        address: '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359',
-        numData: {
-          decimals: 18,
-          amount: 15000 * Math.pow(10, 18),
-        },
-        verified: true,
-      },
       proposals: [],
       convictionStakes: [],
       ...cachedState,
+      globalParams,
+      stakeToken: stakeTokenSettings,
+      requestToken: requestTokenSettings,
       isSyncing: true,
-      stakeToken: {
-        tokenAddress,
-        ...tokenSettings,
-      },
     }
-
-    // It's safe to not refresh the balances of all token holders
-    // because we process any event that could change balances, even with block caching
-
     return inititalState
+  }
+}
+
+async function getRequestTokenSettings(address, vault) {
+  return (
+    { ...(await updateBalances([], address, app, vault))[0], address } || {}
+  )
+}
+
+async function loadGlobalParams() {
+  const [decay, maxRatio, weight] = await Promise.all([
+    app.call('decay').toPromise(),
+    app.call('maxRatio').toPromise(),
+    app.call('weight').toPromise(),
+  ])
+  return {
+    alpha: parseInt(decay) / 10,
+    maxRatio: parseInt(maxRatio) / 10,
+    weight: parseInt(weight) / 100,
   }
 }

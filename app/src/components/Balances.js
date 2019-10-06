@@ -42,7 +42,7 @@ class Balances extends React.Component {
     const { balances } = this.props
     const { convertRates } = this.state
     const balanceItems = balances.map(
-      ({ address, numData: { amount, decimals }, symbol, verified }) => {
+      ({ address, amount, decimals, symbol, verified }) => {
         const adjustedAmount = amount / Math.pow(10, decimals)
         const convertedAmount =
           verified && convertRates[symbol]

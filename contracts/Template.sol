@@ -80,7 +80,7 @@ contract Template is TemplateBase {
         Vault vault = Vault(dao.newAppInstance(vaultAppId, latestVersionAppBase(vaultAppId)));
 
         MiniMeToken token = tokenFactory.createCloneToken(MiniMeToken(0), 0, "App token", 0, "APP", true);
-        MiniMeToken token2 = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Fake DAI", 0, "DAI", true);
+        MiniMeToken token2 = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Fake DAI", 18, "DAI", true);
         token.changeController(tokenManager);
         token2.changeController(tokenManager2);
 
@@ -95,12 +95,13 @@ contract Template is TemplateBase {
         tokenManager.mint(msg.sender, 15000);
 
         acl.createPermission(this, tokenManager2, tokenManager2.MINT_ROLE(), this);
-        tokenManager2.mint(this, 20000);
-        ERC20(token2).safeApprove(vault, 20000);
-        vault.deposit(token2, 20000);
+        tokenManager2.mint(this, 15000 * 10**18);
+        ERC20(token2).safeApprove(vault, 15000 * 10**18);
+        vault.deposit(token2, 15000 * 10**18);
 
         acl.createPermission(ANY_ENTITY, app, app.CREATE_PROPOSALS_ROLE(), msg.sender);
         acl.grantPermission(msg.sender, tokenManager, tokenManager.MINT_ROLE());
+        acl.grantPermission(msg.sender, tokenManager2, tokenManager2.MINT_ROLE());
 
         acl.createPermission(app, vault, vault.TRANSFER_ROLE(), this);
 
