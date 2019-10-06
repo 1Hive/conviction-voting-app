@@ -11,9 +11,29 @@ app.store(
     if (state == null) {
       nextState = {
         globalParams: {
-          alpha: 90,
-          funds: 15000,
-          supply: 45000,
+          alpha: 0.9,
+          maxRatio: 0.2,
+          weight: 0.02,
+        },
+        stakeToken: {
+          name: 'APP Token',
+          symbol: 'APP',
+          address: '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359',
+          numData: {
+            decimals: 0,
+            supply: 45000,
+          },
+          verified: true,
+        },
+        requestToken: {
+          name: 'Dai Stablecoin v1.0',
+          symbol: 'DAI',
+          address: '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359',
+          numData: {
+            decimals: 18,
+            amount: 15000 * Math.pow(10, 18),
+          },
+          verified: true,
         },
         proposals: [],
         convictionStakes: [],
@@ -27,7 +47,6 @@ app.store(
           id: parseInt(id),
           name: title,
           description: 'Lorem ipsum...',
-          requestedToken: 'DAI', // token address?
           requestedAmount: parseInt(amount),
           creator: entity,
           beneficiary,

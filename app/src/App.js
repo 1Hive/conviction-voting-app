@@ -20,7 +20,7 @@ import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
 
 function App() {
   const { api, appState, connectedAccount } = useAragonApi()
-  const { proposals, convictionStakes } = appState
+  const { proposals, convictionStakes, requestToken } = appState
   const myStakes =
     (convictionStakes &&
       convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
@@ -32,19 +32,6 @@ function App() {
 
   const isStaked = proposal =>
     myLastStakes.find(stake => stake.proposal === proposal.id)
-
-  const balances = [
-    {
-      name: 'Dai Stablecoin v1.0',
-      symbol: 'DAI',
-      address: '0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359',
-      numData: {
-        decimals: 18,
-        amount: 10000 * Math.pow(10, 18),
-      },
-      verified: true,
-    },
-  ]
 
   const [proposalPanel, setProposalPanel] = useState(false)
 
@@ -66,7 +53,7 @@ function App() {
         <Wrapper>
           <div css="width: 25%; margin-right: 1rem;">
             <Box heading="Vault balance">
-              <Balances balances={balances} />
+              <Balances balances={[requestToken]} />
             </Box>
             {myLastStakes.length > 0 &&
               myLastStakes.map(stake => (
@@ -157,21 +144,33 @@ const IdAndTitle = ({ id, name, description }) => {
   )
 }
 
-const Amount = ({ requestedAmount = 0, requestedToken = 'DAI' }) => (
-  <div>
-    <BalanceToken
-      amount={parseInt(requestedAmount)}
-      symbol={requestedToken}
-      verified
-    />
-  </div>
-)
+const Amount = ({ requestedAmount = 0 }) => {
+  const {
+    appState: {
+      requestToken: { symbol, verified },
+    },
+  } = useAragonApi()
+  return (
+    <div>
+      <BalanceToken
+        amount={parseInt(requestedAmount)}
+        symbol={symbol}
+        verified={verified}
+      />
+    </div>
+  )
+}
 
 const ProposalInfo = ({ proposal, stake }) => {
+  const {
+    appState: {
+      stakeToken: { symbol },
+    },
+  } = useAragonApi()
   return (
     <div>
       <IdAndTitle {...proposal} />
-      <Tag>{`✓ Voted with ${stake.tokensStaked} TKN`}</Tag>
+      <Tag>{`✓ Supported with ${stake.tokensStaked} ${symbol}`}</Tag>
       <ConvictionBar proposal={proposal} />
     </div>
   )

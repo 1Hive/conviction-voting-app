@@ -6,7 +6,14 @@ import { BlockNumberProvider } from './BlockContext'
 
 const reducer = state => {
   if (state === null) {
-    return { proposals: [], convictionStakes: [], isSyncing: true }
+    return {
+      globalParams: {},
+      stakeToken: {},
+      requestToken: { numData: {} },
+      proposals: [],
+      convictionStakes: [],
+      isSyncing: true,
+    }
   }
   return state
 }

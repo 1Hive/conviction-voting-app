@@ -19,15 +19,22 @@ import { useBlockNumber } from '../BlockContext'
 
 function getStakesAndThreshold(proposal = {}) {
   const { appState } = useAragonApi()
-  const { convictionStakes, globalParams } = appState
+  const { convictionStakes, stakeToken, requestToken } = appState
+  const { maxRatio, weight } = getGlobalParams()
   const { requestedAmount } = proposal
-  const { funds, supply } = globalParams
   const stakes = convictionStakes.filter(
     stake => stake.proposal === parseInt(proposal.id)
   )
   const { totalTokensStaked } = [...stakes].pop() || { totalTokensStaked: 0 }
-  const threshold = calculateThreshold(requestedAmount, funds, supply)
-  const max = getMaxConviction(supply)
+  const threshold = calculateThreshold(
+    requestedAmount,
+    // FIXME: Dividing by 10**18 is a hack, and solidity code does not do it to calculate threshold
+    requestToken.numData.amount / 10 ** 18 || 0,
+    stakeToken.numData.supply || 0,
+    maxRatio,
+    weight
+  )
+  const max = getMaxConviction(stakeToken.numData.supply || 0)
   return { stakes, totalTokensStaked, threshold, max }
 }
 
@@ -35,11 +42,17 @@ function ConvictionChart({ proposal }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const currentBlock = useBlockNumber()
   const { connectedAccount } = useAragonApi()
+  const { alpha } = getGlobalParams()
   const theme = useTheme()
 
   const lines = [
-    getConvictionHistory(stakes, currentBlock + 25),
-    getConvictionHistoryByEntity(stakes, connectedAccount, currentBlock + 25),
+    getConvictionHistory(stakes, currentBlock + 25, alpha),
+    getConvictionHistoryByEntity(
+      stakes,
+      connectedAccount,
+      currentBlock + 25,
+      alpha
+    ),
   ]
 
   // Divides all the numbers of an array of arrays by the biggest in the arrays
@@ -68,17 +81,23 @@ function ConvictionChart({ proposal }) {
 
 const ConvictionBar = ({ proposal }) => {
   const { connectedAccount } = useAragonApi()
+  const { alpha } = getGlobalParams()
   const blockNumber = useBlockNumber()
   const theme = useTheme()
   const { stakes, totalTokensStaked, threshold, max } = getStakesAndThreshold(
     proposal
   )
-  const conviction = getCurrentConviction(stakes, blockNumber)
+  const conviction = getCurrentConviction(stakes, blockNumber, alpha)
   const myConviction =
     (connectedAccount &&
-      getCurrentConvictionByEntity(stakes, connectedAccount, blockNumber)) ||
+      getCurrentConvictionByEntity(
+        stakes,
+        connectedAccount,
+        blockNumber,
+        alpha
+      )) ||
     0
-  const futureConviction = getMaxConviction(totalTokensStaked)
+  const futureConviction = getMaxConviction(totalTokensStaked, alpha)
   const myStakedConviction = myConviction / max
   const stakedConviction = conviction / max
   const futureStakedConviction = futureConviction / max
@@ -105,15 +124,26 @@ const ConvictionBar = ({ proposal }) => {
 }
 
 function ConvictionCountdown({ proposal, onExecute }) {
+  const { alpha } = getGlobalParams()
+  const {
+    appState: {
+      stakeToken: { symbol },
+    },
+  } = useAragonApi()
   const blockNumber = useBlockNumber()
   const theme = useTheme()
   const { stakes, totalTokensStaked, threshold } = getStakesAndThreshold(
     proposal
   )
-  const conviction = getCurrentConviction(stakes, blockNumber)
-  const minTokensNeeded = getMinNeededStake(threshold)
+  const conviction = getCurrentConviction(stakes, blockNumber, alpha)
+  const minTokensNeeded = getMinNeededStake(threshold, alpha)
   const neededTokens = parseInt(minTokensNeeded - totalTokensStaked)
-  const time = getRemainingTimeToPass(threshold, conviction, totalTokensStaked)
+  const time = getRemainingTimeToPass(
+    threshold,
+    conviction,
+    totalTokensStaked,
+    alpha
+  )
   const WONT_PASS = 0
   const WILL_PASS = 1
   const CAN_PASS = 2
@@ -132,22 +162,33 @@ function ConvictionCountdown({ proposal, onExecute }) {
 
   return view === WONT_PASS ? (
     <>
-      <Text color={theme.negative.toString()}> ✘ More stakes required</Text>
+      <Text color={theme.negative.toString()}> ✘ Won't pass</Text>
       <div>
-        <Text>
-          At least <Tag>{neededTokens} TKN</Tag> more needs to be staked in
-          order for this proposal to pass at some point.
+        <Text color={theme.surfaceContent.toString()}>
+          Insufficient staked tokens
+        </Text>
+        <br />
+        <Text color={theme.surfaceContentSecondary.toString()}>
+          (At least{' '}
+          <Tag>
+            {neededTokens} {symbol}
+          </Tag>{' '}
+          more needed).
         </Text>
       </div>
     </>
   ) : view === WILL_PASS ? (
     <>
-      <Text color={theme.positive.toString()}> ✓ Will pass</Text>
+      <Text color={theme.positive.toString()}> ✓ May pass</Text>
+      <br />
+      <Text color={theme.surfaceContentSecondary.toString()}>
+        Estimate until pass
+      </Text>
       <Timer end={endDate} />
     </>
   ) : (
     <>
-      <Text color={theme.positive.toString()}> ✓ Can be executed</Text>
+      <Text color={theme.positive.toString()}> ✓ Available for execution</Text>
       <Button mode="strong" wide onClick={onExecute}>
         Execute proposal
       </Button>
@@ -159,7 +200,8 @@ function ConvictionTrend({ proposal }) {
   const theme = useTheme()
   const { stakes, max } = getStakesAndThreshold(proposal)
   const blockNumber = useBlockNumber()
-  const trend = getConvictionTrend(stakes, max, blockNumber)
+  const { alpha } = getGlobalParams()
+  const trend = getConvictionTrend(stakes, max, blockNumber, alpha)
   const percentage =
     trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
   return (
@@ -174,6 +216,13 @@ function ConvictionTrend({ proposal }) {
       </Text.Block>
     </Centered>
   )
+}
+
+function getGlobalParams() {
+  const {
+    appState: { globalParams },
+  } = useAragonApi()
+  return globalParams
 }
 
 const Centered = styled.div`
