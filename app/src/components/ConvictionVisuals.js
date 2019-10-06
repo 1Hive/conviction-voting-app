@@ -34,32 +34,34 @@ function getStakesAndThreshold(proposal = {}) {
 function ConvictionChart({ proposal }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const currentBlock = useBlockNumber()
-  const entities = [...new Set(stakes.map(({ entity }) => entity))]
-  const lines = entities.map(entity =>
-    getConvictionHistoryByEntity(stakes, entity, currentBlock + 25)
-  )
+  const { connectedAccount } = useAragonApi()
+  const theme = useTheme()
 
-  if (lines[0]) {
-    // Sum line
-    lines.push(getConvictionHistory(stakes, currentBlock + 25))
-    // Threshold line
-    if (!Number.isNaN(threshold) && threshold !== Number.POSITIVE_INFINITY) {
-      lines.push(lines[0].map(i => threshold))
-    }
-  }
+  const lines = [
+    getConvictionHistory(stakes, currentBlock + 25),
+    getConvictionHistoryByEntity(stakes, connectedAccount, currentBlock + 25),
+  ]
 
   // Divides all the numbers of an array of arrays by the biggest in the arrays
-  const normalize = lines => {
-    const max = Math.max(...lines.flat())
+  const normalize = (lines, n) => {
+    const max = Math.max(...lines.flat(), n)
     return lines.map(line => line.map(n => n / max))
   }
 
+  const normalizeN = n => n / Math.max(...lines.flat(), n)
+
   return (
     <LineChart
-      lines={normalize(lines)}
+      lines={normalize(lines, threshold)}
       total={lines[0] && lines[0].length}
       label={i => i - Math.floor((lines[0].length - 1) / 2)}
       captionsHeight={20}
+      color={i => [theme.info, theme.infoSurfaceContent][i]}
+      threshold={
+        !Number.isNaN(threshold) && threshold !== Number.POSITIVE_INFINITY
+          ? normalizeN(threshold)
+          : 1
+      }
     />
   )
 }
@@ -110,38 +112,31 @@ function ConvictionCountdown({ proposal, onExecute }) {
   )
   const conviction = getCurrentConviction(stakes, blockNumber)
   const minTokensNeeded = getMinNeededStake(threshold)
+  const neededTokens = parseInt(minTokensNeeded - totalTokensStaked)
   const time = getRemainingTimeToPass(threshold, conviction, totalTokensStaked)
   const WONT_PASS = 0
   const WILL_PASS = 1
   const CAN_PASS = 2
   const [view, setView] = useState(
-    minTokensNeeded > totalTokensStaked
-      ? WONT_PASS
-      : time > 0
-      ? WILL_PASS
-      : CAN_PASS
+    conviction >= threshold ? CAN_PASS : time > 0 ? WILL_PASS : WONT_PASS
   )
   const NOW = Date.now()
   const BLOCK_TIME = 1000 * 15
   const endDate = new Date(NOW + time * BLOCK_TIME)
 
   useEffect(() => {
-    if (view === WILL_PASS) {
-      const timer = setTimeout(() => {
-        // TODO: Check with the API if it can be executed
-        setView(CAN_PASS)
-      }, time * BLOCK_TIME)
-      return () => clearTimeout(timer)
-    }
-  }, [])
+    setView(
+      conviction >= threshold ? CAN_PASS : time > 0 ? WILL_PASS : WONT_PASS
+    )
+  }, [conviction, threshold, time])
 
   return view === WONT_PASS ? (
     <>
       <Text color={theme.negative.toString()}> ✘ More stakes required</Text>
       <div>
         <Text>
-          At least <Tag>{minTokensNeeded - totalTokensStaked} TKN</Tag> more
-          needs to be staked in order for this proposal to pass at some point.
+          At least <Tag>{neededTokens} TKN</Tag> more needs to be staked in
+          order for this proposal to pass at some point.
         </Text>
       </div>
     </>
