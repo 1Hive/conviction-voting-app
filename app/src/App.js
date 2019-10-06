@@ -164,13 +164,13 @@ const Amount = ({ requestedAmount = 0 }) => {
 const ProposalInfo = ({ proposal, stake }) => {
   const {
     appState: {
-      stakeToken: { symbol },
+      stakeToken: { tokenSymbol },
     },
   } = useAragonApi()
   return (
     <div>
       <IdAndTitle {...proposal} />
-      <Tag>{`✓ Supported with ${stake.tokensStaked} ${symbol}`}</Tag>
+      <Tag>{`✓ Supported with ${stake.tokensStaked} ${tokenSymbol}`}</Tag>
       <ConvictionBar proposal={proposal} />
     </div>
   )

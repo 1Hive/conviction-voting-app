@@ -15,6 +15,8 @@ import "@aragon/os/contracts/apm/Repo.sol";
 import "@aragon/os/contracts/lib/ens/ENS.sol";
 import "@aragon/os/contracts/lib/ens/PublicResolver.sol";
 import "@aragon/os/contracts/apm/APMNamehash.sol";
+import "@aragon/os/contracts/lib/token/ERC20.sol";
+import "@aragon/os/contracts/common/SafeERC20.sol";
 
 import "@aragon/apps-token-manager/contracts/TokenManager.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
@@ -52,6 +54,7 @@ contract TemplateBase is APMNamehash {
 
 
 contract Template is TemplateBase {
+    using SafeERC20 for ERC20;
     MiniMeTokenFactory tokenFactory;
 
     uint64 constant PCT = 10 ** 16;
@@ -66,42 +69,49 @@ contract Template is TemplateBase {
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
 
-        address root = msg.sender;
         address account2 = 0x8401Eb5ff34cc943f096A32EF3d5113FEbE8D4Eb;
-        address dai = 0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359;
         bytes32 appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
         bytes32 tokenManagerAppId = apmNamehash("token-manager");
         bytes32 vaultAppId = apmNamehash("vault");
 
         ConvictionVotingApp app = ConvictionVotingApp(dao.newAppInstance(appId, latestVersionAppBase(appId)));
         TokenManager tokenManager = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
+        TokenManager tokenManager2 = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
         Vault vault = Vault(dao.newAppInstance(vaultAppId, latestVersionAppBase(vaultAppId)));
 
         MiniMeToken token = tokenFactory.createCloneToken(MiniMeToken(0), 0, "App token", 0, "APP", true);
+        MiniMeToken token2 = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Fake DAI", 0, "DAI", true);
         token.changeController(tokenManager);
+        token2.changeController(tokenManager2);
 
         // Initialize apps
         vault.initialize();
-        app.initialize(token, vault, dai);
+        app.initialize(token, vault, token2);
         tokenManager.initialize(token, true, 0);
+        tokenManager2.initialize(token2, true, 0);
 
         acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
         tokenManager.mint(this, 30000);
-        tokenManager.mint(root, 15000);
+        tokenManager.mint(msg.sender, 15000);
 
-        acl.createPermission(ANY_ENTITY, app, app.CREATE_PROPOSALS_ROLE(), root);
-        acl.grantPermission(root, tokenManager, tokenManager.MINT_ROLE());
+        acl.createPermission(this, tokenManager2, tokenManager2.MINT_ROLE(), this);
+        tokenManager2.mint(this, 20000);
+        ERC20(token2).safeApprove(vault, 20000);
+        vault.deposit(token2, 20000);
+
+        acl.createPermission(ANY_ENTITY, app, app.CREATE_PROPOSALS_ROLE(), msg.sender);
+        acl.grantPermission(msg.sender, tokenManager, tokenManager.MINT_ROLE());
 
         acl.createPermission(app, vault, vault.TRANSFER_ROLE(), this);
 
         // Clean up permissions
-        acl.grantPermission(root, dao, dao.APP_MANAGER_ROLE());
+        acl.grantPermission(msg.sender, dao, dao.APP_MANAGER_ROLE());
         acl.revokePermission(this, dao, dao.APP_MANAGER_ROLE());
-        acl.setPermissionManager(root, dao, dao.APP_MANAGER_ROLE());
+        acl.setPermissionManager(msg.sender, dao, dao.APP_MANAGER_ROLE());
 
-        acl.grantPermission(root, acl, acl.CREATE_PERMISSIONS_ROLE());
+        acl.grantPermission(msg.sender, acl, acl.CREATE_PERMISSIONS_ROLE());
         acl.revokePermission(this, acl, acl.CREATE_PERMISSIONS_ROLE());
-        acl.setPermissionManager(root, acl, acl.CREATE_PERMISSIONS_ROLE());
+        acl.setPermissionManager(msg.sender, acl, acl.CREATE_PERMISSIONS_ROLE());
 
         emit DeployInstance(dao);
 

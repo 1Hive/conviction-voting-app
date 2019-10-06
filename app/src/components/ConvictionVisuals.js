@@ -30,11 +30,11 @@ function getStakesAndThreshold(proposal = {}) {
     requestedAmount,
     // FIXME: Dividing by 10**18 is a hack, and solidity code does not do it to calculate threshold
     requestToken.numData.amount / 10 ** 18 || 0,
-    stakeToken.numData.supply || 0,
+    stakeToken.tokenSupply || 0,
     maxRatio,
     weight
   )
-  const max = getMaxConviction(stakeToken.numData.supply || 0)
+  const max = getMaxConviction(stakeToken.tokenSupply || 0)
   return { stakes, totalTokensStaked, threshold, max }
 }
 
@@ -127,7 +127,7 @@ function ConvictionCountdown({ proposal, onExecute }) {
   const { alpha } = getGlobalParams()
   const {
     appState: {
-      stakeToken: { symbol },
+      stakeToken: { tokenSymbol },
     },
   } = useAragonApi()
   const blockNumber = useBlockNumber()
@@ -144,6 +144,7 @@ function ConvictionCountdown({ proposal, onExecute }) {
     totalTokensStaked,
     alpha
   )
+
   const WONT_PASS = 0
   const WILL_PASS = 1
   const CAN_PASS = 2
@@ -152,7 +153,7 @@ function ConvictionCountdown({ proposal, onExecute }) {
   )
   const NOW = Date.now()
   const BLOCK_TIME = 1000 * 15
-  const endDate = new Date(NOW + time * BLOCK_TIME)
+  const endDate = !isNaN(time) && new Date(NOW + time * BLOCK_TIME)
 
   useEffect(() => {
     setView(
@@ -171,7 +172,7 @@ function ConvictionCountdown({ proposal, onExecute }) {
         <Text color={theme.surfaceContentSecondary.toString()}>
           (At least{' '}
           <Tag>
-            {neededTokens} {symbol}
+            {neededTokens} {tokenSymbol}
           </Tag>{' '}
           more needed).
         </Text>
@@ -184,7 +185,7 @@ function ConvictionCountdown({ proposal, onExecute }) {
       <Text color={theme.surfaceContentSecondary.toString()}>
         Estimate until pass
       </Text>
-      <Timer end={endDate} />
+      {endDate && <Timer end={endDate} />}
     </>
   ) : (
     <>
