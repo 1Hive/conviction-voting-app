@@ -44,10 +44,10 @@ function App() {
           action1={
             <Button
               mode="strong"
-              label="Create proposal"
+              label="New proposal"
               onClick={() => setProposalPanel(true)}
             >
-              Create proposal
+              New proposal
             </Button>
           }
         />
@@ -102,7 +102,7 @@ function App() {
           </div>
         </Wrapper>
         <SidePanel
-          title="Create proposal"
+          title="New proposal"
           opened={proposalPanel}
           onClose={() => setProposalPanel(false)}
         >
