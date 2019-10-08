@@ -1,9 +1,43 @@
-# Aragon Conviction Voting Application
+# Conviction Voting
+
+1Hive & P2P Models' Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
+
+#### 🐲 Project Stage: development
+
+The Conviction Voting app is still in development. If you are interested in contributing please see our [open issues](https://github.com/1hive/conviction-voting-app).
+
+#### 🚨 Security Review Status: pre-audit
+
+The code in this repository has not been audited.
+
+## How to run Conviction Voting app locally
+
+To use this Aragon application, set it up using a token and a vault using:
+
+```sh
+npm install
+npx aragon devchain
+npm run start:ipfs:template
+```
+
+If everything is working correctly, your new DAO will be deployed and your browser will open http://localhost:3000/#/YOUR-DAO-ADDRESS. It should look something like this:
+
+![Deployed DAO with conviction voting app](https://raw.githubusercontent.com/1Hive/conviction-voting-app/master/app/public/meta/screenshot-1.png)
+
+You can see how conviction increases and decreases over time by killing the `aragon devchain` process and executing:
+
+```sh
+npx aragon devchain -b 15 # A new block is going to be mined every 15s
+```
+
+And refreshing the application in the browser (F5).
+
+## Background
+
 The process of allocating funds in DAOs that are being used today feels very clunky, typically requiring a series of yes/no votes evaluated independently. These organizations also suffer from a number of challenges like 51% attacks, low participation, and overall inability to effectively prioritize and decide when there are many potential options all competing for consideration at once.
 
 [Conviction voting](https://medium.com/giveth/conviction-voting-a-novel-continuous-decision-making-alternative-to-governance-aa746cfb9475) as proposed by Commons Stack and Block Science  provides an interesting solution, that feels more organic and DAO-like than other methods we have seen proposed.
 
-## What it does
 Our implementation of Conviction Voting as an Aragon application is intended to be used to collectively allocate funds from a shared treasury. It does not currently support voting on other types of proposals.
 
 Proposals can be submitted for consideration at any time and do not have an explicit expiration.
@@ -14,20 +48,9 @@ Proposals can be executed only if there is enough accumulated conviction. The th
 
 The time based accumulation forces voters to prioritize where they place their conviction and may encourage members to more effectively converge on a mutually acceptable compromise to most effectively leverage their influence on the DAOs fund allocations.
 
-Unfortunately, we were not able to complete the application during the hackathon, we were able to get the basic contract into a mostly complete state as an Aragon App. We are confident the approach will work at this point, but some cleanup still needs to be done, and the threshold function still needs to be implemented. On the front-end we were able to come up with a [design](https://www.figma.com/file/MH2ntFCnKC1O91HS8lWmDb/Conviction-Voting?node-id=1%3A2280) and start to implement using mock data.
-
-## Usage
-
-To use this Aragon application, set it up using a token and a vault using:
-
-```sh
-npm install
-npm run start:ipfs:template
-```
-
 ## Structure
 
-This boilerplate has the following structure:
+This app has the following structure:
 
 ```md
 root
@@ -49,7 +72,7 @@ root
   - **src**: Source files.
   - [**package.json**](https://docs.npmjs.com/creating-a-package-json-file): Frontend npm configuration file.
 - **contracts**: Smart Constracts folder.
-  - `ConvictionApp.sol`: Aragon app contract.
+  - `ConvictionVotingApp.sol`: Aragon app contract.
   - `Template.sol`: [Aragon Template](https://hack.aragon.org/docs/templates-intro) to deploy a fully functional DAO.
 - [**migrations**](https://truffleframework.com/docs/truffle/getting-started/running-migrations): Migrations folder.
 - **test**: Tests folder.
@@ -58,10 +81,10 @@ root
 - [**truffle.js**](https://truffleframework.com/docs/truffle/reference/configuration): Truffle configuration file.
 - [**package.json**](https://docs.npmjs.com/creating-a-package-json-file): Main npm configuration file.
 
-## Contributors
+## Contributing
 
-- Luke - 1Hive
-- Pati - Aragon One
-- Sem - P2P Models
-- Yalda - Autark
-- Deam - Aragon Black
+We welcome community contributions!
+
+Please check out our [open Issues](https://github.com/1Hive/conviction-voting-app/issues) to get started.
+
+If you discover something that could potentially impact security, please notify us immediately. The quickest way to reach us is via the #conviction-voting channel in our [team Keybase chat](https://1hive.org/contribute/keybase). Just say hi and that you discovered a potential security vulnerability and we'll DM you to discuss details.

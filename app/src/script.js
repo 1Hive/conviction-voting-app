@@ -211,7 +211,9 @@ function initState(stakeToken, vault, requestTokenAddress) {
       vault
     )
 
-    app.identify(`${stakeToken.tokenSymbol}-${requestTokenSettings.symbol}`)
+    app.identify(
+      `${stakeTokenSettings.tokenSymbol}-${requestTokenSettings.symbol}`
+    )
 
     const inititalState = {
       proposals: [],
