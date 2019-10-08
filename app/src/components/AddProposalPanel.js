@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import { Button, Field, TextInput } from "@aragon/ui";
-import styled, { css } from "styled-components";
+import React, { useState } from 'react'
+import { Button, Field, TextInput } from '@aragon/ui'
+import styled, { css } from 'styled-components'
 
 const AddProposalPanel = ({ onSubmit }) => {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("Lorem ipsum...");
-  const [amount, setAmount] = useState(0);
-  const [beneficiary, setBeneficiary] = useState("");
-  const disabled = false; // TODO Disable when empty or invalid fields
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('Lorem ipsum...')
+  const [amount, setAmount] = useState(0)
+  const [beneficiary, setBeneficiary] = useState('')
+  const disabled = false // TODO Disable when empty or invalid fields
   const onFormSubmit = event => {
-    event.preventDefault();
-    onSubmit({ title, description, amount, beneficiary });
-  };
+    event.preventDefault()
+    onSubmit({ title, description, amount, beneficiary })
+  }
   return (
     <form onSubmit={onFormSubmit}>
       <Field
@@ -80,15 +80,15 @@ const AddProposalPanel = ({ onSubmit }) => {
       </Field>
       <ButtonWrapper>
         <Button wide mode="strong" type="submit" disabled={disabled}>
-          Create proposal
+          Submit
         </Button>
       </ButtonWrapper>
     </form>
-  );
-};
+  )
+}
 
 const ButtonWrapper = styled.div`
   padding-top: 10px;
-`;
+`
 
-export default AddProposalPanel;
+export default AddProposalPanel
