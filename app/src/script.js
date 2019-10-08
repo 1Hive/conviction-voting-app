@@ -116,10 +116,8 @@ async function initialize([
       if (returnValues.token === requestTokenAddress) {
         return {
           ...nextState,
-          balances: await updateBalances(
-            nextState.balances,
+          requestToken: await getRequestTokenSettings(
             returnValues.token,
-            app,
             vault
           ),
         }

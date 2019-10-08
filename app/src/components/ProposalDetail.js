@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Text, useTheme, IdentityBadge, GU, Button } from '@aragon/ui'
+import { Text, useTheme, GU, Button } from '@aragon/ui'
 import { ConvictionChart, ConvictionCountdown } from './ConvictionVisuals'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 
