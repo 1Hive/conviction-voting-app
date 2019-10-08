@@ -2,6 +2,7 @@ import React from 'react'
 import styled from 'styled-components'
 import { Text, useTheme, IdentityBadge, GU, Button } from '@aragon/ui'
 import { ConvictionChart, ConvictionCountdown } from './ConvictionVisuals'
+import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 
 const ProposalDetail = ({
   proposal,
@@ -57,13 +58,13 @@ const ProposalDetail = ({
             Created by
           </Text>
         </h2>
-        <IdentityBadge entity={creator} />
+        <LocalIdentityBadge entity={creator} />
         <h2>
           <Text color={theme.textSecondary} smallcaps>
             Recipient
           </Text>
         </h2>
-        <IdentityBadge entity={beneficiary} />
+        <LocalIdentityBadge entity={beneficiary} />
       </DetailsGroup>
     </div>
   )

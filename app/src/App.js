@@ -12,8 +12,7 @@ import {
 } from '@aragon/ui'
 import styled from 'styled-components'
 import AppHeader from './components/AppHeader'
-import Balances from './components/Balances'
-import BalanceToken from './components/BalanceToken'
+import Balance from './components/Balance'
 import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
 import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
@@ -22,7 +21,6 @@ function App() {
   const { api, appState, connectedAccount } = useAragonApi()
   const { proposals, convictionStakes, requestToken } = appState
   const activeProposals = proposals.filter(({ executed }) => !executed)
-  const balances = requestToken.address ? [requestToken] : []
   const myStakes =
     (convictionStakes &&
       convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
@@ -38,7 +36,7 @@ function App() {
   const [proposalPanel, setProposalPanel] = useState(false)
 
   return (
-    <Main assetsUrl="./">
+    <Main assetsUrl="./aragon-ui">
       <>
         <AppHeader
           heading="Conviction Voting"
@@ -55,7 +53,7 @@ function App() {
         <Wrapper>
           <div css="width: 25%; margin-right: 1rem;">
             <Box heading="Vault balance">
-              <Balances balances={balances} />
+              <Balance {...requestToken} />
             </Box>
             {myLastStakes.length > 0 &&
               myLastStakes.map(stake => (
@@ -152,10 +150,12 @@ const Amount = ({ requestedAmount = 0 }) => {
       requestToken: { symbol, decimals, verified },
     },
   } = useAragonApi()
+  console.log(requestedAmount)
   return (
     <div>
-      <BalanceToken
-        amount={requestedAmount / 10 ** decimals}
+      <Balance
+        amount={requestedAmount}
+        decimals={decimals}
         symbol={symbol}
         verified={verified}
       />
