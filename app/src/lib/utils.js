@@ -9,7 +9,7 @@ export const formatTokenAmount = (
 ) =>
   (displaySign ? (isIncoming ? '+' : '-') : '') +
   Number(round(amount / Math.pow(10, decimals), rounding)).toLocaleString(
-    'latn',
+    undefined,
     {
       style: 'decimal',
       maximumFractionDigits: 18,
