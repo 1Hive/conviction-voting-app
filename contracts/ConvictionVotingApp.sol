@@ -90,7 +90,7 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @notice Add proposal `_title` for `@tokenAmount(requestToken, _requestedAmount)` to `_beneficiary`
+     * @notice Add proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
      * @param _title Title of the proposal
      * @param _ipfsHash IPFS file with proposal's description
      * @param _requestedAmount Tokens requested
@@ -117,7 +117,7 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-      * @notice Stake `@tokenAmount(token, amount)` on proposal #`id`
+      * @notice Stake `@tokenAmount((self.stakeToken(): address), amount)` on proposal #`id`
       * @param id Proposal id
       * @param amount Amount of tokens staked
       */
@@ -126,7 +126,7 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @notice Stake all my tokens on #`id`
+     * @notice Stake all my `(self.stakeToken(): address).symbol(): string` tokens on proposal #`id`
      * @param id Proposal id
      */
     function stakeAllToProposal(uint256 id) external isInitialized() {
@@ -135,7 +135,7 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @notice Withdraw `@tokenAmount(token, amount)` previously staked on proposal #`id`
+     * @notice Withdraw `@tokenAmount((self.stakeToken(): address), amount)` previously staked on proposal #`id`
      * @param id Proposal id
      * @param amount Amount of tokens withdrawn
      */
@@ -144,7 +144,7 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @notice Withdraw all tokens previously staked on proposal #`id`
+     * @notice Withdraw all `(self.stakeToken(): address).symbol(): string` tokens previously staked on proposal #`id`
      * @param id Proposal id
      */
     function withdrawAllFromProposal(uint256 id) external isInitialized() {
@@ -152,7 +152,8 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     /**
-     * @notice Execute proposal #`id` by sending `proposals[id].requestedAmount` to `proposals[id].beneficiary`
+     * @notice Execute proposal #`id`
+     * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(id): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(id): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param id Proposal id
      * @param _withdraw True if sender's staked tokens should be withdrawed after execution
      */
