@@ -69,7 +69,16 @@ contract ConvictionVotingApp is AragonApp {
         initialize(_stakeToken, _vault, _requestToken, _decay, _maxRatio, _weight);
     }
 
-    function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken, uint256 _decay, uint256 _maxRatio, uint256 _weight) public onlyInit {
+    function initialize(
+        MiniMeToken _stakeToken,
+        Vault _vault,
+        address _requestToken,
+        uint256 _decay,
+        uint256 _maxRatio,
+        uint256 _weight
+    )
+        public onlyInit
+    {
         proposalCounter = 1; // First proposal should be #1, not #0
         stakeToken = _stakeToken;
         requestToken = _requestToken;
@@ -93,8 +102,7 @@ contract ConvictionVotingApp is AragonApp {
         uint256 _requestedAmount,
         address _beneficiary
     )
-        external
-        isInitialized()
+        external isInitialized()
     {
         proposals[proposalCounter] = Proposal(
             _requestedAmount,
@@ -166,7 +174,7 @@ contract ConvictionVotingApp is AragonApp {
         // TODO Check if enough funds?
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
         if (_withdraw) {
-          withdraw(id, proposal.stakedTokens);
+            withdraw(id, proposals[id].stakesPerVoter[msg.sender]);
         }
     }
 
@@ -230,22 +238,32 @@ contract ConvictionVotingApp is AragonApp {
         uint256 Dt = D**t;
         uint256 aDt = aD**t;
         if (t <= MAX_T) { // no overflow
-          conviction = aDt.mul(lastConv).add((oldAmount.mul(D).mul(Dt.sub(aDt))).div(D.sub(aD))).div(Dt);
+            conviction = aDt.mul(lastConv).add((oldAmount.mul(D).mul(Dt.sub(aDt))).div(D.sub(aD))).div(Dt);
         } else {
-          // We neglect lastConv when timePassed is big enough because lim [ a^t ] = 0 when t -> infinity
-          conviction = oldAmount.mul(D).div(D.sub(aD));
+            // We neglect lastConv when timePassed is big enough because lim [ a^t ] = 0 when t -> infinity
+            conviction = oldAmount.mul(D).div(D.sub(aD));
         }
     }
 
     /**
-     * @dev Formula: wS/(β-r)^2, r = requested/total
+     * @dev Formula: ρ * supply / (β - requestedAmount / total)**2
+     * For the Solidity implementation we amplify ρ and β and simplify the formula:
+     * weight = ρ * D ** 2
+     * maxRatio = β * D
+     * threshold = weight * supply * funds ** 2 / (maxRatio * funds - requestedAmount * D) ** 2
      * @param requestedAmount Requested amount of tokens on certain proposal
-     * @return Threshold a proposal's conviction should surpass in order to be able to executed it
+     * @return Threshold a proposal's conviction should surpass in order to be able to
+     * executed it.
      */
     function calculateThreshold(uint256 requestedAmount) public view returns (uint256 threshold) {
-        uint256 totalFunds = vault.balance(requestToken);
-        threshold = weight.mul(stakeToken.totalSupply());
-        threshold = threshold.div(maxRatio.sub(requestedAmount.mul(D).div(totalFunds))**2); // (β-r)^2 won't overflow
+        uint256 funds = vault.balance(requestToken);
+        uint256 supply = stakeToken.totalSupply();
+        // denom = maxRatio * funds - requestedAmount * D
+        uint256 denom = maxRatio.mul(funds).sub(requestedAmount.mul(D));
+        // threshold = weight * supply * funds ** 2
+        threshold = weight.mul(supply).mul(funds).mul(funds);
+        // threshold /= denom ** 2
+        threshold = threshold.div(denom.mul(denom));
     }
 
     /**
@@ -257,6 +275,9 @@ contract ConvictionVotingApp is AragonApp {
         Proposal storage proposal = proposals[id];
         uint64 blockNumber = getBlockNumber64();
         assert(proposal.blockLast <= blockNumber);
+        if (proposal.blockLast == blockNumber) {
+          return; // Conviction already stored
+        }
         // calculateConviction and store it
         uint256 conviction = calculateConviction(
             blockNumber - proposal.blockLast, // we assert it doesn't overflow above
