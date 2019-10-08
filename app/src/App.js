@@ -16,6 +16,7 @@ import Balance from './components/Balance'
 import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
 import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
+import { toDecimals } from './lib/math-utils'
 
 function App() {
   const { api, appState, connectedAccount } = useAragonApi()
@@ -34,6 +35,13 @@ function App() {
     myLastStakes.find(stake => stake.proposal === proposal.id)
 
   const [proposalPanel, setProposalPanel] = useState(false)
+  const onProposalSubmit = ({ title, description, amount, beneficiary }) => {
+    const decimals = parseInt(requestToken.decimals)
+    const decimalAmount = toDecimals(amount.trim(), decimals).toString()
+    api.addProposal(title, '0x0', decimalAmount, beneficiary).toPromise()
+    // TODO Store description on IPFS
+    setProposalPanel(false)
+  }
 
   return (
     <Main assetsUrl="./aragon-ui">
@@ -105,13 +113,7 @@ function App() {
           opened={proposalPanel}
           onClose={() => setProposalPanel(false)}
         >
-          <AddProposalPanel
-            onSubmit={({ title, description, amount, beneficiary }) => {
-              api.addProposal(title, '0x0', amount, beneficiary).toPromise()
-              // TODO Store description on IPFS
-              setProposalPanel(false)
-            }}
-          />
+          <AddProposalPanel onSubmit={onProposalSubmit} />
         </SidePanel>
       </>
     </Main>
@@ -150,7 +152,6 @@ const Amount = ({ requestedAmount = 0 }) => {
       requestToken: { symbol, decimals, verified },
     },
   } = useAragonApi()
-  console.log(requestedAmount)
   return (
     <div>
       <Balance
