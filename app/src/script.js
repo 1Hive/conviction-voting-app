@@ -158,6 +158,19 @@ async function initialize([
         })
         break
       }
+      case 'ProposalExecuted': {
+        const { id } = returnValues
+        nextState = {
+          ...nextState,
+          proposals: nextState.proposals.map(proposal => {
+            if (proposal.id === parseInt(id)) {
+              return { ...proposal, executed: true }
+            }
+            return proposal
+          }),
+        }
+        break
+      }
       case events.SYNC_STATUS_SYNCING:
         nextState = { ...nextState, isSyncing: true }
         break
