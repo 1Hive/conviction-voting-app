@@ -117,9 +117,9 @@ contract Template is TemplateBase {
         emit DeployInstance(dao);
 
         // Test inital transactions
-        app.addProposal('Aragon Sidechain', '0x0', 2000, 0xD41b2558691d4A39447b735C23E6c98dF6cF4409);
-        app.addProposal('Conviction Voting', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
-        app.addProposal('Aragon Button', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
+        app.addProposal("Aragon Sidechain", "0x0", 2000 * 10**18, 0xD41b2558691d4A39447b735C23E6c98dF6cF4409);
+        app.addProposal("Conviction Voting", "0x0", 1000 * 10**18, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
+        app.addProposal("Aragon Button", "0x0", 1000 * 10**18, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
         app.stakeToProposal(1, 20000);
     }
 }

@@ -28,8 +28,7 @@ function getStakesAndThreshold(proposal = {}) {
   const { totalTokensStaked } = [...stakes].pop() || { totalTokensStaked: 0 }
   const threshold = calculateThreshold(
     requestedAmount,
-    // FIXME: Dividing by 10**18 is a hack, and solidity code does not do it to calculate threshold
-    requestToken.amount / 10 ** 18 || 0,
+    requestToken.amount || 0,
     stakeToken.tokenSupply || 0,
     maxRatio,
     weight
