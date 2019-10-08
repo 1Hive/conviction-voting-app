@@ -65,7 +65,7 @@ contract ConvictionVotingApp is AragonApp {
     }
 
     function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken, uint256 _decay, uint256 _maxRatio) public onlyInit {
-        uint256 _weight = (_maxRatio**2).div(D).mul(5); // _maxRatio^2 won't overflow
+        uint256 _weight = (_maxRatio**2).mul(5).div(D); // _maxRatio^2 won't overflow
         initialize(_stakeToken, _vault, _requestToken, _decay, _maxRatio, _weight);
     }
 
@@ -130,14 +130,6 @@ contract ConvictionVotingApp is AragonApp {
      * @param id Proposal id
      */
     function stakeAllToProposal(uint256 id) external isInitialized() {
-        // TODO: Should we withdraw tokens from other proposals in just one tx?
-        // uint256 i = 0;
-        // while (i < proposalCounter && stakesPerVoter[msg.sender] > 0) {
-        //     if (proposals[i].stakesPerVoter[msg.sender] > 0) {
-        //         withdraw(i, proposals[i].stakesPerVoter[msg.sender]);
-        //     }
-        //     i++;
-        // }
         require(stakesPerVoter[msg.sender] == 0, ERROR_STAKING_ALREADY_STAKED);
         stake(id, stakeToken.balanceOf(msg.sender));
     }
