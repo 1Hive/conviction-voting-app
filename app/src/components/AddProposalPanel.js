@@ -1,23 +1,18 @@
 import React, { useState } from 'react'
 import { Button, Field, TextInput } from '@aragon/ui'
-import styled, { css } from 'styled-components'
+import styled from 'styled-components'
 
 const AddProposalPanel = ({ onSubmit }) => {
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('Lorem ipsum...')
+  const [link, setLink] = useState('')
   const [amount, setAmount] = useState(0)
-  const [beneficiary, setBeneficiary] = useState('')
+  const [recipient, setRecipient] = useState('')
   const disabled = false // TODO Disable when empty or invalid fields
-  const onFormSubmit = event => {
-    event.preventDefault()
-    onSubmit({ title, description, amount, beneficiary })
-  }
   return (
-    <form onSubmit={onFormSubmit}>
+    <Form onSubmit={() => onSubmit({ title, link, amount, recipient })}>
       <Field
         label="Title"
         css={`
-          margin: 16px 0;
           div {
             font-weight: 400;
           }
@@ -28,21 +23,6 @@ const AddProposalPanel = ({ onSubmit }) => {
           value={title}
           wide
           required
-        />
-      </Field>
-      <Field
-        label="Description"
-        css={`
-          div {
-            font-weight: 400;
-          }
-        `}
-      >
-        <TextInput
-          onChange={event => setDescription(event.target.value)}
-          value={description}
-          wide
-          multiline
         />
       </Field>
       <Field
@@ -64,7 +44,7 @@ const AddProposalPanel = ({ onSubmit }) => {
         />
       </Field>
       <Field
-        label="Beneficiary"
+        label="Recipient"
         css={`
           div {
             font-weight: 400;
@@ -72,10 +52,24 @@ const AddProposalPanel = ({ onSubmit }) => {
         `}
       >
         <TextInput
-          onChange={event => setBeneficiary(event.target.value)}
-          value={beneficiary}
+          onChange={event => setRecipient(event.target.value)}
+          value={recipient}
           wide
           required
+        />
+      </Field>
+      <Field
+        label="Link"
+        css={`
+          div {
+            font-weight: 400;
+          }
+        `}
+      >
+        <TextInput
+          onChange={event => setLink(event.target.value)}
+          value={link}
+          wide
         />
       </Field>
       <ButtonWrapper>
@@ -83,12 +77,15 @@ const AddProposalPanel = ({ onSubmit }) => {
           Submit
         </Button>
       </ButtonWrapper>
-    </form>
+    </Form>
   )
 }
 
 const ButtonWrapper = styled.div`
   padding-top: 10px;
+`
+const Form = styled.form`
+  margin: 16px 0;
 `
 
 export default AddProposalPanel
