@@ -15,8 +15,6 @@ import "@aragon/os/contracts/apm/Repo.sol";
 import "@aragon/os/contracts/lib/ens/ENS.sol";
 import "@aragon/os/contracts/lib/ens/PublicResolver.sol";
 import "@aragon/os/contracts/apm/APMNamehash.sol";
-import "@aragon/os/contracts/lib/token/ERC20.sol";
-import "@aragon/os/contracts/common/SafeERC20.sol";
 
 import "@aragon/apps-token-manager/contracts/TokenManager.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
@@ -50,76 +48,80 @@ contract TemplateBase is APMNamehash {
 
         return base;
     }
+
+    function installApp(Kernel dao, bytes32 appId) internal returns (address) {
+        address instance = address(dao.newAppInstance(appId, latestVersionAppBase(appId)));
+        emit InstalledApp(instance, appId);
+        return instance;
+    }
+
+    function installDefaultApp(Kernel dao, bytes32 appId) internal returns (address) {
+        address instance = address(dao.newAppInstance(appId, latestVersionAppBase(appId), new bytes(0), true));
+        emit InstalledApp(instance, appId);
+        return instance;
+    }
 }
 
 
 contract Template is TemplateBase {
-    using SafeERC20 for ERC20;
-    MiniMeTokenFactory tokenFactory;
 
     uint64 constant PCT = 10 ** 16;
     address constant ANY_ENTITY = address(-1);
+
+    bytes32 internal CONVICTION_VOTING_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
+    bytes32 internal TOKEN_MANAGER_APP_ID = apmNamehash("token-manager");
+    bytes32 internal VAULT_APP_ID = apmNamehash("vault");
+
+    MiniMeTokenFactory tokenFactory;
 
     constructor(ENS ens) TemplateBase(DAOFactory(0), ens) public {
         tokenFactory = new MiniMeTokenFactory();
     }
 
-    function newInstance() public {
+    function newInstance(address requestToken) public {
         Kernel dao = fac.newDAO(this);
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
+        address root = msg.sender;
 
-        address account2 = 0x8401Eb5ff34cc943f096A32EF3d5113FEbE8D4Eb;
-        bytes32 appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
-        bytes32 tokenManagerAppId = apmNamehash("token-manager");
-        bytes32 vaultAppId = apmNamehash("vault");
+        ConvictionVotingApp convictionVoting = ConvictionVotingApp(installApp(dao, CONVICTION_VOTING_APP_ID));
+        TokenManager tokenManager = TokenManager(installApp(dao, TOKEN_MANAGER_APP_ID));
+        Vault vault = Vault(installDefaultApp(dao, VAULT_APP_ID));
 
-        ConvictionVotingApp app = ConvictionVotingApp(dao.newAppInstance(appId, latestVersionAppBase(appId)));
-        TokenManager tokenManager = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
-        TokenManager tokenManager2 = TokenManager(dao.newAppInstance(tokenManagerAppId, latestVersionAppBase(tokenManagerAppId)));
-        Vault vault = Vault(dao.newAppInstance(vaultAppId, latestVersionAppBase(vaultAppId)));
-
-        MiniMeToken token = tokenFactory.createCloneToken(MiniMeToken(0), 0, "App token", 0, "APP", true);
-        MiniMeToken token2 = tokenFactory.createCloneToken(MiniMeToken(0), 0, "Fake DAI", 18, "DAI", true);
-        token.changeController(tokenManager);
-        token2.changeController(tokenManager2);
+        //stakeToken
+        MiniMeToken stakeToken = tokenFactory.createCloneToken(MiniMeToken(0), 0, "App token", 0, "APP", true);
+        stakeToken.changeController(tokenManager);
 
         // Initialize apps
+        convictionVoting.initialize(stakeToken, vault, requestToken);
+        tokenManager.initialize(stakeToken, true, 0);
         vault.initialize();
-        app.initialize(token, vault, token2);
-        tokenManager.initialize(token, true, 0);
-        tokenManager2.initialize(token2, true, 0);
 
+        //set permissions
         acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
-        tokenManager.mint(this, 30000);
-        tokenManager.mint(msg.sender, 15000);
-
-        acl.createPermission(this, tokenManager2, tokenManager2.MINT_ROLE(), this);
-        tokenManager2.mint(this, 15000 * 10**18);
-        ERC20(token2).safeApprove(vault, 15000 * 10**18);
-        vault.deposit(token2, 15000 * 10**18);
-
-        acl.createPermission(ANY_ENTITY, app, app.CREATE_PROPOSALS_ROLE(), msg.sender);
-        acl.grantPermission(msg.sender, tokenManager, tokenManager.MINT_ROLE());
-        acl.grantPermission(msg.sender, tokenManager2, tokenManager2.MINT_ROLE());
-
-        acl.createPermission(app, vault, vault.TRANSFER_ROLE(), this);
+        tokenManager.mint(root, 15000);
+        acl.createPermission(ANY_ENTITY, convictionVoting, convictionVoting.CREATE_PROPOSALS_ROLE(), root);
+        acl.createPermission(convictionVoting, vault, vault.TRANSFER_ROLE(), root);
 
         // Clean up permissions
-        acl.grantPermission(msg.sender, dao, dao.APP_MANAGER_ROLE());
+        acl.grantPermission(root, dao, dao.APP_MANAGER_ROLE());
         acl.revokePermission(this, dao, dao.APP_MANAGER_ROLE());
-        acl.setPermissionManager(msg.sender, dao, dao.APP_MANAGER_ROLE());
+        acl.setPermissionManager(root, dao, dao.APP_MANAGER_ROLE());
 
-        acl.grantPermission(msg.sender, acl, acl.CREATE_PERMISSIONS_ROLE());
+        acl.grantPermission(root, acl, acl.CREATE_PERMISSIONS_ROLE());
         acl.revokePermission(this, acl, acl.CREATE_PERMISSIONS_ROLE());
-        acl.setPermissionManager(msg.sender, acl, acl.CREATE_PERMISSIONS_ROLE());
+        acl.setPermissionManager(root, acl, acl.CREATE_PERMISSIONS_ROLE());
+
+        acl.grantPermission(root, tokenManager, tokenManager.MINT_ROLE());
+        acl.revokePermission(this, tokenManager, tokenManager.MINT_ROLE());
+        acl.setPermissionManager(root, tokenManager, tokenManager.MINT_ROLE());
 
         emit DeployInstance(dao);
 
-        // Test inital transactions
-        app.addProposal("Aragon Sidechain", "0x0", 2000 * 10**18, 0xD41b2558691d4A39447b735C23E6c98dF6cF4409);
-        app.addProposal("Conviction Voting", "0x0", 1000 * 10**18, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
-        app.addProposal("Aragon Button", "0x0", 1000 * 10**18, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
-        app.stakeToProposal(1, 20000);
+        // // Test inital transactions
+        // convictionVoting.addProposal('Aragon Sidechain', '0x0', 2000, 0xD41b2558691d4A39447b735C23E6c98dF6cF4409);
+        // convictionVoting.addProposal('Conviction Voting', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
+        // convictionVoting.addProposal('Aragon Button', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
+        // convictionVoting.stakeToProposal(1, 20000);
     }
 }
