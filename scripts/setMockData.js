@@ -55,6 +55,8 @@ module.exports = async (
       proposals.map(proposal => convictionVoting.addProposal(...proposal))
     )
     await convictionVoting.stakeToProposal(1, 15000)
+
+    console.log('Succesfully setted mock data on Conviction Voting!')
   } catch (err) {
     console.log(`Error setting mock data: ${err}`)
   }

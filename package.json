@@ -32,8 +32,8 @@
   },
   "scripts": {
     "start": "npm run start:ipfs",
-    "start:ipfs": "aragon run --files dist",
-    "start:http": "aragon run --http localhost:8001 --http-served-from ./dist",
+    "start:ipfs": "npm run start:ipfs:template",
+    "start:http": "npm run start:http:template",
     "start:ipfs:template": "./scripts/start.sh ipfs",
     "start:http:template": "./scripts/start.sh http",
     "prepare": "cd app && npm install && cd ..",
