@@ -78,7 +78,7 @@ contract Template is TemplateBase {
         tokenFactory = new MiniMeTokenFactory();
     }
 
-    function newInstance(address requestToken) public {
+    function newInstance(string name, uint8 decimals, string symbol, address requestToken) public {
         Kernel dao = fac.newDAO(this);
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
@@ -89,17 +89,17 @@ contract Template is TemplateBase {
         Vault vault = Vault(installDefaultApp(dao, VAULT_APP_ID));
 
         //stakeToken
-        MiniMeToken stakeToken = tokenFactory.createCloneToken(MiniMeToken(0), 0, "App token", 0, "APP", true);
+        MiniMeToken stakeToken = tokenFactory.createCloneToken(MiniMeToken(0), 0, name, decimals, symbol, true);
         stakeToken.changeController(tokenManager);
 
         // Initialize apps
         convictionVoting.initialize(stakeToken, vault, requestToken);
-        tokenManager.initialize(stakeToken, true, 0);
+        tokenManager.initialize(stakeToken, false, 0);
         vault.initialize();
 
         //set permissions
         acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
-        tokenManager.mint(root, 15000);
+        tokenManager.mint(root, 15000 * (10 ** uint256(decimals)));
         acl.createPermission(ANY_ENTITY, convictionVoting, convictionVoting.CREATE_PROPOSALS_ROLE(), root);
         acl.createPermission(convictionVoting, vault, vault.TRANSFER_ROLE(), root);
 
@@ -117,11 +117,5 @@ contract Template is TemplateBase {
         acl.setPermissionManager(root, tokenManager, tokenManager.MINT_ROLE());
 
         emit DeployInstance(dao);
-
-        // // Test inital transactions
-        // convictionVoting.addProposal('Aragon Sidechain', '0x0', 2000, 0xD41b2558691d4A39447b735C23E6c98dF6cF4409);
-        // convictionVoting.addProposal('Conviction Voting', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
-        // convictionVoting.addProposal('Aragon Button', '0x0', 1000, 0xb4124cEB3451635DAcedd11767f004d8a28c6eE7);
-        // convictionVoting.stakeToProposal(1, 20000);
     }
 }
