@@ -16,18 +16,23 @@ To use this Aragon application, set it up using a token and a vault using:
 
 ```sh
 npm install
-npx aragon devchain
-npm run start:ipfs:template
+npm start # It actually starts `npm run start:ipfs:template`
 ```
 
 If everything is working correctly, your new DAO will be deployed and your browser will open http://localhost:3000/#/YOUR-DAO-ADDRESS. It should look something like this:
 
 ![Deployed DAO with conviction voting app](https://raw.githubusercontent.com/1Hive/conviction-voting-app/master/app/public/meta/screenshot-1.png)
 
-You can see how conviction increases and decreases over time by killing the `aragon devchain` process and executing:
+You can set up mocked data and add funds to the vault by executing:
 
 ```sh
-npx aragon devchain -b 15 # A new block is going to be mined every 15s
+npm run mock-data $YOUR_DAO_ADDR $CONVICTION_VOTING_APP_ID [$AMOUNT]
+```
+
+You can also see how conviction increases and decreases over time by executing:
+
+```sh
+npm run mine-blocks # A new block is going to be mined every 15s
 ```
 
 And refreshing the application in the browser (F5).

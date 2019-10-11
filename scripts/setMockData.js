@@ -1,3 +1,7 @@
+/**
+ * Usage: $ npm run mock-data $DAO_ADDR $CONVICTION_VOTING_APP_ADDR [$AMOUNT]
+ */
+
 const getProposals = require('./helpers/get-proposals')
 const BN = require('bn.js')
 
@@ -25,9 +29,15 @@ module.exports = async (
   const [
     daoAddress,
     convictionVotingAddress,
-    tokenAddress,
     tokenAmount = defaultAmount,
   ] = process.argv.slice(4)
+
+  if (!daoAddress || !convictionVotingAddress) {
+    console.error(
+      `Usage:\n$ npm run mock-data $DAO_ADDR $CONVICTION_VOTING_APP_ADDR [$AMOUNT]`
+    )
+    return
+  }
 
   // Get Vault and ConvictionVoting contract
   const kernel = await Kernel.at(daoAddress)
@@ -39,7 +49,8 @@ module.exports = async (
   const convictionVoting = await ConvictionVoting.at(convictionVotingAddress)
 
   try {
-    const tokenContract = await ERC20Token.at(tokenAddress)
+    const requestTokenAddress = await convictionVoting.requestToken()
+    const tokenContract = await ERC20Token.at(requestTokenAddress)
     const tokenAmountBN = bigExp(
       tokenAmount,
       (await tokenContract.decimals()).toString()
@@ -47,7 +58,7 @@ module.exports = async (
 
     //  Make a deposit to the vault
     await tokenContract.approve(vaultAddress, tokenAmountBN.toString())
-    await vault.deposit(tokenAddress, tokenAmountBN.toString())
+    await vault.deposit(requestTokenAddress, tokenAmountBN.toString())
 
     //  Create some proposals
     const proposals = await getProposals(web3)

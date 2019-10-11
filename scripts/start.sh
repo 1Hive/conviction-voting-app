@@ -18,37 +18,37 @@ cleanup() {
 }
 
 compileContracts() {
-  echo Compiling contracts 
+  echo Compiling contracts…
   npx truffle compile > /dev/null
 }
 
 startDevchain() {
   pid=$(pgrep -f "aragon devchain" | tail -1)
-  if [ -z "$pid" ] 
+  if [ -z "$pid" ]
   then
-    echo Starting devchain
+    echo Starting devchain…
     npx aragon devchain --verbose > /dev/null &
     pid=$!
     sleep 3
-    echo Running devchain with pid ${pid}
+    echo Running devchain with pid ${pid}…
   else
     echo Devchain already running [skipped]
   fi
 }
 
 deployToken() {
-  echo Deploying token
+  echo Deploying token…
   RESPONSE=$(npx truffle exec ./scripts/deployToken.js "Dai Stablecoin" "DAI" 18)
   REQUEST_TOKEN=$(echo "${RESPONSE}" | tail -1)
   echo Request token: ${REQUEST_TOKEN}
 }
 
 runUsingTemplateIPFS() {
-  npx aragon run --template Template --template-init @ARAGON_ENS --template-args "App token" 0 "APP" ${REQUEST_TOKEN} --files dist
+  npx aragon run --template Template --template-init @ARAGON_ENS --template-args "Stake token" 0 "TKN" ${REQUEST_TOKEN} --files dist
 }
 
 runUsingTemplateHTTP() {
-  npx aragon run --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-args "App token" 0 "APP" ${REQUEST_TOKEN} 
+  npx aragon run --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-args "Stake token" 0 "TKN" ${REQUEST_TOKEN}
 }
 
 compileContracts

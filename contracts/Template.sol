@@ -68,9 +68,9 @@ contract Template is TemplateBase {
     uint64 constant PCT = 10 ** 16;
     address constant ANY_ENTITY = address(-1);
 
-    bytes32 internal CONVICTION_VOTING_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
-    bytes32 internal TOKEN_MANAGER_APP_ID = apmNamehash("token-manager");
-    bytes32 internal VAULT_APP_ID = apmNamehash("vault");
+    bytes32 internal constant CONVICTION_VOTING_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
+    bytes32 internal constant TOKEN_MANAGER_APP_ID = apmNamehash("token-manager");
+    bytes32 internal constant VAULT_APP_ID = apmNamehash("vault");
 
     MiniMeTokenFactory tokenFactory;
 
