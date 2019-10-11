@@ -78,7 +78,7 @@ contract Template is TemplateBase {
         tokenFactory = new MiniMeTokenFactory();
     }
 
-    function newInstance(string name, uint8 decimals, string symbol, address requestToken) public {
+    function newInstance(string stakeTokenName, uint8 stakeTokenDecimals, string stakeTokenSymbol, address requestToken) public {
         Kernel dao = fac.newDAO(this);
         ACL acl = ACL(dao.acl());
         acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
@@ -89,7 +89,7 @@ contract Template is TemplateBase {
         Vault vault = Vault(installDefaultApp(dao, VAULT_APP_ID));
 
         //stakeToken
-        MiniMeToken stakeToken = tokenFactory.createCloneToken(MiniMeToken(0), 0, name, decimals, symbol, true);
+        MiniMeToken stakeToken = tokenFactory.createCloneToken(MiniMeToken(0), 0, stakeTokenName, stakeTokenDecimals, stakeTokenSymbol, true);
         stakeToken.changeController(tokenManager);
 
         // Initialize apps
@@ -99,7 +99,7 @@ contract Template is TemplateBase {
 
         //set permissions
         acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
-        tokenManager.mint(root, 15000 * (10 ** uint256(decimals)));
+        tokenManager.mint(root, 15000 * (10 ** uint256(stakeTokenDecimals)));
         acl.createPermission(ANY_ENTITY, convictionVoting, convictionVoting.CREATE_PROPOSALS_ROLE(), root);
         acl.createPermission(convictionVoting, vault, vault.TRANSFER_ROLE(), root);
 

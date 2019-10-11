@@ -17,6 +17,11 @@ cleanup() {
   fi
 }
 
+compileContracts() {
+  echo Compiling contracts 
+  npx truffle compile > /dev/null
+}
+
 startDevchain() {
   pid=$(pgrep -f "aragon devchain" | tail -1)
   if [ -z "$pid" ] 
@@ -46,6 +51,7 @@ runUsingTemplateHTTP() {
   npx aragon run --http localhost:8001 --http-served-from ./dist --template Template --template-init @ARAGON_ENS --template-args "App token" 0 "APP" ${REQUEST_TOKEN} 
 }
 
+compileContracts
 startDevchain
 deployToken
 
