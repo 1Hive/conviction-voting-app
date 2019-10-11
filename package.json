@@ -26,7 +26,8 @@
     "eslint-plugin-standard": "^4.0.0",
     "ethlint": "^1.2.4",
     "prettier": "^1.18.2",
-    "solidity-coverage": "^0.6.2"
+    "solidity-coverage": "^0.6.2",
+    "truffle": "4.1.14"
   },
   "scripts": {
     "start": "npm run start:ipfs",
