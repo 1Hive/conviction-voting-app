@@ -1,3 +1,4 @@
+/* global artifacts */
 const ERC20Token = artifacts.require('ERC20Token')
 
 const deployToken = (name, symbol, decimals) => {

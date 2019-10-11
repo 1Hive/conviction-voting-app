@@ -269,7 +269,7 @@ contract ConvictionVotingApp is AragonApp {
         uint64 blockNumber = getBlockNumber64();
         assert(proposal.blockLast <= blockNumber);
         if (proposal.blockLast == blockNumber) {
-          return; // Conviction already stored
+            return; // Conviction already stored
         }
         // calculateConviction and store it
         uint256 conviction = calculateConviction(
