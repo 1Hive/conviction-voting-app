@@ -155,19 +155,18 @@ contract ConvictionVotingApp is AragonApp {
      * @notice Execute proposal #`id`
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(id): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(id): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param id Proposal id
-     * @param _withdraw True if sender's staked tokens should be withdrawed after execution
+     * @param _withdrawIfPossible True if sender's staked tokens should be withdrawed after execution
      */
-    function executeProposal(uint256 id, bool _withdraw) external isInitialized() {
+    function executeProposal(uint256 id, bool _withdrawIfPossible) external isInitialized() {
         Proposal storage proposal = proposals[id];
         require(!proposal.executed, ERROR_PROPOSAL_ALREADY_EXECUTED);
         proposal.executed = true;
         calculateAndSetConviction(id, proposal.stakedTokens);
         require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE);
         emit ProposalExecuted(id, proposal.convictionLast);
-        // TODO Check if enough funds?
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
-        if (_withdraw) {
-            withdraw(id, proposals[id].stakesPerVoter[msg.sender]);
+        if (_withdrawIfPossible && proposal.stakesPerVoter[msg.sender] > 0) {
+            withdraw(id, proposal.stakesPerVoter[msg.sender]);
         }
     }
 
