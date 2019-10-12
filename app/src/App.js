@@ -17,6 +17,7 @@ import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
 import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
 import { toDecimals } from './lib/math-utils'
+import { toHex } from 'web3-utils'
 
 function App() {
   const { api, appState, connectedAccount } = useAragonApi()
@@ -35,11 +36,10 @@ function App() {
     myLastStakes.find(stake => stake.proposal === proposal.id)
 
   const [proposalPanel, setProposalPanel] = useState(false)
-  const onProposalSubmit = ({ title, description, amount, beneficiary }) => {
+  const onProposalSubmit = ({ title, link, amount, beneficiary }) => {
     const decimals = parseInt(requestToken.decimals)
     const decimalAmount = toDecimals(amount.trim(), decimals).toString()
-    api.addProposal(title, '0x0', decimalAmount, beneficiary).toPromise()
-    // TODO Store description on IPFS
+    api.addProposal(title, toHex(link), decimalAmount, beneficiary).toPromise()
     setProposalPanel(false)
   }
 
@@ -51,10 +51,10 @@ function App() {
           action1={
             <Button
               mode="strong"
-              label="Create proposal"
+              label="New proposal"
               onClick={() => setProposalPanel(true)}
             >
-              Create proposal
+              New proposal
             </Button>
           }
         />
@@ -109,7 +109,7 @@ function App() {
           </div>
         </Wrapper>
         <SidePanel
-          title="Create proposal"
+          title="New proposal"
           opened={proposalPanel}
           onClose={() => setProposalPanel(false)}
         >
