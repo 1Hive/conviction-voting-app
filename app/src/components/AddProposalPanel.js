@@ -6,18 +6,16 @@ const AddProposalPanel = ({ onSubmit }) => {
   const [title, setTitle] = useState('')
   const [link, setLink] = useState('')
   const [amount, setAmount] = useState(0)
-  const [recipient, setRecipient] = useState('')
+  const [beneficiary, setBeneficiary] = useState('')
   const disabled = false // TODO Disable when empty or invalid fields
   return (
-    <Form onSubmit={() => onSubmit({ title, link, amount, recipient })}>
-      <Field
-        label="Title"
-        css={`
-          div {
-            font-weight: 400;
-          }
-        `}
-      >
+    <Form
+      onSubmit={e => {
+        e.preventDefault()
+        onSubmit({ title, link, amount, beneficiary })
+      }}
+    >
+      <Field label="Title">
         <TextInput
           onChange={event => setTitle(event.target.value)}
           value={title}
@@ -25,14 +23,7 @@ const AddProposalPanel = ({ onSubmit }) => {
           required
         />
       </Field>
-      <Field
-        label="Requested Amount"
-        css={`
-          div {
-            font-weight: 400;
-          }
-        `}
-      >
+      <Field label="Requested Amount">
         <TextInput
           type="number"
           value={amount}
@@ -43,29 +34,15 @@ const AddProposalPanel = ({ onSubmit }) => {
           wide
         />
       </Field>
-      <Field
-        label="Recipient"
-        css={`
-          div {
-            font-weight: 400;
-          }
-        `}
-      >
+      <Field label="Beneficiary">
         <TextInput
-          onChange={event => setRecipient(event.target.value)}
-          value={recipient}
+          onChange={event => setBeneficiary(event.target.value)}
+          value={beneficiary}
           wide
           required
         />
       </Field>
-      <Field
-        label="Link"
-        css={`
-          div {
-            font-weight: 400;
-          }
-        `}
-      >
+      <Field label="Link">
         <TextInput
           onChange={event => setLink(event.target.value)}
           value={link}
