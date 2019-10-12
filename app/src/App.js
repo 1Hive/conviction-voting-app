@@ -23,17 +23,6 @@ function App() {
   const { api, appState, connectedAccount } = useAragonApi()
   const { proposals, convictionStakes, requestToken } = appState
   const activeProposals = proposals.filter(({ executed }) => !executed)
-  const myStakes =
-    (convictionStakes &&
-      convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
-    []
-
-  const myLastStakes = getLastOf(myStakes, 'proposal').filter(
-    ({ tokensStaked }) => tokensStaked > 0
-  )
-
-  const isStaked = proposal =>
-    myLastStakes.find(stake => stake.proposal === proposal.id)
 
   const [proposalPanel, setProposalPanel] = useState(false)
   const onProposalSubmit = ({ title, link, amount, beneficiary }) => {
@@ -42,6 +31,13 @@ function App() {
     api.addProposal(title, toHex(link), decimalAmount, beneficiary).toPromise()
     setProposalPanel(false)
   }
+
+  const myStakes =
+    (convictionStakes &&
+      convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
+    []
+
+  const myLastStake = [...myStakes].pop() || {}
 
   return (
     <Main assetsUrl="./aragon-ui">
@@ -63,17 +59,16 @@ function App() {
             <Box heading="Vault balance">
               <Balance {...requestToken} />
             </Box>
-            {myLastStakes.length > 0 &&
-              myLastStakes.map(stake => (
-                <Box heading="My conviction proposal" key={stake.proposal}>
-                  <ProposalInfo
-                    proposal={
-                      proposals.filter(({ id }) => id === stake.proposal)[0]
-                    }
-                    stake={stake}
-                  />
-                </Box>
-              ))}
+            {myLastStake.tokensStaked > 0 && (
+              <Box heading="My staked proposal" key={myLastStake.proposal}>
+                <ProposalInfo
+                  proposal={
+                    proposals.filter(({ id }) => id === myLastStake.proposal)[0]
+                  }
+                  stake={myLastStake}
+                />
+              </Box>
+            )}
           </div>
           <div css="width: 75%">
             <DataView
@@ -102,7 +97,6 @@ function App() {
                   onExecute={() =>
                     api.executeProposal(proposal.id, true).toPromise()
                   }
-                  isStaked={isStaked(proposal)}
                 />
               )}
             />
@@ -120,28 +114,12 @@ function App() {
   )
 }
 
-function getLastOf(arr, comp) {
-  arr = [...arr].reverse()
-  const unique = arr
-    .map(e => e[comp])
-    // store the keys of the unique objects
-    .map((e, i, final) => final.indexOf(e) === i && i)
-    // eliminate the dead keys & store unique objects
-    .filter(e => arr[e])
-    .map(e => arr[e])
-  return unique
-}
-
-const IdAndTitle = ({ id, name, description }) => {
+const IdAndTitle = ({ id, name }) => {
   const theme = useTheme()
   return (
     <div>
       <Text color={theme.surfaceContent.toString()}>#{id}</Text>{' '}
       <Text color={theme.surfaceContentSecondary.toString()}>{name}</Text>
-      <br />
-      <Text color={theme.surfaceContentSecondary.toString()}>
-        {description}
-      </Text>
     </div>
   )
 }

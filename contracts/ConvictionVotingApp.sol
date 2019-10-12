@@ -12,7 +12,7 @@ contract ConvictionVotingApp is AragonApp {
     using SafeMath64 for uint64;
 
     // Events
-    event ProposalAdded(address entity, uint256 id, string title, bytes ipfsHash, uint256 amount, address beneficiary);
+    event ProposalAdded(address entity, uint256 id, string title, bytes link, uint256 amount, address beneficiary);
     event StakeChanged(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 id, uint256 conviction);
 
@@ -92,13 +92,13 @@ contract ConvictionVotingApp is AragonApp {
     /**
      * @notice Add proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
      * @param _title Title of the proposal
-     * @param _ipfsHash IPFS file with proposal's description
+     * @param _link IPFS or HTTP link with proposal's description
      * @param _requestedAmount Tokens requested
      * @param _beneficiary Address that will receive payment
      */
     function addProposal(
         string _title,
-        bytes _ipfsHash,
+        bytes _link,
         uint256 _requestedAmount,
         address _beneficiary
     )
@@ -112,7 +112,7 @@ contract ConvictionVotingApp is AragonApp {
             0,
             false
         );
-        emit ProposalAdded(msg.sender, proposalCounter, _title, _ipfsHash, _requestedAmount, _beneficiary);
+        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary);
         proposalCounter++;
     }
 

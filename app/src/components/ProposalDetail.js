@@ -1,18 +1,16 @@
 import React from 'react'
 import styled from 'styled-components'
-import { Text, useTheme, GU, Button } from '@aragon/ui'
-import { ConvictionChart, ConvictionCountdown } from './ConvictionVisuals'
+import { Text, useTheme, GU, ExternalLink } from '@aragon/ui'
+import {
+  ConvictionChart,
+  ConvictionCountdown,
+  ConvictionButton,
+} from './ConvictionVisuals'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 
-const ProposalDetail = ({
-  proposal,
-  onStake,
-  onWithdraw,
-  onExecute,
-  isStaked = false,
-}) => {
+const ProposalDetail = ({ proposal, onStake, onWithdraw, onExecute }) => {
   const theme = useTheme()
-  const { description, creator, beneficiary } = proposal
+  const { link, creator, beneficiary } = proposal
 
   return (
     <div
@@ -26,24 +24,27 @@ const ProposalDetail = ({
       `}
     >
       <DetailsGroup>
-        <h1>
-          <Text size="large">About this proposal</Text>
-        </h1>
         <h2>
           <Text color={theme.textSecondary} smallcaps>
-            Description
+            Link
           </Text>
         </h2>
-        {description}
+        {link ? (
+          <ExternalLink href={link}>{link}</ExternalLink>
+        ) : (
+          'No link provided.'
+        )}
         <div>
-          {!isStaked ? (
-            <Button mode="strong" onClick={onStake}>
-              Vote for this proposal
-            </Button>
-          ) : (
-            <Button onClick={onWithdraw}>Revoke conviction</Button>
-          )}
+          <ConvictionButton
+            proposal={proposal}
+            {...{ onStake, onWithdraw, onExecute }}
+          />
         </div>
+        <h2>
+          <Text color={theme.textSecondary} smallcaps>
+            Conviction prediction
+          </Text>
+        </h2>
         <ConvictionChart proposal={proposal} />
       </DetailsGroup>
       <DetailsGroup>
@@ -52,7 +53,7 @@ const ProposalDetail = ({
             Status
           </Text>
         </h2>
-        <ConvictionCountdown proposal={proposal} onExecute={onExecute} />
+        <ConvictionCountdown proposal={proposal} />
         <h2>
           <Text color={theme.textSecondary} smallcaps>
             Created by
