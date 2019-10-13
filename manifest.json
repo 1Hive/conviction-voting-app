@@ -10,7 +10,12 @@
       "sizes": "72x72"
     }
   ],
-  "screenshots": [{ "src": "/public/meta/screenshot-1.png" }],
+  "screenshots": [
+    { "src": "/public/meta/screenshot-1.png" },
+    { "src": "/public/meta/screenshot-2.png" },
+    { "src": "/public/meta/screenshot-3.png" },
+    { "src": "/public/meta/screenshot-4.png" }
+  ],
   "start_url": "/index.html",
   "script": "/script.js"
 }
