@@ -59,7 +59,7 @@ contract('ConvictionVoting', ([appManager, user]) => {
   it('should stake an amount of tokens on proposal - by appManager', async () => {
     // assume that 1 block ~ 15 seconds
     // after 20 blocks
-    await timeAdvancer.advanceTimeAndBlock(15 * 20)
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 20, 20)
 
     // When MiniMe mock token was created by appManager, he got all the supply, so
     // `staleToProposal` call passes functions `require`ments.
@@ -84,7 +84,7 @@ contract('ConvictionVoting', ([appManager, user]) => {
   it('should stake an amount of tokens on proposal - by user', async () => {
     // assume that 1 block ~ 15 seconds
     // after 10 blocks (+30 totally)
-    await timeAdvancer.advanceTimeAndBlock(15 * 10)
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
     // user should have some tokens
     await miniMeMock.transfer(user, 7000, { from: appManager })
     const stakesPerUser = 1000
@@ -106,7 +106,7 @@ contract('ConvictionVoting', ([appManager, user]) => {
   it('should withdraw from proposal - by appManager', async () => {
     // assume that 1 block ~ 15 seconds
     // after 20 blocks (+50 totally)
-    await timeAdvancer.advanceTimeAndBlock(15 * 20)
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 20, 20)
 
     const currentlProposal = await app.proposals.call(1)
     const currentlyStaked = currentlProposal[2]
@@ -125,7 +125,7 @@ contract('ConvictionVoting', ([appManager, user]) => {
   it('should stake more tokens - by user', async () => {
     // assume that 1 block ~ 15 seconds
     // after 10 blocks (+10 totally)
-    await timeAdvancer.advanceTimeAndBlock(15 * 10)
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
 
     const currentProposal = await app.proposals.call(1)
     const currentlyStaked = currentProposal[2]
@@ -146,8 +146,7 @@ contract('ConvictionVoting', ([appManager, user]) => {
   it('should enact proposal', async () => {
     // assume that 1 block ~ 15 seconds
     // after 40 blocks (+100 totally)
-    // await timeAdvancer.advanceTimeAndBlock(15 * 40)
-    // await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 40, 40)
     // await app.executeProposal(1, false, { from: user })
   })
 })
