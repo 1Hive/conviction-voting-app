@@ -1,24 +1,26 @@
-/* global artifacts contract beforeEach it assert */
+/* global artifacts contract before it assert */
 
 const { getEventArgument } = require('@aragon/test-helpers/events')
 const { hash } = require('eth-ens-namehash')
 const deployDAO = require('./helpers/deployDAO')
+const timeAdvancer = require('./helpers/timeAdvancer')
 
 const ConvictionVoting = artifacts.require('ConvictionVotingApp.sol')
-const MiniMeERC20Mock = artifacts.require('ERC20Token.sol')
+const ERC20Mock = artifacts.require('ERC20Token.sol')
 
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
 
 contract('ConvictionVoting', ([appManager, user]) => {
   let app
   let miniMeMock
+  // let requestToken - mock
 
-  beforeEach('deploy dao and app', async () => {
+  before('deploy dao and app', async () => {
     const { dao, acl } = await deployDAO(appManager)
 
     // Deploy the app's base contract.
     const appBase = await ConvictionVoting.new()
-    miniMeMock = await MiniMeERC20Mock.new('mock', 'MMM', '8', {
+    miniMeMock = await ERC20Mock.new('mock', 'MMM', '18', {
       from: appManager,
     })
 
@@ -55,12 +57,20 @@ contract('ConvictionVoting', ([appManager, user]) => {
   })
 
   it('should stake an amount of tokens on proposal - by appManager', async () => {
+    // assume that 1 block ~ 15 seconds
+    // after 20 blocks
+    await timeAdvancer.advanceTimeAndBlock(15 * 20)
+
     // When MiniMe mock token was created by appManager, he got all the supply, so
     // `staleToProposal` call passes functions `require`ments.
-    const stakedTokens = 1000
+    const stakedTokens = 1000 // should be in total
     const stakesPerAppManager = 1000
+
     // let conviction -> should add assert on newly calculated conviction
-    const receipt = await app.stakeToProposal(1, 1000, { from: appManager })
+
+    const receipt = await app.stakeToProposal(1, stakesPerAppManager, {
+      from: appManager,
+    })
     assert.equal(
       getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
       stakedTokens
@@ -72,19 +82,72 @@ contract('ConvictionVoting', ([appManager, user]) => {
   })
 
   it('should stake an amount of tokens on proposal - by user', async () => {
+    // assume that 1 block ~ 15 seconds
+    // after 10 blocks (+30 totally)
+    await timeAdvancer.advanceTimeAndBlock(15 * 10)
     // user should have some tokens
-    await miniMeMock.transfer(user, 1000, { from: appManager })
-    const stakedTokens = 1000
-    const stakesPerAppManager = 1000
+    await miniMeMock.transfer(user, 7000, { from: appManager })
+    const stakesPerUser = 1000
 
-    const receipt = await app.stakeToProposal(1, 1000, { from: user })
+    const currentProposal = await app.proposals.call(1)
+    const currentlyStaked = currentProposal[2]
+
+    const receipt = await app.stakeToProposal(1, stakesPerUser, { from: user })
     assert.equal(
       getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
-      stakedTokens
+      currentlyStaked.toNumber() + stakesPerUser
     )
     assert.equal(
       getEventArgument(receipt, 'StakeChanged', 'tokensStaked'),
-      stakesPerAppManager
+      stakesPerUser
     )
+  })
+
+  it('should withdraw from proposal - by appManager', async () => {
+    // assume that 1 block ~ 15 seconds
+    // after 20 blocks (+50 totally)
+    await timeAdvancer.advanceTimeAndBlock(15 * 20)
+
+    const currentlProposal = await app.proposals.call(1)
+    const currentlyStaked = currentlProposal[2]
+    const withdrawAmount = 1000
+
+    const receipt = await app.withdrawFromProposal(1, withdrawAmount, {
+      from: appManager,
+    })
+    assert.equal(
+      getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
+      currentlyStaked - withdrawAmount
+    )
+    assert.equal(getEventArgument(receipt, 'StakeChanged', 'tokensStaked'), 0)
+  })
+
+  it('should stake more tokens - by user', async () => {
+    // assume that 1 block ~ 15 seconds
+    // after 10 blocks (+10 totally)
+    await timeAdvancer.advanceTimeAndBlock(15 * 10)
+
+    const currentProposal = await app.proposals.call(1)
+    const currentlyStaked = currentProposal[2]
+    const stakesPerUser = 6000
+
+    const receipt = await app.stakeToProposal(1, stakesPerUser, { from: user })
+
+    assert.equal(
+      getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
+      currentlyStaked.toNumber() + stakesPerUser
+    )
+    assert.equal(
+      getEventArgument(receipt, 'StakeChanged', 'tokensStaked'),
+      currentlyStaked.toNumber() + stakesPerUser
+    )
+  })
+
+  it('should enact proposal', async () => {
+    // assume that 1 block ~ 15 seconds
+    // after 40 blocks (+100 totally)
+    // await timeAdvancer.advanceTimeAndBlock(15 * 40)
+    // await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
+    // await app.executeProposal(1, false, { from: user })
   })
 })
