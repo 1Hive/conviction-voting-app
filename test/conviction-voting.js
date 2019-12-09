@@ -7,22 +7,39 @@ const timeAdvancer = require('./helpers/timeAdvancer')
 
 const ConvictionVoting = artifacts.require('ConvictionVotingApp.sol')
 const ERC20Mock = artifacts.require('ERC20Token.sol')
+const VaultMock = artifacts.require('VaultMock.sol')
 
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
 
-contract('ConvictionVoting', ([appManager, user]) => {
+contract('ConvictionVoting', ([appManager, user, anyAcc]) => {
   let app
-  let miniMeMock
-  // let requestToken - mock
+  let stakeToken
+  // DAI mock
+  let requestToken
+  let vault
 
   before('deploy dao and app', async () => {
     const { dao, acl } = await deployDAO(appManager)
 
     // Deploy the app's base contract.
     const appBase = await ConvictionVoting.new()
-    miniMeMock = await ERC20Mock.new('mock', 'MMM', '18', {
+
+    // Deploying tokens, used in conviction app
+
+    // ERC20 accepts `decimals`. In order to create token with 45000 total supply
+    // we provide `1` as `decimals` and `initialSupply` as 4500. So we get 4500*(10**1) total supply.
+    stakeToken = await ERC20Mock.new('stakeToken', 'TKN', 1, 4500, {
+      from: anyAcc,
+    })
+    await stakeToken.transfer(appManager, 30000, { from: anyAcc })
+    await stakeToken.transfer(user, 15000, { from: anyAcc })
+
+    vault = await VaultMock.new({ from: appManager })
+
+    requestToken = await ERC20Mock.new('DAI', 'DAI', 18, 100000, {
       from: appManager,
     })
+    await requestToken.transfer(vault.address, 15000, { from: appManager })
 
     // Instantiate a proxy for the app, using the base contract as its logic implementation.
     const instanceReceipt = await dao.newAppInstance(
@@ -45,10 +62,18 @@ contract('ConvictionVoting', ([appManager, user]) => {
       { from: appManager }
     )
 
-    await app.initialize(miniMeMock.address, 0x0, 0x0, 9, 2, 2)
+    await app.initialize(
+      stakeToken.address,
+      vault.address,
+      requestToken.address,
+      9,
+      2,
+      2
+    )
   })
 
   it('should create proposals', async () => {
+    // transaction is at block 21
     const title = 'Conviction Voting'
     const receipt = await app.addProposal(title, '0x', 1000, user, {
       from: appManager,
@@ -57,9 +82,8 @@ contract('ConvictionVoting', ([appManager, user]) => {
   })
 
   it('should stake an amount of tokens on proposal - by appManager', async () => {
-    // assume that 1 block ~ 15 seconds
-    // after 20 blocks
-    await timeAdvancer.advanceTimeAndBlocksBy(15 * 20, 20)
+    // should be at block 30
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 20, 8)
 
     // When MiniMe mock token was created by appManager, he got all the supply, so
     // `staleToProposal` call passes functions `require`ments.
@@ -83,10 +107,8 @@ contract('ConvictionVoting', ([appManager, user]) => {
 
   it('should stake an amount of tokens on proposal - by user', async () => {
     // assume that 1 block ~ 15 seconds
-    // after 10 blocks (+30 totally)
-    await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
-    // user should have some tokens
-    await miniMeMock.transfer(user, 7000, { from: appManager })
+    // at block 40
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 9)
     const stakesPerUser = 1000
 
     const currentProposal = await app.proposals.call(1)
@@ -105,8 +127,8 @@ contract('ConvictionVoting', ([appManager, user]) => {
 
   it('should withdraw from proposal - by appManager', async () => {
     // assume that 1 block ~ 15 seconds
-    // after 20 blocks (+50 totally)
-    await timeAdvancer.advanceTimeAndBlocksBy(15 * 20, 20)
+    // at block 60
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 20, 19)
 
     const currentlProposal = await app.proposals.call(1)
     const currentlyStaked = currentlProposal[2]
@@ -124,8 +146,8 @@ contract('ConvictionVoting', ([appManager, user]) => {
 
   it('should stake more tokens - by user', async () => {
     // assume that 1 block ~ 15 seconds
-    // after 10 blocks (+10 totally)
-    await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
+    // at block 70
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 9)
 
     const currentProposal = await app.proposals.call(1)
     const currentlyStaked = currentProposal[2]
@@ -145,8 +167,8 @@ contract('ConvictionVoting', ([appManager, user]) => {
 
   it('should enact proposal', async () => {
     // assume that 1 block ~ 15 seconds
-    // after 40 blocks (+100 totally)
-    await timeAdvancer.advanceTimeAndBlocksBy(15 * 40, 40)
-    // await app.executeProposal(1, false, { from: user })
+    // at block 110
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 40, 39)
+    await app.executeProposal(1, false, { from: user })
   })
 })
