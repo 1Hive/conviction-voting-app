@@ -11,6 +11,22 @@ const VaultMock = artifacts.require('VaultMock.sol')
 
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
 
+const expectThrow = async promise => {
+  try {
+    await promise
+  } catch (error) {
+    const invalidOpcode = error.message.search('invalid opcode') >= 0
+    const outOfGas = error.message.search('out of gas') >= 0
+    const revert = error.message.search('revert') >= 0
+    assert(
+      invalidOpcode || outOfGas || revert,
+      "Expected throw, got '" + error + "' instead"
+    )
+    return
+  }
+  assert.fail('Expected throw not received')
+}
+
 contract('ConvictionVoting-passing proposal', ([appManager, user, anyAcc]) => {
   let app
   let stakeToken
@@ -91,7 +107,9 @@ contract('ConvictionVoting-passing proposal', ([appManager, user, anyAcc]) => {
     const stakedTokens = 1000 // should be in total
     const stakesPerAppManager = 1000
 
-    // let conviction -> should add assert on newly calculated conviction
+    // wrong amount
+    await expectThrow(app.stakeToProposal(1, 0, { from: appManager }))
+    await expectThrow(app.stakeToProposal(1, 1000000, { from: appManager }))
 
     const receipt = await app.stakeToProposal(1, stakesPerAppManager, {
       from: appManager,
@@ -115,6 +133,10 @@ contract('ConvictionVoting-passing proposal', ([appManager, user, anyAcc]) => {
     const currentProposal = await app.proposals.call(1)
     const currentlyStaked = currentProposal[2]
 
+    // wrong amount
+    await expectThrow(app.stakeToProposal(1, 0, { from: user }))
+    await expectThrow(app.stakeToProposal(1, 1000000, { from: user }))
+
     const receipt = await app.stakeToProposal(1, stakesPerUser, { from: user })
     assert.equal(
       getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
@@ -134,6 +156,10 @@ contract('ConvictionVoting-passing proposal', ([appManager, user, anyAcc]) => {
     const currentlProposal = await app.proposals.call(1)
     const currentlyStaked = currentlProposal[2]
     const withdrawAmount = 1000
+
+    // wrong amount
+    await expectThrow(app.stakeToProposal(1, 0, { from: appManager }))
+    await expectThrow(app.stakeToProposal(1, 1000000, { from: appManager }))
 
     const receipt = await app.withdrawFromProposal(1, withdrawAmount, {
       from: appManager,
@@ -172,25 +198,14 @@ contract('ConvictionVoting-passing proposal', ([appManager, user, anyAcc]) => {
     await timeAdvancer.advanceTimeAndBlocksBy(15 * 39, 39)
     await app.executeProposal(1, false, { from: user })
   })
+
+  it('should not enact same proposal second time', async () => {
+    await timeAdvancer.advanceTimeAndBlocksBy(15 * 39, 39)
+    await expectThrow(app.executeProposal(1, false, { from: user }))
+  })
 })
 
 contract('ConvictionVoting-failing proposal', ([appManager, user, anyAcc]) => {
-  const expectThrow = async promise => {
-    try {
-      await promise
-    } catch (error) {
-      const invalidOpcode = error.message.search('invalid opcode') >= 0
-      const outOfGas = error.message.search('out of gas') >= 0
-      const revert = error.message.search('revert') >= 0
-      assert(
-        invalidOpcode || outOfGas || revert,
-        "Expected throw, got '" + error + "' instead"
-      )
-      return
-    }
-    assert.fail('Expected throw not received')
-  }
-
   let app
   let stakeToken
   // DAI mock
@@ -270,7 +285,9 @@ contract('ConvictionVoting-failing proposal', ([appManager, user, anyAcc]) => {
     const stakedTokens = 1000 // should be in total
     const stakesPerAppManager = 1000
 
-    // let conviction -> should add assert on newly calculated conviction
+    // wrong amount
+    await expectThrow(app.stakeToProposal(1, 0, { from: appManager }))
+    await expectThrow(app.stakeToProposal(1, 100000, { from: appManager }))
 
     const receipt = await app.stakeToProposal(1, stakesPerAppManager, {
       from: appManager,
@@ -294,6 +311,10 @@ contract('ConvictionVoting-failing proposal', ([appManager, user, anyAcc]) => {
     const currentProposal = await app.proposals.call(1)
     const currentlyStaked = currentProposal[2]
 
+    // wrong amount
+    await expectThrow(app.stakeToProposal(1, 0, { from: user }))
+    await expectThrow(app.stakeToProposal(1, 100000, { from: user }))
+
     const receipt = await app.stakeToProposal(1, stakesPerUser, { from: user })
     assert.equal(
       getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
@@ -313,6 +334,10 @@ contract('ConvictionVoting-failing proposal', ([appManager, user, anyAcc]) => {
     const currentlProposal = await app.proposals.call(1)
     const currentlyStaked = currentlProposal[2]
     const withdrawAmount = 1000
+
+    // wrong amount
+    await expectThrow(app.stakeToProposal(1, 0, { from: appManager }))
+    await expectThrow(app.stakeToProposal(1, 1000000, { from: appManager }))
 
     const receipt = await app.withdrawFromProposal(1, withdrawAmount, {
       from: appManager,
