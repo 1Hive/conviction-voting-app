@@ -9,6 +9,18 @@
   "imageSize": 75,
   "commit": true,
   "commitConvention": "eslint",
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "lkngtn",
+      "name": "Luke Duncan",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/4986634?v=4",
+      "profile": "https://github.com/lkngtn",
+      "contributions": [
+        "fundingFinding",
+        "ideas",
+        "projectManagement"
+      ]
+    }
+  ],
   "contributorsPerLine": 7
 }
