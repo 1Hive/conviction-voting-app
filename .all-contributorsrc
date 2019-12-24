@@ -126,6 +126,15 @@
       "contributions": [
         "financial"
       ]
+    },
+    {
+      "login": "P2PModels",
+      "name": "P2P Models",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/35083190?v=4",
+      "profile": "https://p2pmodels.eu",
+      "contributions": [
+        "infra"
+      ]
     }
   ],
   "contributorsPerLine": 7

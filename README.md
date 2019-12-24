@@ -1,6 +1,6 @@
 # Conviction Voting
 
-1Hive & P2P Models' Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
+1Hive's Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
 
 #### 🐲 Project Stage: development
 
@@ -117,6 +117,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/commons-stack"><img src="https://avatars1.githubusercontent.com/u/48513475?v=4" width="75px;" alt=""/><br /><sub><b>The Commons Stack</b></sub></a><br /><a href="#blog-commons-stack" title="Blogposts">📝</a> <a href="#ideas-commons-stack" title="Ideas, Planning, & Feedback">🤔</a> <a href="#tool-commons-stack" title="Tools">🔧</a></td>
     <td align="center"><a href="http://1hive.org"><img src="https://avatars2.githubusercontent.com/u/29875830?v=4" width="75px;" alt=""/><br /><sub><b>1Hive</b></sub></a><br /><a href="#financial-1Hive" title="Financial">💵</a> <a href="#infra-1Hive" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
     <td align="center"><a href="https://aragon.org"><img src="https://avatars1.githubusercontent.com/u/24612534?v=4" width="75px;" alt=""/><br /><sub><b>Aragon</b></sub></a><br /><a href="#financial-aragon" title="Financial">💵</a></td>
+    <td align="center"><a href="https://p2pmodels.eu"><img src="https://avatars1.githubusercontent.com/u/35083190?v=4" width="75px;" alt=""/><br /><sub><b>P2P Models</b></sub></a><br /><a href="#infra-P2PModels" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
   </tr>
 </table>
 
