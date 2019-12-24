@@ -69,6 +69,15 @@
         "code",
         "security"
       ]
+    },
+    {
+      "login": "javieralaves",
+      "name": "Javier Alaves",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/28843778?v=4",
+      "profile": "https://github.com/javieralaves",
+      "contributions": [
+        "design"
+      ]
     }
   ],
   "contributorsPerLine": 7

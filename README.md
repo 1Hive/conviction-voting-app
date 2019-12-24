@@ -109,6 +109,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="http://spacedecentral.net"><img src="https://avatars3.githubusercontent.com/u/2584493?v=4" width="75px;" alt=""/><br /><sub><b>Yalda Mousavinia</b></sub></a><br /><a href="#ideas-stellarmagnet" title="Ideas, Planning, & Feedback">🤔</a></td>
     <td align="center"><a href="https://twitter.com/deamlabs"><img src="https://avatars2.githubusercontent.com/u/9392750?v=4" width="75px;" alt=""/><br /><sub><b>Deam</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=deamme" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/fabriziovigevani"><img src="https://avatars3.githubusercontent.com/u/22663232?v=4" width="75px;" alt=""/><br /><sub><b>Fabrizio Vigevani</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=fabriziovigevani" title="Code">💻</a> <a href="#security-fabriziovigevani" title="Security">🛡️</a></td>
+    <td align="center"><a href="https://github.com/javieralaves"><img src="https://avatars2.githubusercontent.com/u/28843778?v=4" width="75px;" alt=""/><br /><sub><b>Javier Alaves</b></sub></a><br /><a href="#design-javieralaves" title="Design">🎨</a></td>
   </tr>
 </table>
 
