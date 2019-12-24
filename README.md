@@ -104,6 +104,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="https://github.com/lkngtn"><img src="https://avatars0.githubusercontent.com/u/4986634?v=4" width="75px;" alt=""/><br /><sub><b>Luke Duncan</b></sub></a><br /><a href="#fundingFinding-lkngtn" title="Funding Finding">🔍</a> <a href="#ideas-lkngtn" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-lkngtn" title="Project Management">📆</a></td>
+    <td align="center"><a href="https://github.com/dizzypaty"><img src="https://avatars0.githubusercontent.com/u/7205369?v=4" width="75px;" alt=""/><br /><sub><b>Patricia Davila</b></sub></a><br /><a href="#design-dizzypaty" title="Design">🎨</a> <a href="#ideas-dizzypaty" title="Ideas, Planning, & Feedback">🤔</a></td>
   </tr>
 </table>
 
