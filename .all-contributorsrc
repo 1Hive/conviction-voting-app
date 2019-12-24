@@ -107,6 +107,16 @@
         "ideas",
         "tool"
       ]
+    },
+    {
+      "login": "1Hive",
+      "name": "1Hive",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/29875830?v=4",
+      "profile": "http://1hive.org",
+      "contributions": [
+        "financial",
+        "infra"
+      ]
     }
   ],
   "contributorsPerLine": 7
