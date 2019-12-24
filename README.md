@@ -114,6 +114,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tr>
     <td align="center"><a href="https://github.com/vivianedias"><img src="https://avatars3.githubusercontent.com/u/9057801?v=4" width="75px;" alt=""/><br /><sub><b>Viviane Dias</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=vivianedias" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/SabaunT"><img src="https://avatars0.githubusercontent.com/u/37265857?v=4" width="75px;" alt=""/><br /><sub><b>Sabaun Taraki</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=SabaunT" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://github.com/commons-stack"><img src="https://avatars1.githubusercontent.com/u/48513475?v=4" width="75px;" alt=""/><br /><sub><b>The Commons Stack</b></sub></a><br /><a href="#blog-commons-stack" title="Blogposts">📝</a> <a href="#ideas-commons-stack" title="Ideas, Planning, & Feedback">🤔</a> <a href="#tool-commons-stack" title="Tools">🔧</a></td>
   </tr>
 </table>
 
