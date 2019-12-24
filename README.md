@@ -107,6 +107,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/dizzypaty"><img src="https://avatars0.githubusercontent.com/u/7205369?v=4" width="75px;" alt=""/><br /><sub><b>Patricia Davila</b></sub></a><br /><a href="#design-dizzypaty" title="Design">🎨</a> <a href="#ideas-dizzypaty" title="Ideas, Planning, & Feedback">🤔</a></td>
     <td align="center"><a href="https://github.com/sembrestels"><img src="https://avatars1.githubusercontent.com/u/931684?v=4" width="75px;" alt=""/><br /><sub><b>David Llop</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=sembrestels" title="Code">💻</a> <a href="#ideas-sembrestels" title="Ideas, Planning, & Feedback">🤔</a> <a href="#security-sembrestels" title="Security">🛡️</a></td>
     <td align="center"><a href="http://spacedecentral.net"><img src="https://avatars3.githubusercontent.com/u/2584493?v=4" width="75px;" alt=""/><br /><sub><b>Yalda Mousavinia</b></sub></a><br /><a href="#ideas-stellarmagnet" title="Ideas, Planning, & Feedback">🤔</a></td>
+    <td align="center"><a href="https://twitter.com/deamlabs"><img src="https://avatars2.githubusercontent.com/u/9392750?v=4" width="75px;" alt=""/><br /><sub><b>Deam</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=deamme" title="Code">💻</a></td>
   </tr>
 </table>
 
