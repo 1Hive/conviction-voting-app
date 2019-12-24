@@ -113,6 +113,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   </tr>
   <tr>
     <td align="center"><a href="https://github.com/vivianedias"><img src="https://avatars3.githubusercontent.com/u/9057801?v=4" width="75px;" alt=""/><br /><sub><b>Viviane Dias</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=vivianedias" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/SabaunT"><img src="https://avatars0.githubusercontent.com/u/37265857?v=4" width="75px;" alt=""/><br /><sub><b>Sabaun Taraki</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=SabaunT" title="Tests">⚠️</a></td>
   </tr>
 </table>
 
