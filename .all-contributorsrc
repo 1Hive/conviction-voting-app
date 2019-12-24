@@ -117,6 +117,15 @@
         "financial",
         "infra"
       ]
+    },
+    {
+      "login": "aragon",
+      "name": "Aragon",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/24612534?v=4",
+      "profile": "https://aragon.org",
+      "contributions": [
+        "financial"
+      ]
     }
   ],
   "contributorsPerLine": 7
