@@ -21,7 +21,7 @@ module.exports = async (
   truffleExecCallback,
   { artifacts = globalArtifacts, web3 = globalWeb3 } = {}
 ) => {
-  const ERC20Token = artifacts.require('ERC20Token')
+  const ERC20Token = artifacts.require('ERC20Mock')
   const Kernel = artifacts.require('Kernel')
   const Vault = artifacts.require('Vault')
   const ConvictionVoting = artifacts.require('ConvictionVotingApp')

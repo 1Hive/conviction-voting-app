@@ -6,7 +6,7 @@ const deployDAO = require('./helpers/deployDAO')
 const timeAdvancer = require('./helpers/timeAdvancer')
 
 const ConvictionVoting = artifacts.require('ConvictionVotingApp.sol')
-const ERC20Mock = artifacts.require('ERC20Token.sol')
+const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const VaultMock = artifacts.require('VaultMock.sol')
 
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'

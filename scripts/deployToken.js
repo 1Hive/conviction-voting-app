@@ -1,8 +1,8 @@
 /* global artifacts */
-const ERC20Token = artifacts.require('ERC20Token')
+const ERC20Mock = artifacts.require('ERC20Mock')
 
 const deployToken = (name, symbol, decimals) => {
-  return ERC20Token.new(name, symbol, decimals)
+  return ERC20Mock.new(name, symbol, decimals, 100000)
 }
 
 module.exports = async callback => {

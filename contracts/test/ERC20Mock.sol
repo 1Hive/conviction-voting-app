@@ -4,7 +4,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 
 
-contract ERC20Token is ERC20, ERC20Detailed {
+contract ERC20Mock is ERC20, ERC20Detailed {
 
     constructor(string name, string symbol, uint8 decimals, uint256 initialSupply)
         ERC20Detailed(name, symbol, decimals)
