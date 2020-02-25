@@ -1,0 +1,21 @@
+{
+  "name": "Conviction Voting",
+  "author": "1Hive",
+  "description": "Collectively allocate funds from a shared treasury",
+  "details_url": "/public/meta/details.md",
+  "source_url": "https://github.com/1Hive/conviction-voting-app",
+  "icons": [
+    {
+      "src": "/public/meta/icon.svg",
+      "sizes": "72x72"
+    }
+  ],
+  "screenshots": [
+    { "src": "/public/meta/screenshot-1.png" },
+    { "src": "/public/meta/screenshot-2.png" },
+    { "src": "/public/meta/screenshot-3.png" },
+    { "src": "/public/meta/screenshot-4.png" }
+  ],
+  "start_url": "/index.html",
+  "script": "/script.js"
+}

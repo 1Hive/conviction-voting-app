@@ -1,0 +1,35 @@
+{
+  "name": "conviction-voting-frontend",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "dependencies": {
+    "@aragon/api": "^2.0.0-beta.7",
+    "@aragon/api-react": "^2.0.0-beta.6",
+    "@aragon/ui": "^1.0.0-alpha.26",
+    "core-js": "^3.1.4",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "regenerator-runtime": "^0.13.2",
+    "rxjs": "^6.5.2",
+    "styled-components": "^4.3.2",
+    "web3-utils": "^1.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.4",
+    "@babel/plugin-proposal-class-properties": "^7.5.0",
+    "@babel/preset-env": "^7.5.4",
+    "copyfiles": "^2.1.1",
+    "parcel-bundler": "^1.12.3"
+  },
+  "scripts": {
+    "build": "npm run sync-assets && npm run build:app && npm run build:script",
+    "build:app": "parcel build index.html -d ../dist/ --public-url \".\" --no-cache",
+    "build:script": "parcel build src/script.js --out-dir ../dist/ --no-cache",
+    "watch:script": "parcel watch src/script.js --out-dir ../dist/ --no-hmr",
+    "start": "npm run sync-assets && npm run build:script -- --no-minify && npm run serve",
+    "watch": "npm run watch:script",
+    "serve": "parcel serve index.html --out-dir ../dist/ --no-cache",
+    "sync-assets": "copy-aragon-ui-assets -n aragon-ui ../dist && rsync -rtu ./public/ ../dist",
+    "now-build": "npm run build"
+  }
+}

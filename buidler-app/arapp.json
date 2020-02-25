@@ -1,0 +1,16 @@
+{
+  "roles": [
+    {
+      "name": "Create a proposal",
+      "id": "CREATE_PROPOSALS_ROLE",
+      "params": []
+    }
+  ],
+  "environments": {
+    "default": {
+      "network": "rpc",
+      "appName": "voting.aragonpm.eth"
+    }
+  },
+  "path": "contracts/ConvictionVotingApp.sol"
+}
