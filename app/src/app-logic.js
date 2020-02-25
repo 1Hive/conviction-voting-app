@@ -29,7 +29,9 @@ export function useSelectedProposal(proposals) {
       return null
     }
 
-    return proposals.find(proposal => proposal.id === id) || null
+    return (
+      proposals.find(proposal => Number(proposal.id) === Number(id)) || null
+    )
   }, [path, isSyncing, proposals])
 
   const selectProposal = useCallback(
