@@ -1,24 +1,28 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useAragonApi, useGuiStyle } from '@aragon/api-react'
 import {
   Main,
   Button,
   SidePanel,
   Box,
-  Tag,
+  // Tag,
   SyncIndicator,
   IconPlus,
   Header,
   useLayout,
 } from '@aragon/ui'
 import styled from 'styled-components'
+
+import NoProposals from './screens/NoProposals'
+import ProposalDetail from './screens/ProposalDetail'
+import Proposals from './screens/Proposals'
 // import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
 import Balance from './components/Balance'
+
 import useAppLogic from './app-logic'
 import { toDecimals } from './lib/math-utils'
 import { toHex } from 'web3-utils'
-import Proposals from './screens/Proposals'
 
 const App = React.memo(function App() {
   const {
@@ -27,12 +31,20 @@ const App = React.memo(function App() {
     selectedProposal,
     proposals,
   } = useAppLogic()
+  const handleBack = useCallback(() => selectProposal(-1), [selectProposal])
 
   const { layoutName } = useLayout()
   const compactMode = layoutName === 'small'
 
-  const { api, appState, connectedAccount } = useAragonApi()
-  const { convictionStakes, requestToken } = appState
+  const {
+    api,
+    appState,
+    // connectedAccount
+  } = useAragonApi()
+  const {
+    // convictionStakes,
+    requestToken,
+  } = appState
   const filteredProposals = proposals.filter(({ executed }) => !executed)
 
   const [proposalPanel, setProposalPanel] = useState(false)
@@ -43,60 +55,83 @@ const App = React.memo(function App() {
     setProposalPanel(false)
   }
 
-  const myStakes =
-    (convictionStakes &&
-      convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
-    []
+  // const myStakes =
+  //   (convictionStakes &&
+  //     convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
+  //   []
 
-  const myLastStake = [...myStakes].pop() || {}
+  // const myLastStake = [...myStakes].pop() || {}
 
   return (
     <React.Fragment>
-      <SyncIndicator visible={isSyncing} />
-      <Header
-        primary="Conviction Voting"
-        secondary={
-          !selectedProposal && (
-            <Button
-              mode="strong"
-              onClick={() => setProposalPanel(true)}
-              label="New proposal"
-              icon={<IconPlus />}
-              display={compactMode ? 'icon' : 'label'}
-            />
-          )
-        }
-      />
-      <Wrapper>
-        <div css="width: 25%; margin-right: 1rem;">
-          <Box heading="Vault balance">
-            <Balance {...requestToken} />
-          </Box>
-          {/* {myLastStake.tokensStaked > 0 && (
-            <Box heading="My staked proposal" key={myLastStake.proposal}>
-              <ProposalInfo
-                proposal={
-                  proposals.filter(({ id }) => id === myLastStake.proposal)[0]
-                }
-                stake={myLastStake}
-              />
-            </Box>
-          )} */}
-        </div>
-        <div css="width: 75%">
-          <Proposals
-            filteredProposals={filteredProposals}
-            selectProposal={selectProposal}
+      {proposals.length === 0 && (
+        <div
+          css={`
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          `}
+        >
+          <NoProposals
+            onNewProposal={() => setProposalPanel(true)}
+            isSyncing={isSyncing}
           />
         </div>
-      </Wrapper>
-      <SidePanel
-        title="New proposal"
-        opened={proposalPanel}
-        onClose={() => setProposalPanel(false)}
-      >
-        <AddProposalPanel onSubmit={onProposalSubmit} />
-      </SidePanel>
+      )}
+      {proposals.length > 0 && (
+        <React.Fragment>
+          <SyncIndicator visible={isSyncing} />
+          <Header
+            primary="Conviction Voting"
+            secondary={
+              !selectedProposal && (
+                <Button
+                  mode="strong"
+                  onClick={() => setProposalPanel(true)}
+                  label="New proposal"
+                  icon={<IconPlus />}
+                  display={compactMode ? 'icon' : 'label'}
+                />
+              )
+            }
+          />
+          <Wrapper>
+            <div css="width: 25%; margin-right: 1rem;">
+              <Box heading="Vault balance">
+                <Balance {...requestToken} />
+              </Box>
+              {/* {myLastStake.tokensStaked > 0 && (
+                <Box heading="My staked proposal" key={myLastStake.proposal}>
+                  <ProposalInfo
+                    proposal={
+                      proposals.filter(({ id }) => id === myLastStake.proposal)[0]
+                    }
+                    stake={myLastStake}
+                  />
+                </Box>
+              )} */}
+            </div>
+            {selectedProposal ? (
+              <ProposalDetail proposal={selectedProposal} onBack={handleBack} />
+            ) : (
+              <div css="width: 75%">
+                <Proposals
+                  filteredProposals={filteredProposals}
+                  selectProposal={selectProposal}
+                />
+              </div>
+            )}
+          </Wrapper>
+          <SidePanel
+            title="New proposal"
+            opened={proposalPanel}
+            onClose={() => setProposalPanel(false)}
+          >
+            <AddProposalPanel onSubmit={onProposalSubmit} />
+          </SidePanel>
+        </React.Fragment>
+      )}
     </React.Fragment>
   )
 })
