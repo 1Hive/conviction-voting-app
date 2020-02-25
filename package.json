@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "dependencies": {
+    "@aragon/api": "^2.0.0-beta.9",
+    "@aragon/api-react": "^2.0.0-beta.9",
     "@aragon/apps-shared-minime": "^1.0.1",
     "@aragon/apps-token-manager": "2.1.0",
     "@aragon/apps-vault": "^4.1.0",
-    "@aragon/os": "^4.2.1"
+    "@aragon/os": "^4.2.1",
+    "@aragon/ui": "^1.3.1"
   },
   "devDependencies": {
     "@aragon/cli": "^6.0.0",
