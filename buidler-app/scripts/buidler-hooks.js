@@ -3,14 +3,14 @@ let stakeToken, requestToken
 let vault
 
 module.exports = {
-  postDao: async function(dao, bre) {
+  postDao: async function({ dao }, bre) {
     await _getAccounts(bre.web3)
     await _deployTokens(bre.artifacts)
     await _deployVault()
     await _transferTokens()
   },
 
-  getInitParams: async function(bre) {
+  getInitParams: async function({}, bre) {
     return [
       stakeToken.address,
       vault.address,
