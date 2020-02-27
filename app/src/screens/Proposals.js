@@ -107,39 +107,54 @@ const Filters = ({
 }) => (
   <div
     css={`
-      height: ${6.25 * GU}px;
       display: grid;
-      grid-template-columns: auto auto auto 1fr;
-      grid-gap: ${1 * GU}px;
-      align-items: center;
+      grid-template-rows: auto;
+      grid-row-gap: ${2 * GU}px;
     `}
   >
-    <DropDown
-      header="Type"
-      placeholder="Type"
-      selected={proposalStatusFilter}
-      onChange={handleProposalStatusFilterChange}
-      items={[
-        <div>
-          All
-          <span
-            css={`
-              margin-left: ${1.5 * GU}px;
-              display: inline-flex;
-              align-items: center;
-              justify-content: center;
-              color: ${useTheme().info};
-              ${textStyle('label3')};
-            `}
-          >
-            <Tag limitDigits={4} label={proposals.length} size="small" />
-          </span>
-        </div>,
-        'Open',
-        'Closed',
-      ]}
-      width="128px"
-    />
+    <h2
+      css={`
+        ${textStyle('title4')};
+      `}
+    >
+      Proposals
+    </h2>
+    <div
+      css={`
+        display: grid;
+        grid-template-columns: auto auto auto 1fr;
+        align-items: center;
+        grid-column-gap: ${2 * GU}px;
+      `}
+    >
+      <Text>Filter by</Text>
+      <DropDown
+        header="Status"
+        placeholder="Status"
+        selected={proposalStatusFilter}
+        onChange={handleProposalStatusFilterChange}
+        items={[
+          <div>
+            All
+            <span
+              css={`
+                margin-left: ${1.5 * GU}px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: ${useTheme().info};
+                ${textStyle('label3')};
+              `}
+            >
+              <Tag limitDigits={4} label={proposals.length} size="small" />
+            </span>
+          </div>,
+          'Open',
+          'Closed',
+        ]}
+        width="128px"
+      />
+    </div>
   </div>
 )
 
