@@ -1,5 +1,3 @@
-export function noop() {}
-
 export const PROPOSAL_STATUS_OPEN = 1
 export const PROPOSAL_STATUS_ACCEPTED = 2
 
