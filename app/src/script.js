@@ -112,21 +112,27 @@ async function initialize([
     }
 
     // Vault event
-    if (addressesEqual(address, vaultAddress)) {
-      if (returnValues.token === requestTokenAddress) {
-        return {
-          ...nextState,
-          requestToken: await getRequestTokenSettings(
-            returnValues.token,
-            vault
-          ),
-        }
+    if (
+      addressesEqual(address, vaultAddress) &&
+      returnValues.token === requestTokenAddress
+    ) {
+      return {
+        ...nextState,
+        requestToken: await getRequestTokenSettings(returnValues.token, vault),
       }
     }
 
     switch (event) {
       case 'ProposalAdded': {
-        const { entity, id, title, amount, beneficiary, link } = returnValues
+        const {
+          entity, // where this comes from?
+          id,
+          title,
+          amount,
+          beneficiary,
+          link,
+          description,
+        } = returnValues
         const newProposal = {
           id: parseInt(id),
           name: title,
@@ -134,8 +140,9 @@ async function initialize([
           requestedAmount: parseInt(amount),
           creator: entity,
           beneficiary,
+          description,
         }
-        nextState.proposals.push(newProposal)
+        nextState = [...nextState, newProposal]
         break
       }
       case 'StakeChanged': {

@@ -1,56 +1,81 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button, Field, TextInput } from '@aragon/ui'
 import styled from 'styled-components'
 
 const AddProposalPanel = ({ onSubmit }) => {
-  const [title, setTitle] = useState('')
-  const [link, setLink] = useState('')
-  const [amount, setAmount] = useState(0)
-  const [beneficiary, setBeneficiary] = useState('')
-  const disabled = false // TODO Disable when empty or invalid fields
+  const [form, setForm] = useState({
+    title: '',
+    link: '',
+    amount: 0,
+    beneficiary: '',
+    description: '',
+  })
+  const [isDisabled, setStatus] = useState(true)
+
+  const isFormValid = form => form.filter(i => i === '' || i === 0).length === 0
+
+  useEffect(() => {
+    const values = Object.values(form)
+    if (isFormValid(values)) return setStatus(false)
+    return setStatus(true)
+  }, [form])
+
   const onFormSubmit = event => {
     event.preventDefault()
-    onSubmit({ title, link, amount, beneficiary })
+    onSubmit(form)
   }
+
   return (
     <Form onSubmit={onFormSubmit}>
       <Field label="Title">
         <TextInput
-          onChange={event => setTitle(event.target.value)}
-          value={title}
+          onChange={event => setForm({ ...form, title: event.target.value })}
+          value={form.title}
           wide
           required
+        />
+      </Field>
+      <Field label="Description">
+        <TextInput
+          onChange={event =>
+            setForm({ ...form, description: event.target.value })
+          }
+          value={form.description}
+          wide
+          multiline
         />
       </Field>
       <Field label="Requested Amount">
         <TextInput
           type="number"
-          value={amount}
-          onChange={event => setAmount(event.target.value)}
+          value={form.amount}
+          onChange={event => setForm({ ...form, amount: event.target.value })}
           min={0}
           step="any"
           required
           wide
         />
       </Field>
-      <Field label="Beneficiary">
+      <Field label="Recipient">
         <TextInput
-          onChange={event => setBeneficiary(event.target.value)}
-          value={beneficiary}
+          onChange={event =>
+            setForm({ ...form, beneficiary: event.target.value })
+          }
+          value={form.beneficiary}
           wide
           required
         />
       </Field>
       <Field label="Link">
         <TextInput
-          onChange={event => setLink(event.target.value)}
-          value={link}
+          onChange={event => setForm({ ...form, link: event.target.value })}
+          value={form.link}
           wide
         />
       </Field>
       <ButtonWrapper>
-        <Button wide mode="strong" type="submit" disabled={disabled}>
-          Submit
+        <Button wide mode="strong" type="submit" disabled={isDisabled}>
+          Create proposal
         </Button>
       </ButtonWrapper>
     </Form>
