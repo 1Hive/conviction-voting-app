@@ -107,7 +107,7 @@ const App = React.memo(function App() {
             />
           )}
           <SidePanel
-            title="Create proposal"
+            title="New proposal"
             opened={proposalPanel}
             onClose={() => setProposalPanel(false)}
           >

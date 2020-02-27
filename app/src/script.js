@@ -124,15 +124,7 @@ async function initialize([
 
     switch (event) {
       case 'ProposalAdded': {
-        const {
-          entity,
-          id,
-          title,
-          amount,
-          beneficiary,
-          link,
-          // description,
-        } = returnValues
+        const { entity, id, title, amount, beneficiary, link } = returnValues
         const newProposal = {
           id: parseInt(id),
           name: title,
@@ -140,7 +132,6 @@ async function initialize([
           requestedAmount: parseInt(amount),
           creator: entity,
           beneficiary,
-          // description,
         }
         nextState = {
           ...nextState,

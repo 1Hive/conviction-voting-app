@@ -8,7 +8,6 @@ const AddProposalPanel = ({ onSubmit }) => {
     link: '',
     amount: 0,
     beneficiary: '',
-    description: '',
   })
   const [isDisabled, setStatus] = useState(true)
 
@@ -33,16 +32,6 @@ const AddProposalPanel = ({ onSubmit }) => {
           value={form.title}
           wide
           required
-        />
-      </Field>
-      <Field label="Description">
-        <TextInput
-          onChange={event =>
-            setForm({ ...form, description: event.target.value })
-          }
-          value={form.description}
-          wide
-          multiline
         />
       </Field>
       <Field label="Requested Amount">
@@ -75,7 +64,7 @@ const AddProposalPanel = ({ onSubmit }) => {
       </Field>
       <ButtonWrapper>
         <Button wide mode="strong" type="submit" disabled={isDisabled}>
-          Create proposal
+          Submit
         </Button>
       </ButtonWrapper>
     </Form>
