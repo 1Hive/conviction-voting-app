@@ -29,12 +29,7 @@ const Layout = styled.div`
 `
 
 const App = React.memo(function App() {
-  const {
-    setProposalPanel,
-    proposalPanel,
-    onProposalSubmit,
-    myLastStake,
-  } = useAppLogic()
+  const { setProposalPanel, proposalPanel, onProposalSubmit } = useAppLogic()
 
   const { proposals = [], isSyncing, requestToken } = useAppState()
 
@@ -106,15 +101,15 @@ const App = React.memo(function App() {
               requestToken={requestToken}
             />
           )}
-          <SidePanel
-            title="New proposal"
-            opened={proposalPanel}
-            onClose={() => setProposalPanel(false)}
-          >
-            <AddProposalPanel onSubmit={onProposalSubmit} />
-          </SidePanel>
         </div>
       )}
+      <SidePanel
+        title="New proposal"
+        opened={proposalPanel}
+        onClose={() => setProposalPanel(false)}
+      >
+        <AddProposalPanel onSubmit={onProposalSubmit} />
+      </SidePanel>
     </Layout>
   )
 })
