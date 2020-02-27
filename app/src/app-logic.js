@@ -32,13 +32,11 @@ export default function useAppLogic() {
     link,
     amount,
     beneficiary,
-    description,
+    // description,
   }) => {
     const decimals = parseInt(requestToken.decimals)
     const decimalAmount = toDecimals(amount.trim(), decimals).toString()
-    api
-      .addProposal(title, toHex(link), decimalAmount, beneficiary, description)
-      .toPromise()
+    api.addProposal(title, toHex(link), decimalAmount, beneficiary).toPromise()
     setProposalPanel(false)
   }
 
