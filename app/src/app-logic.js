@@ -27,13 +27,7 @@ export default function useAppLogic() {
 
   const [proposalPanel, setProposalPanel] = useState(false)
 
-  const onProposalSubmit = ({
-    title,
-    link,
-    amount,
-    beneficiary,
-    // description,
-  }) => {
+  const onProposalSubmit = ({ title, link, amount, beneficiary }) => {
     const decimals = parseInt(requestToken.decimals)
     const decimalAmount = toDecimals(amount.trim(), decimals).toString()
     api.addProposal(title, toHex(link), decimalAmount, beneficiary).toPromise()
