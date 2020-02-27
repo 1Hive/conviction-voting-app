@@ -11,8 +11,12 @@ import {
   Link,
 } from '@aragon/ui'
 import styled from 'styled-components'
-import { useConnectedAccount } from '@aragon/api-react'
+import { useAragonApi } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
+import {
+  ConvictionCountdown,
+  ConvictionButton,
+} from '../components/ConvictionVisuals'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 
 const DEFAULT_DESCRIPTION =
@@ -43,7 +47,7 @@ const Progress = styled.div`
 function ProposalDetail({ proposal, onBack }) {
   const theme = useTheme()
   const { layoutName } = useLayout()
-  const connectedAccount = useConnectedAccount()
+  const { api, connectedAccount } = useAragonApi()
 
   const { id, name, description, creator, beneficiary, link } = proposal
 
@@ -92,18 +96,33 @@ function ProposalDetail({ proposal, onBack }) {
                     {description || DEFAULT_DESCRIPTION}
                   </Text>
                 </div>
-                {link && (
-                  <div>
-                    <H2 color={theme.surfaceContentSecondary}>Links</H2>
+                <div>
+                  <H2 color={theme.surfaceContentSecondary}>Links</H2>
+                  {link ? (
                     <Link href={link} external>
                       Read more
                     </Link>
-                  </div>
-                )}
+                  ) : (
+                    <Text
+                      css={`
+                        ${textStyle('body2')};
+                      `}
+                    >
+                      No link provided.
+                    </Text>
+                  )}
+                </div>
+                <ConvictionButton
+                  proposal={proposal}
+                  onStake={() => api.stakeAllToProposal(id).toPromise()}
+                  onWithdraw={() => api.withdrawAllFromProposal(id).toPromise()}
+                  onExecute={() => api.executeProposal(id, true).toPromise()}
+                />
               </InfoWrapper>
               <InfoWrapper>
                 <div>
                   <H2 color={theme.surfaceContentSecondary}>Status</H2>
+                  <ConvictionCountdown proposal={proposal} />
                 </div>
                 <div>
                   <H2 color={theme.surfaceContentSecondary}>Created By</H2>
@@ -144,6 +163,7 @@ function ProposalDetail({ proposal, onBack }) {
           </div>
           <Progress>
             <H2 color={theme.surfaceContentSecondary}>Conviction Progress</H2>
+            {/* <ConvictionChart proposal={proposal} /> */}
           </Progress>
         </section>
       </Box>
