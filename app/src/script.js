@@ -125,13 +125,13 @@ async function initialize([
     switch (event) {
       case 'ProposalAdded': {
         const {
-          entity, // where this comes from?
+          entity,
           id,
           title,
           amount,
           beneficiary,
           link,
-          description,
+          // description,
         } = returnValues
         const newProposal = {
           id: parseInt(id),
@@ -140,9 +140,12 @@ async function initialize([
           requestedAmount: parseInt(amount),
           creator: entity,
           beneficiary,
-          description,
+          // description,
         }
-        nextState = [...nextState, newProposal]
+        nextState = {
+          ...nextState,
+          proposals: [...nextState.proposals, newProposal],
+        }
         break
       }
       case 'StakeChanged': {
