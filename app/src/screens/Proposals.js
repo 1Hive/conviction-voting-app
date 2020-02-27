@@ -60,6 +60,16 @@ const Proposals = React.memo(function Proposals({
             { label: 'Conviction progress', priority: 2, align: 'start' },
             { label: 'Trend', priority: 5, align: 'start' },
           ]}
+          statusEmpty={
+            <h2
+              css={`
+                ${textStyle('title2')};
+                font-weight: 600;
+              `}
+            >
+              No proposals yet!
+            </h2>
+          }
           entries={filteredProposals}
           renderEntry={({ id, name, requestedAmount, ...proposal }) => [
             <IdAndTitle id={id} name={name} selectProposal={selectProposal} />,
