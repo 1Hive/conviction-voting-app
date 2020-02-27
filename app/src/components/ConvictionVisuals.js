@@ -140,7 +140,7 @@ export function ConvictionButton({ proposal, onStake, onWithdraw, onExecute }) {
     </Button>
   ) : (
     <Button mode="strong" wide onClick={onStake}>
-      Vote for this proposal
+      Support this proposal
     </Button>
   )
 }
