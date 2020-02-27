@@ -17,6 +17,7 @@ import Balance from '../components/Balance'
 import {
   ConvictionCountdown,
   ConvictionButton,
+  ConvictionBar,
 } from '../components/ConvictionVisuals'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 
@@ -45,7 +46,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   const { layoutName } = useLayout()
   const { api, connectedAccount } = useAragonApi()
 
-  const { id, name, creator, beneficiary, link } = proposal
+  const { id, name, creator, beneficiary, link, requestedAmount } = proposal
 
   return (
     <Wrapper>
@@ -79,6 +80,10 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                 grid-gap: ${layoutName !== 'small' ? 5 * GU : 2.5 * GU}px;
               `}
             >
+              <Amount
+                requestedAmount={requestedAmount}
+                requestToken={requestToken}
+              />
               <div>
                 <H2 color={theme.surfaceContentSecondary}>Links</H2>
                 {link ? (
@@ -129,7 +134,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
             </div>
             <Progress>
               <H2 color={theme.surfaceContentSecondary}>Conviction Progress</H2>
-              {/* <ConvictionChart proposal={proposal} /> */}
+              <ConvictionBar proposal={proposal} />
             </Progress>
             <ConvictionButton
               proposal={proposal}
@@ -151,5 +156,20 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     </Wrapper>
   )
 }
+
+const Amount = ({
+  requestedAmount = 0,
+  requestToken: { symbol, decimals, verified },
+}) => (
+  <div>
+    <H2 color={useTheme().surfaceContentSecondary}>Amount</H2>
+    <Balance
+      amount={requestedAmount}
+      decimals={decimals}
+      symbol={symbol}
+      verified={verified}
+    />
+  </div>
+)
 
 export default ProposalDetail
