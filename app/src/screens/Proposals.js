@@ -89,7 +89,7 @@ const Proposals = React.memo(function Proposals({
 const ProposalInfo = ({ proposal, stake, tokenSymbol }) => (
   <div>
     <IdAndTitle {...proposal} />
-    <Tag>{`✓ Supported with ${stake.tokensStaked} ${tokenSymbol}`}</Tag>
+    <Tag>{`✓ Voted with ${stake.tokensStaked} ${tokenSymbol}`}</Tag>
     <ConvictionBar proposal={proposal} />
   </div>
 )
