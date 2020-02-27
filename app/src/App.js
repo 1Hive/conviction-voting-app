@@ -12,7 +12,6 @@ import {
 } from '@aragon/ui'
 import styled from 'styled-components'
 
-import NoProposals from './screens/NoProposals'
 import ProposalDetail from './screens/ProposalDetail'
 import Proposals from './screens/Proposals'
 import AddProposalPanel from './components/AddProposalPanel'
@@ -47,62 +46,43 @@ const App = React.memo(function App() {
 
   return (
     <Layout size={layoutName}>
-      {proposals.length === 0 && (
-        <div
-          css={`
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          `}
-        >
-          <NoProposals
-            onNewProposal={() => setProposalPanel(true)}
-            isSyncing={isSyncing}
+      <div
+        css={`
+          width: ${layoutName !== 'small' ? '75%' : '100%'};
+        `}
+      >
+        <SyncIndicator visible={isSyncing} />
+        <Header
+          primary="Conviction Voting"
+          secondary={
+            !selectedProposal && (
+              <Button
+                mode="strong"
+                onClick={() => setProposalPanel(true)}
+                label="New proposal"
+                icon={<IconPlus />}
+                display={compactMode ? 'icon' : 'label'}
+              />
+            )
+          }
+        />
+        {selectedProposal ? (
+          <ProposalDetail
+            proposal={selectedProposal}
+            onBack={handleBack}
+            requestToken={requestToken}
           />
-        </div>
-      )}
-      {proposals.length > 0 && (
-        <div
-          css={`
-            width: ${layoutName !== 'small' ? '75%' : '100%'};
-          `}
-        >
-          <SyncIndicator visible={isSyncing} />
-          <Header
-            primary="Conviction Voting"
-            secondary={
-              !selectedProposal && (
-                <Button
-                  mode="strong"
-                  onClick={() => setProposalPanel(true)}
-                  label="New proposal"
-                  icon={<IconPlus />}
-                  display={compactMode ? 'icon' : 'label'}
-                />
-              )
-            }
+        ) : (
+          <Proposals
+            proposals={proposals}
+            selectProposal={selectProposal}
+            filteredProposals={filteredProposals}
+            proposalStatusFilter={proposalStatusFilter}
+            handleProposalStatusFilterChange={handleProposalStatusFilterChange}
+            requestToken={requestToken}
           />
-          {selectedProposal ? (
-            <ProposalDetail
-              proposal={selectedProposal}
-              onBack={handleBack}
-              requestToken={requestToken}
-            />
-          ) : (
-            <Proposals
-              proposals={proposals}
-              selectProposal={selectProposal}
-              filteredProposals={filteredProposals}
-              proposalStatusFilter={proposalStatusFilter}
-              handleProposalStatusFilterChange={
-                handleProposalStatusFilterChange
-              }
-              requestToken={requestToken}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </div>
       <SidePanel
         title="New proposal"
         opened={proposalPanel}
