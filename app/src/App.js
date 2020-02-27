@@ -1,14 +1,13 @@
-import React, { useState, useCallback } from 'react'
-import { useAragonApi, useGuiStyle } from '@aragon/api-react'
+import React, { useCallback } from 'react'
+import { useGuiStyle, useAppState } from '@aragon/api-react'
 import {
   Main,
   Button,
   SidePanel,
-  Box,
-  // Tag,
   SyncIndicator,
   IconPlus,
   Header,
+  GU,
   useLayout,
 } from '@aragon/ui'
 import styled from 'styled-components'
@@ -16,54 +15,43 @@ import styled from 'styled-components'
 import NoProposals from './screens/NoProposals'
 import ProposalDetail from './screens/ProposalDetail'
 import Proposals from './screens/Proposals'
-// import ProposalDetail from './components/ProposalDetail'
 import AddProposalPanel from './components/AddProposalPanel'
-import Balance from './components/Balance'
+// import ProposalDetail from './components/ProposalDetail'
 
 import useAppLogic from './app-logic'
-import { toDecimals } from './lib/math-utils'
-import { toHex } from 'web3-utils'
+import useFilterProposals from './hooks/useFilterProposals'
+import useSelectedProposal from './hooks/useSelectedProposal'
+
+const Layout = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: ${2.5 * GU}px;
+`
 
 const App = React.memo(function App() {
   const {
-    isSyncing,
-    selectProposal,
-    selectedProposal,
-    proposals,
+    setProposalPanel,
+    proposalPanel,
+    onProposalSubmit,
+    myLastStake,
   } = useAppLogic()
-  const handleBack = useCallback(() => selectProposal(-1), [selectProposal])
+
+  const { proposals = [], isSyncing, requestToken } = useAppState()
 
   const { layoutName } = useLayout()
   const compactMode = layoutName === 'small'
 
+  const [selectedProposal, selectProposal] = useSelectedProposal(proposals)
+  const handleBack = useCallback(() => selectProposal(-1), [selectProposal])
+
   const {
-    api,
-    appState,
-    // connectedAccount
-  } = useAragonApi()
-  const {
-    // convictionStakes,
-    requestToken,
-  } = appState
-  const filteredProposals = proposals.filter(({ executed }) => !executed)
-
-  const [proposalPanel, setProposalPanel] = useState(false)
-  const onProposalSubmit = ({ title, link, amount, beneficiary }) => {
-    const decimals = parseInt(requestToken.decimals)
-    const decimalAmount = toDecimals(amount.trim(), decimals).toString()
-    api.addProposal(title, toHex(link), decimalAmount, beneficiary).toPromise()
-    setProposalPanel(false)
-  }
-
-  // const myStakes =
-  //   (convictionStakes &&
-  //     convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
-  //   []
-
-  // const myLastStake = [...myStakes].pop() || {}
+    filteredProposals,
+    proposalStatusFilter,
+    handleProposalStatusFilterChange,
+  } = useFilterProposals(proposals)
 
   return (
-    <React.Fragment>
+    <Layout size={layoutName}>
       {proposals.length === 0 && (
         <div
           css={`
@@ -80,7 +68,11 @@ const App = React.memo(function App() {
         </div>
       )}
       {proposals.length > 0 && (
-        <React.Fragment>
+        <div
+          css={`
+            width: ${layoutName !== 'small' ? '75%' : '100%'};
+          `}
+        >
           <SyncIndicator visible={isSyncing} />
           <Header
             primary="Conviction Voting"
@@ -96,69 +88,42 @@ const App = React.memo(function App() {
               )
             }
           />
-          <Wrapper>
-            <div css="width: 25%; margin-right: 1rem;">
-              <Box heading="Vault balance">
-                <Balance {...requestToken} />
-              </Box>
-              {/* {myLastStake.tokensStaked > 0 && (
-                <Box heading="My staked proposal" key={myLastStake.proposal}>
-                  <ProposalInfo
-                    proposal={
-                      proposals.filter(({ id }) => id === myLastStake.proposal)[0]
-                    }
-                    stake={myLastStake}
-                  />
-                </Box>
-              )} */}
-            </div>
-            {selectedProposal ? (
-              <ProposalDetail proposal={selectedProposal} onBack={handleBack} />
-            ) : (
-              <div css="width: 75%">
-                <Proposals
-                  filteredProposals={filteredProposals}
-                  selectProposal={selectProposal}
-                />
-              </div>
-            )}
-          </Wrapper>
+          {selectedProposal ? (
+            <ProposalDetail
+              proposal={selectedProposal}
+              onBack={handleBack}
+              myLastStake={myLastStake}
+              requestToken={requestToken}
+            />
+          ) : (
+            <Proposals
+              proposals={proposals}
+              selectProposal={selectProposal}
+              filteredProposals={filteredProposals}
+              proposalStatusFilter={proposalStatusFilter}
+              handleProposalStatusFilterChange={
+                handleProposalStatusFilterChange
+              }
+              requestToken={requestToken}
+            />
+          )}
           <SidePanel
-            title="New proposal"
+            title="Create proposal"
             opened={proposalPanel}
             onClose={() => setProposalPanel(false)}
           >
             <AddProposalPanel onSubmit={onProposalSubmit} />
           </SidePanel>
-        </React.Fragment>
+        </div>
       )}
-    </React.Fragment>
+    </Layout>
   )
 })
-
-// const ProposalInfo = ({ proposal, stake }) => {
-//   const {
-//     appState: {
-//       stakeToken: { tokenSymbol },
-//     },
-//   } = useAragonApi()
-//   return (
-//     <div>
-//       <IdAndTitle {...proposal} />
-//       <Tag>{`✓ Supported with ${stake.tokensStaked} ${tokenSymbol}`}</Tag>
-//       <ConvictionBar proposal={proposal} />
-//     </div>
-//   )
-// }
-
-const Wrapper = styled.div`
-  display: flex;
-`
 
 export default () => {
   const { appearance } = useGuiStyle()
   return (
-    <Main theme={appearance} assetsUrl="./aragon-ui">
+    <Main layout={false} theme={appearance} assetsUrl="./aragon-ui">
       <App />
     </Main>
   )
