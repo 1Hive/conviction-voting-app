@@ -9,6 +9,8 @@ import {
   useLayout,
   useTheme,
   Link,
+  IconShare,
+  Button,
 } from '@aragon/ui'
 import styled from 'styled-components'
 import { useAragonApi } from '@aragon/api-react'
@@ -53,8 +55,23 @@ function ProposalDetail({ proposal, onBack }) {
 
   return (
     <Wrapper>
-      <Bar>
+      <Bar
+        css={`
+          display: grid;
+          grid-template-columns: ${18.75 * GU}px auto;
+        `}
+      >
         <BackButton onClick={onBack} />
+        <Button
+          label="Share"
+          size="medium"
+          icon={<IconShare />}
+          css={`
+            justify-self end;
+            align-self: center;
+            margin-right: ${3 * GU}px;
+          `}
+        />
       </Bar>
       <Box>
         <section
