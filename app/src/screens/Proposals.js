@@ -25,6 +25,9 @@ const Wrapper = styled.div`
   min-height: 100vh;
 `
 
+const DEFAULT_DESCRIPTION =
+  'No additional description has been provided for this proposal.'
+
 const Proposals = React.memo(function Proposals({
   proposals,
   selectProposal,
@@ -55,19 +58,36 @@ const Proposals = React.memo(function Proposals({
       <div>
         <DataView
           fields={[
-            { label: 'Proposal', priority: 1 },
-            { label: 'Requested', priority: 4 },
-            { label: 'Conviction progress', priority: 2 },
-            { label: 'Trend', priority: 5 },
+            { label: 'Proposal', priority: 1, align: 'start' },
+            { label: 'Requested', priority: 4, align: 'start' },
+            { label: 'Conviction progress', priority: 2, align: 'start' },
+            { label: 'Trend', priority: 5, align: 'start' },
           ]}
           entries={filteredProposals}
-          renderEntry={({ id, name, requestedAmount, ...proposal }) => [
-            <IdAndTitle id={id} name={name} selectProposal={selectProposal} />,
+          renderEntry={({
+            id,
+            name,
+            description = DEFAULT_DESCRIPTION,
+            requestedAmount,
+            ...proposal
+          }) => [
+            <IdAndTitle
+              id={id}
+              name={name}
+              selectProposal={selectProposal}
+              description={description}
+            />,
             <Amount
               requestedAmount={requestedAmount}
               requestToken={requestToken}
             />,
-            <ConvictionBar proposal={proposal} />,
+            <div
+              css={`
+                width: ${23 * GU};
+              `}
+            >
+              <ConvictionBar proposal={proposal} />
+            </div>,
             <ConvictionTrend proposal={proposal} />,
           ]}
           tableRowHeight={14 * GU}
@@ -109,8 +129,8 @@ const Filters = ({
     `}
   >
     <DropDown
-      header="Status"
-      placeholder="Status"
+      header="Type"
+      placeholder="Type"
       selected={proposalStatusFilter}
       onChange={handleProposalStatusFilterChange}
       items={[
@@ -137,11 +157,28 @@ const Filters = ({
   </div>
 )
 
-const IdAndTitle = ({ id, name, selectProposal }) => (
-  <Link onClick={() => selectProposal(id)}>
-    <Text color={useTheme().surfaceContent.toString()}>#{id}</Text>{' '}
-    <Text color={useTheme().surfaceContentSecondary.toString()}>{name}</Text>
-  </Link>
+const IdAndTitle = ({ id, name, description, selectProposal }) => (
+  <div
+    css={`
+      display: grid;
+      grid-template-columns: auto;
+      grid-row-gap: ${1.5 * GU}px;
+      max-width: ${25 * GU}px;
+      justify-items: start;
+    `}
+  >
+    <Link onClick={() => selectProposal(id)}>
+      <Text color={useTheme().surfaceContent.toString()}>#{id}</Text>{' '}
+      <Text color={useTheme().surfaceContentSecondary.toString()}>{name}</Text>
+    </Link>
+    <Text
+      css={`
+        ${textStyle('body3')};
+      `}
+    >
+      {description.slice(0, 29) + '...'}
+    </Text>
+  </div>
 )
 
 const Amount = ({
