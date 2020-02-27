@@ -4,68 +4,86 @@ import {
   Bar,
   Box,
   GU,
-  Split,
   Text,
   textStyle,
   useLayout,
   useTheme,
+  Link,
 } from '@aragon/ui'
+import styled from 'styled-components'
 import { useConnectedAccount } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
-import { addressesEqual } from '../web3-utils'
+import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 
 const DEFAULT_DESCRIPTION =
   'No additional description has been provided for this proposal.'
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+`
+const H2 = styled.h2`
+  ${textStyle('label2')};
+  color: ${props => props.color};
+  margin-bottom: ${1.5 * GU}px;
+`
+
+const InfoWrapper = styled.div`
+  display: grid;
+  grid-template-row: auto;
+  grid-row-gap: ${3 * GU}px;
+`
+
+const Progress = styled.div`
+  width: 100%;
+`
 
 function ProposalDetail({ proposal, onBack }) {
   const theme = useTheme()
   const { layoutName } = useLayout()
   const connectedAccount = useConnectedAccount()
 
-  const { id, title, description, creator } = proposal
+  const { id, name, description, creator, beneficiary, link } = proposal
 
   return (
-    <React.Fragment>
+    <Wrapper>
       <Bar>
         <BackButton onClick={onBack} />
       </Bar>
-      <Split
-        primary={
-          <Box>
-            <section
+      <Box>
+        <section
+          css={`
+            display: grid;
+            grid-template-columns: auto;
+            grid-template-rows: auto;
+            grid-gap: ${2.5 * GU}px;
+            margin-top: ${2.5 * GU}px;
+          `}
+        >
+          <div>
+            <h1
               css={`
-                display: grid;
-                grid-template-columns: auto;
-                grid-gap: ${2.5 * GU}px;
-                margin-top: ${2.5 * GU}px;
+                ${textStyle('title2')};
+                font-weight: 600;
+                margin-bottom: ${2.5 * GU}px;
               `}
             >
-              <h1
-                css={`
-                  ${textStyle('title2')};
-                `}
-              >
-                <span css="font-weight: bold;">Proposal #{id}</span> - {title}
-              </h1>
-              <div
-                css={`
-                  display: grid;
-                  grid-template-columns: ${layoutName === 'large'
-                    ? '1fr minmax(300px, auto)'
-                    : 'auto'};
-                  grid-gap: ${layoutName === 'large' ? 5 * GU : 2.5 * GU}px;
-                `}
-              >
+              #{id} {name}
+            </h1>
+            <div
+              css={`
+                display: grid;
+                grid-template-columns: ${layoutName !== 'small'
+                  ? '1fr minmax(240px, auto)'
+                  : 'auto'};
+                grid-gap: ${layoutName !== 'small' ? 5 * GU : 2.5 * GU}px;
+              `}
+            >
+              <InfoWrapper>
                 <div>
-                  <h2
-                    css={`
-                      ${textStyle('label2')};
-                      color: ${theme.surfaceContentSecondary};
-                      margin-bottom: ${2 * GU}px;
-                    `}
-                  >
-                    Description
-                  </h2>
+                  <H2 color={theme.surfaceContentSecondary}>Description</H2>
                   <Text
                     css={`
                       ${textStyle('body2')};
@@ -74,16 +92,21 @@ function ProposalDetail({ proposal, onBack }) {
                     {description || DEFAULT_DESCRIPTION}
                   </Text>
                 </div>
+                {link && (
+                  <div>
+                    <H2 color={theme.surfaceContentSecondary}>Links</H2>
+                    <Link href={link} external>
+                      Read more
+                    </Link>
+                  </div>
+                )}
+              </InfoWrapper>
+              <InfoWrapper>
                 <div>
-                  <h2
-                    css={`
-                      ${textStyle('label2')};
-                      color: ${theme.surfaceContentSecondary};
-                      margin-bottom: ${2 * GU}px;
-                    `}
-                  >
-                    Created By
-                  </h2>
+                  <H2 color={theme.surfaceContentSecondary}>Status</H2>
+                </div>
+                <div>
+                  <H2 color={theme.surfaceContentSecondary}>Created By</H2>
                   <div
                     css={`
                       display: flex;
@@ -99,13 +122,32 @@ function ProposalDetail({ proposal, onBack }) {
                     />
                   </div>
                 </div>
-              </div>
-            </section>
-          </Box>
-        }
-        secondary={<Box heading="Dummy">Dummy</Box>}
-      />
-    </React.Fragment>
+                <div>
+                  <H2 color={theme.surfaceContentSecondary}>Recipient</H2>
+                  <div
+                    css={`
+                      display: flex;
+                      align-items: flex-start;
+                    `}
+                  >
+                    <LocalIdentityBadge
+                      connectedAccount={addressesEqual(
+                        beneficiary,
+                        connectedAccount
+                      )}
+                      entity={beneficiary}
+                    />
+                  </div>
+                </div>
+              </InfoWrapper>
+            </div>
+          </div>
+          <Progress>
+            <H2 color={theme.surfaceContentSecondary}>Conviction Progress</H2>
+          </Progress>
+        </section>
+      </Box>
+    </Wrapper>
   )
 }
 
