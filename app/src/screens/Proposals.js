@@ -71,21 +71,27 @@ const Proposals = React.memo(function Proposals({
             </h2>
           }
           entries={filteredProposals}
-          renderEntry={({ id, name, requestedAmount, ...proposal }) => [
-            <IdAndTitle id={id} name={name} selectProposal={selectProposal} />,
-            <Amount
-              requestedAmount={requestedAmount}
-              requestToken={requestToken}
-            />,
-            <div
-              css={`
-                width: ${23 * GU};
-              `}
-            >
-              <ConvictionBar proposal={proposal} />
-            </div>,
-            <ConvictionTrend proposal={proposal} />,
-          ]}
+          renderEntry={proposal => {
+            return [
+              <IdAndTitle
+                id={proposal.id}
+                name={proposal.name}
+                selectProposal={selectProposal}
+              />,
+              <Amount
+                requestedAmount={proposal.requestedAmount}
+                requestToken={requestToken}
+              />,
+              <div
+                css={`
+                  width: ${23 * GU};
+                `}
+              >
+                <ConvictionBar proposal={proposal} />
+              </div>,
+              <ConvictionTrend proposal={proposal} />,
+            ]
+          }}
           tableRowHeight={14 * GU}
           heading={
             <Filters

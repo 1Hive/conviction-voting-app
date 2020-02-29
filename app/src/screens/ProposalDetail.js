@@ -18,6 +18,7 @@ import {
   ConvictionCountdown,
   ConvictionButton,
   ConvictionBar,
+  ConvictionChart,
 } from '../components/ConvictionVisuals'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 
@@ -149,8 +150,8 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
         <Box heading="Status">
           <ConvictionCountdown proposal={proposal} />
         </Box>
-        <Box heading="Vault balance">
-          <Balance {...requestToken} />
+        <Box heading="Conviction prediction">
+          <ConvictionChart proposal={proposal} />
         </Box>
       </div>
     </Wrapper>
