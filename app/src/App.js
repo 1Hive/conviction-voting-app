@@ -37,13 +37,14 @@ const App = React.memo(function App() {
 
   const [selectedProposal, selectProposal] = useSelectedProposal(proposals)
   const handleBack = useCallback(() => selectProposal(-1), [selectProposal])
-
   const {
     filteredProposals,
     proposalStatusFilter,
     handleProposalStatusFilterChange,
   } = useFilterProposals(proposals)
-
+  console.log('app')
+  console.log(filteredProposals);
+  
   return (
     <Layout size={layoutName}>
       <div

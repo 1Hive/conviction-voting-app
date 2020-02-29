@@ -56,7 +56,7 @@ const ProposalDetail = ({ proposal, onStake, onWithdraw, onExecute }) => {
         <ConvictionCountdown proposal={proposal} />
         <h2>
           <Text color={theme.textSecondary} smallcaps>
-            Created by
+            Created byy
           </Text>
         </h2>
         <LocalIdentityBadge entity={creator} />
