@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { theme, useTheme, GU, Text } from '@aragon/ui'
+import { theme, useTheme, Text } from '@aragon/ui'
 import { formatTokenAmount } from '../lib/utils'
 
 const splitAmount = amount => {

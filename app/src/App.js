@@ -15,7 +15,6 @@ import styled from 'styled-components'
 import ProposalDetail from './screens/ProposalDetail'
 import Proposals from './screens/Proposals'
 import AddProposalPanel from './components/AddProposalPanel'
-// import ProposalDetail from './components/ProposalDetail'
 
 import useAppLogic from './app-logic'
 import useFilterProposals from './hooks/useFilterProposals'
@@ -42,9 +41,7 @@ const App = React.memo(function App() {
     proposalStatusFilter,
     handleProposalStatusFilterChange,
   } = useFilterProposals(proposals)
-  console.log('app')
-  console.log(filteredProposals);
-  
+
   return (
     <Layout size={layoutName}>
       <div

@@ -79,7 +79,6 @@ export function ConvictionChart({ proposal }) {
 }
 
 export function ConvictionBar({ proposal }) {
-  console.log(proposal)
   const { connectedAccount } = useAragonApi()
   const { alpha } = getGlobalParams()
   const blockNumber = useBlockNumber()
