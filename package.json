@@ -9,8 +9,10 @@
     "@aragon/os": "^4.3.0"
   },
   "devDependencies": {
-    "@aragon/cli": "^6.0.0",
+    "@aragon/cli": "^7.0.3",
+    "@aragon/templates-shared": "^1.0.1",
     "@aragon/test-helpers": "^2.0.0",
+    "@aragon/truffle-config-v5": "^1.0.0",
     "babel-eslint": "^10.0.2",
     "console.table": "^0.10.0",
     "cross-env": "^5.2.0",
@@ -25,31 +27,32 @@
     "eslint-plugin-react": "^7.14.2",
     "eslint-plugin-standard": "^4.0.0",
     "ethlint": "^1.2.4",
+    "fs-extra": "^8.1.0",
     "openzeppelin-solidity": "2.0.1",
     "prettier": "^1.18.2",
     "solidity-coverage": "^0.6.2",
-    "truffle": "=4.1.14"
+    "truffle": "5.1.4"
   },
   "scripts": {
+    "prepare": "cd app && npm install && cd ..",
     "start": "npm run start:ipfs",
     "start:ipfs": "npm run start:ipfs:template",
     "start:http": "npm run start:http:template",
     "start:ipfs:template": "./scripts/start.sh ipfs",
     "start:http:template": "./scripts/start.sh http",
-    "prepare": "cd app && npm install && cd ..",
     "start:app": "cd app && npm start && cd ..",
-    "test": "cross-env TRUFFLE_TEST=true npm run ganache-cli:test",
-    "compile": "aragon contracts compile",
     "build": "cd app && npm run build && cd ..",
+    "lint": "eslint . & solium --dir ./contracts",
+    "lint:fix": "eslint . --fix & solium --dir ./contracts --fix",
+    "compile": "aragon contracts compile",
+    "test": "cross-env TRUFFLE_TEST=true npm run ganache-cli:test",
+    "coverage": "cross-env SOLIDITY_COVERAGE=true npm run ganache-cli:test",
+    "ganache-cli:test": "sh ./node_modules/@aragon/test-helpers/ganache-cli.sh",
     "publish:patch": "aragon apm publish patch",
     "publish:minor": "aragon apm publish minor",
     "publish:major": "aragon apm publish major",
     "versions": "aragon apm versions",
-    "lint": "eslint . & solium --dir ./contracts",
-    "lint:fix": "eslint . --fix & solium --dir ./contracts --fix",
-    "coverage": "cross-env SOLIDITY_COVERAGE=true npm run ganache-cli:test",
-    "ganache-cli:test": "sh ./node_modules/@aragon/test-helpers/ganache-cli.sh",
-    "mock-data": "npx truffle exec ./scripts/setMockData.js",
+    "mock-data": "npx truffle exec ./scripts/setMockData.js --network rpc",
     "mine-blocks": "sh ./scripts/mine-blocks.sh"
   }
 }
