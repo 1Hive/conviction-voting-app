@@ -8,7 +8,7 @@
   ],
   "environments": {
     "default": {
-      "network": "development",
+      "network": "rpc",
       "appName": "conviction-voting.open.aragonpm.eth"
     },
     "rinkeby": {

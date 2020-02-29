@@ -27,7 +27,7 @@ startDevchain() {
   if [ -z "$pid" ]
   then
     echo Starting devchain…
-    npx aragon devchain --verbose > /dev/null &
+    npx aragon devchain --network-id 15 --verbose > /dev/null &
     pid=$!
     sleep 3
     echo Running devchain with pid ${pid}…
@@ -38,7 +38,7 @@ startDevchain() {
 
 deployToken() {
   echo Deploying token…
-  RESPONSE=$(npx truffle exec ./scripts/deployToken.js "Dai Stablecoin" "DAI" 18)
+  RESPONSE=$(npx truffle exec ./scripts/deployToken.js "Dai Stablecoin" "DAI" 18 --network rpc)
   REQUEST_TOKEN=$(echo "${RESPONSE}" | tail -1)
   echo Request token: ${REQUEST_TOKEN}
 }

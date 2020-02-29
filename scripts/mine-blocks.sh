@@ -6,4 +6,4 @@ then
   kill -9 $pid
 fi
 echo Starting devchain…
-npx aragon devchain -b 15
+npx aragon devchain -b 15 --network-id 15
