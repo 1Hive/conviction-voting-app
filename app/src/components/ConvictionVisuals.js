@@ -79,10 +79,12 @@ export function ConvictionChart({ proposal }) {
 }
 
 export function ConvictionBar({ proposal }) {
+  console.log(proposal)
   const { connectedAccount } = useAragonApi()
   const { alpha } = getGlobalParams()
   const blockNumber = useBlockNumber()
   const theme = useTheme()
+
   const { stakes, totalTokensStaked, threshold, max } = getStakesAndThreshold(
     proposal
   )
@@ -176,8 +178,9 @@ export function ConvictionCountdown({ proposal }) {
 
   const NOW = Date.now()
   const BLOCK_TIME = 1000 * 15
-  const endDate = !isNaN(time) && new Date(NOW + time * BLOCK_TIME)
-
+  const endDate =
+    !isNaN(new Date(NOW + time * BLOCK_TIME).getTime()) &&
+    new Date(NOW + time * BLOCK_TIME)
   useEffect(() => {
     setView(getView())
   }, [conviction, threshold, time])
@@ -206,7 +209,7 @@ export function ConvictionCountdown({ proposal }) {
       <Text color={theme.surfaceContentSecondary.toString()}>
         Estimate until pass
       </Text>
-      {endDate && <Timer end={endDate} />}
+      {!!endDate && <Timer end={endDate} />}
     </>
   ) : (
     <>
@@ -221,6 +224,7 @@ export function ConvictionTrend({ proposal }) {
   const blockNumber = useBlockNumber()
   const { alpha } = getGlobalParams()
   const trend = getConvictionTrend(stakes, max, blockNumber, alpha)
+
   const percentage =
     trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
   return (
