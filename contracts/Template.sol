@@ -1,121 +1,217 @@
-/*
- * SPDX-License-Identitifer:    GPL-3.0-or-later
- *
- * This file requires contract dependencies which are licensed as
- * GPL-3.0-or-later, forcing it to also be licensed as such.
- *
- * This is the only file in your project that requires this license and
- * you are free to choose a different license for the rest of the project.
- */
-
 pragma solidity 0.4.24;
 
-import "@aragon/os/contracts/factory/DAOFactory.sol";
-import "@aragon/os/contracts/apm/Repo.sol";
-import "@aragon/os/contracts/lib/ens/ENS.sol";
-import "@aragon/os/contracts/lib/ens/PublicResolver.sol";
-import "@aragon/os/contracts/apm/APMNamehash.sol";
-
-import "@aragon/apps-token-manager/contracts/TokenManager.sol";
-import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
-import "@aragon/apps-vault/contracts/Vault.sol";
+import "@aragon/templates-shared/contracts/TokenCache.sol";
+import "@aragon/templates-shared/contracts/BaseTemplate.sol";
 
 import "./ConvictionVotingApp.sol";
 
 
-contract TemplateBase is APMNamehash {
-    ENS public ens;
-    DAOFactory public fac;
+contract Template is BaseTemplate, TokenCache {
+    string constant private ERROR_EMPTY_HOLDERS = "TEMPLATE_EMPTY_HOLDERS";
+    string constant private ERROR_BAD_HOLDERS_STAKES_LEN = "TEMPLATE_BAD_HOLDERS_STAKES_LEN";
+    string constant private ERROR_BAD_VOTE_SETTINGS = "TEMPLATE_BAD_VOTE_SETTINGS";
 
-    event DeployDao(address dao);
-    event InstalledApp(address appProxy, bytes32 appId);
+    address constant private ANY_ENTITY = address(-1);
+    bool constant private TOKEN_TRANSFERABLE = true;
+    uint8 constant private TOKEN_DECIMALS = uint8(18);
+    uint256 constant private TOKEN_MAX_PER_ACCOUNT = uint256(0);
+    uint256 constant private VAULT_BALANCE = 15000000000000000000000;
 
-    constructor(DAOFactory _fac, ENS _ens) public {
-        ens = _ens;
-
-        // If no factory is passed, get it from on-chain bare-kit
-        if (address(_fac) == address(0)) {
-            bytes32 bareKit = apmNamehash("bare-kit");
-            fac = TemplateBase(latestVersionAppBase(bareKit)).fac();
-        } else {
-            fac = _fac;
-        }
+    constructor (
+        DAOFactory _daoFactory,
+        ENS _ens,
+        MiniMeTokenFactory _miniMeFactory,
+        IFIFSResolvingRegistrar _aragonID
+    )
+        BaseTemplate(_daoFactory, _ens, _miniMeFactory, _aragonID)
+        public
+    {
+        _ensureAragonIdIsValid(_aragonID);
+        _ensureMiniMeFactoryIsValid(_miniMeFactory);
     }
 
-    function latestVersionAppBase(bytes32 appId) public view returns (address base) {
-        Repo repo = Repo(PublicResolver(ens.resolver(appId)).addr(appId));
-        (,base,) = repo.getLatest();
+    /**
+    * @dev Create a new MiniMe token and deploy a Template DAO.
+    * @param _stakeTokenName String with the name for the token used by share holders in the organization
+    * @param _stakeTokenSymbol String with the symbol for the token used by share holders in the organization
+    * @param _holders Array of token holder addresses
+    * @param _stakes Array of token stakes for holders (token has 18 decimals, multiply token amount `* 10^18`)
+    * @param _votingSettings Array of [supportRequired, minAcceptanceQuorum, voteDuration] to set up the voting app of the organization
+    */
+    function newTokenAndInstance(
+        string _stakeTokenName,
+        string _stakeTokenSymbol,
+        address[] _holders,
+        uint256[] _stakes,
+        uint64[3] _votingSettings
+    )
+        external
+    {
+        newToken(_stakeTokenName, _stakeTokenSymbol);
+        newInstance(_holders, _stakes, _votingSettings);
 
-        return base;
     }
 
-    function installApp(Kernel dao, bytes32 appId) internal returns (address) {
-        address instance = address(dao.newAppInstance(appId, latestVersionAppBase(appId)));
-        emit InstalledApp(instance, appId);
-        return instance;
+    /**
+    * @dev Create a new MiniMe token and cache it for the user
+    * @param _name String with the name for the token used by share holders in the organization
+    * @param _symbol String with the symbol for the token used by share holders in the organization
+    */
+    function newToken(string memory _name, string memory _symbol) public returns (MiniMeToken) {
+        MiniMeToken token = _createToken(_name, _symbol, TOKEN_DECIMALS);
+        _cacheToken(token, msg.sender);
+        return token;
     }
 
-    function installDefaultApp(Kernel dao, bytes32 appId) internal returns (address) {
-        address instance = address(dao.newAppInstance(appId, latestVersionAppBase(appId), new bytes(0), true));
-        emit InstalledApp(instance, appId);
-        return instance;
+    /**
+    * @dev Deploy a Template DAO using a previously cached MiniMe token
+    * @param _holders Array of token holder addresses
+    * @param _stakes Array of token stakes for holders (token has 18 decimals, multiply token amount `* 10^18`)
+    * @param _votingSettings Array of [supportRequired, minAcceptanceQuorum, voteDuration] to set up the voting app of the organization
+    */
+    function newInstance(
+        address[] memory _holders,
+        uint256[] memory _stakes,
+        uint64[3] memory _votingSettings
+    )
+        public
+        returns (Vault)
+    {
+        _ensureTemplateSettings(_holders, _stakes, _votingSettings);
+
+        (Kernel dao, ACL acl) = _createDAO();
+        MiniMeToken requestToken = _setupRequestToken(dao, acl);
+        (Voting voting, MiniMeToken stakeToken, Vault vault) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
+        // Setup conviction-voting app
+        _setupConvictionVoting(dao, acl, voting, stakeToken, vault, address(requestToken));
+        _transferRootPermissionsFromTemplateAndFinalizeDAO(dao, voting);
+        _fillVault(vault, requestToken, VAULT_BALANCE);
     }
-}
 
-
-contract Template is TemplateBase {
-
-    uint64 constant PCT = 10 ** 16;
-    address constant ANY_ENTITY = address(-1);
-
-    bytes32 internal constant CONVICTION_VOTING_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
-    bytes32 internal constant TOKEN_MANAGER_APP_ID = apmNamehash("token-manager");
-    bytes32 internal constant VAULT_APP_ID = apmNamehash("vault");
-
-    MiniMeTokenFactory tokenFactory;
-
-    constructor(ENS ens) TemplateBase(DAOFactory(0), ens) public {
-        tokenFactory = new MiniMeTokenFactory();
+    function _setupRequestToken(Kernel _dao, ACL _acl) internal returns (MiniMeToken) {
+        MiniMeToken requestToken = _createToken("DAI", "DAI", 18);
+        TokenManager tokenManager = _installTokenManagerApp(_dao, requestToken, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
+        _mintTokens(_acl, tokenManager, this, VAULT_BALANCE);
+        return requestToken;
     }
 
-    function newInstance(string stakeTokenName, uint8 stakeTokenDecimals, string stakeTokenSymbol, address requestToken) public {
-        Kernel dao = fac.newDAO(this);
-        ACL acl = ACL(dao.acl());
-        acl.createPermission(this, dao, dao.APP_MANAGER_ROLE(), this);
-        address root = msg.sender;
+    function _setupBaseApps(
+        Kernel _dao,
+        ACL _acl,
+        address[] memory _holders,
+        uint256[] memory _stakes,
+        uint64[3] memory _votingSettings
+    )
+        internal
+        returns (Voting, MiniMeToken, Vault)
+    {
+        MiniMeToken token = _popTokenCache(msg.sender);
+        TokenManager tokenManager = _installTokenManagerApp(_dao, token, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
+        Voting voting = _installVotingApp(_dao, token, _votingSettings);
+        Vault vault = _installVaultApp(_dao);
 
-        ConvictionVotingApp convictionVoting = ConvictionVotingApp(installApp(dao, CONVICTION_VOTING_APP_ID));
-        TokenManager tokenManager = TokenManager(installApp(dao, TOKEN_MANAGER_APP_ID));
-        Vault vault = Vault(installDefaultApp(dao, VAULT_APP_ID));
+        _mintTokens(_acl, tokenManager, _holders, _stakes);
+        _setupBasePermissions(_acl, voting, tokenManager);
 
-        //stakeToken
-        MiniMeToken stakeToken = tokenFactory.createCloneToken(MiniMeToken(0), 0, stakeTokenName, stakeTokenDecimals, stakeTokenSymbol, true);
-        stakeToken.changeController(tokenManager);
+        return (voting, token, vault);
+    }
 
-        // Initialize apps
-        convictionVoting.initialize(stakeToken, vault, requestToken);
-        tokenManager.initialize(stakeToken, false, 0);
-        vault.initialize();
+    function _setupBasePermissions(
+        ACL _acl,
+        Voting _voting,
+        TokenManager _tokenManager
+    )
+        internal
+    {
+        _createEvmScriptsRegistryPermissions(_acl, _voting, _voting);
+        _createVotingPermissions(_acl, _voting, _voting, _tokenManager, _voting);
+        _createTokenManagerPermissions(_acl, _tokenManager, _voting, _voting);
+    }
 
-        //set permissions
-        acl.createPermission(this, tokenManager, tokenManager.MINT_ROLE(), this);
-        tokenManager.mint(root, 15000 * (10 ** uint256(stakeTokenDecimals)));
-        acl.createPermission(ANY_ENTITY, convictionVoting, convictionVoting.CREATE_PROPOSALS_ROLE(), root);
-        acl.createPermission(convictionVoting, vault, vault.TRANSFER_ROLE(), root);
+    // Next we install and create permissions for the conviction-voting app
+    //--------------------------------------------------------------//
+    function _setupConvictionVoting(
+        Kernel _dao,
+        ACL _acl,
+        Voting _voting,
+        MiniMeToken _stakeToken,
+        Vault _vault,
+        address _requestToken
+    )
+        internal
+    {
+        ConvictionVotingApp app = _installConvictionVoting(_dao, _stakeToken, _vault, _requestToken);
+        _createConvictionVotingPermissions(_acl, app, _voting, _voting);
+        _mockProposalsData(app);
+        _createVaultPermissions(_acl, _vault, app, _voting);
+    }
 
-        // Clean up permissions
-        acl.grantPermission(root, dao, dao.APP_MANAGER_ROLE());
-        acl.revokePermission(this, dao, dao.APP_MANAGER_ROLE());
-        acl.setPermissionManager(root, dao, dao.APP_MANAGER_ROLE());
+    function _installConvictionVoting(
+        Kernel _dao,
+        MiniMeToken _stakeToken,
+        Vault _vault,
+        address _requestToken
+    )
+        internal returns (ConvictionVotingApp)
+    {
+        bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
+        bytes4 selector = bytes4(keccak256("initialize(address,address,address)"));
+        bytes memory initializeData = abi.encodeWithSelector(selector, _stakeToken, _vault, _requestToken);
+        return ConvictionVotingApp(_installDefaultApp(_dao, _appId, initializeData));
+    }
 
-        acl.grantPermission(root, acl, acl.CREATE_PERMISSIONS_ROLE());
-        acl.revokePermission(this, acl, acl.CREATE_PERMISSIONS_ROLE());
-        acl.setPermissionManager(root, acl, acl.CREATE_PERMISSIONS_ROLE());
+    function _createConvictionVotingPermissions(
+        ACL _acl,
+        ConvictionVotingApp _app,
+        address _grantee,
+        address _manager
+    )
+        internal
+    {
+        _acl.createPermission(ANY_ENTITY, _app, _app.CREATE_PROPOSALS_ROLE(), _manager);
+    }
 
-        acl.grantPermission(root, tokenManager, tokenManager.MINT_ROLE());
-        acl.revokePermission(this, tokenManager, tokenManager.MINT_ROLE());
-        acl.setPermissionManager(root, tokenManager, tokenManager.MINT_ROLE());
 
-        emit DeployDao(dao);
+    function _createVaultPermissions(
+        ACL _acl,
+        Vault _app,
+        address _grantee,
+        address _manager
+    )
+        internal
+    {
+        _acl.createPermission(_grantee, _app, _app.TRANSFER_ROLE(), _manager);
+    }
+
+    function _fillVault(
+        Vault _vault,
+        MiniMeToken _requestToken,
+        uint256 _amount
+    )
+        internal
+    {
+        _requestToken.approve(_vault, _amount);
+        _vault.deposit(_requestToken, _amount);
+    }
+
+    function _mockProposalsData(ConvictionVotingApp _app) internal {
+        _app.addProposal("Aragon Sidechain", "0x0", 2000 * 10 ** 18, msg.sender);
+        _app.addProposal("Conviction Voting", "0x0", 1000 * 10 ** 18, msg.sender);
+        _app.addProposal("Aragon Button", "0x0", 1000 * 10 ** 18, msg.sender);
+    }
+
+    //--------------------------------------------------------------//
+
+    function _ensureTemplateSettings(
+        address[] memory _holders,
+        uint256[] memory _stakes,
+        uint64[3] memory _votingSettings
+    )
+        private
+        pure
+    {
+        require(_holders.length > 0, ERROR_EMPTY_HOLDERS);
+        require(_holders.length == _stakes.length, ERROR_BAD_HOLDERS_STAKES_LEN);
+        require(_votingSettings.length == 3, ERROR_BAD_VOTE_SETTINGS);
     }
 }
