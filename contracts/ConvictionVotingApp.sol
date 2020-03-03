@@ -19,8 +19,8 @@ contract ConvictionVotingApp is AragonApp {
     // Constants
     uint256 public constant TIME_UNIT = 1;
     uint256 public constant D = 10;
-    uint256 public constant MAX_T = 77; // MAX_T = floor(log(2**256 - 1) / log(D))
-    // Variable `t` can't surpass MAX_T because D**(MAX_T+1) = 10**78 overflows uint256
+    uint256 constant TWO_128 = 0x100000000000000000000000000000000; // 2^128
+    uint256 constant TWO_127 = 0x80000000000000000000000000000000; // 2^127
 
     // State
     uint256 public decay;
@@ -212,7 +212,7 @@ contract ConvictionVotingApp is AragonApp {
 
     /**
      * @dev Conviction formula: a^t * y(0) + x * (1 - a^t) / (1 - a)
-     * Solidity implementation: y = (aDt * y0 + (x*D*(Dt-aDt))/(D-aD)) / Dt
+     * Solidity implementation: y = (2^128 * a^t * y0 + x * D * (2^128 - 2^128 * a^t) / (D - aD) + 2^127) / 2^128
      * @param timePassed Number of blocks since last conviction record
      * @param lastConv Last conviction record
      * @param oldAmount Amount of tokens staked until now
@@ -226,15 +226,45 @@ contract ConvictionVotingApp is AragonApp {
         public view returns(uint256 conviction)
     {
         uint256 t = uint256(timePassed).div(TIME_UNIT);
-        uint256 aD = decay;
-        uint256 Dt = D**t;
-        uint256 aDt = aD**t;
-        if (t <= MAX_T) { // no overflow
-            conviction = aDt.mul(lastConv).add((oldAmount.mul(D).mul(Dt.sub(aDt))).div(D.sub(aD))).div(Dt);
+        // atTWO_128 = 2^128 * a^t
+        uint256 atTWO_128 = pow((decay << 128).div(D), t);
+        // conviction = (atTWO_128 * lastConv + oldAmount * D * (2^128 - atTWO_128) / (D - aD) + 2^127) / 2^128
+        conviction = (atTWO_128.mul(lastConv).add(oldAmount.mul(D).mul(TWO_128.sub(atTWO_128)).div(D - decay))).add(TWO_127) >> 128;
+    }
+
+    /**
+     * Multiply _a by _b / 2^128.  Parameter _a should be less than or equal to
+     * 2^128 and parameter _b should be less than 2^128.
+     * @param _a left argument
+     * @param _b right argument
+     * @return _a * _b / 2^128
+     */
+    function mul(uint256 _a, uint256 _b) internal pure returns (uint256 _result) {
+      require(_a <= TWO_128, '_a should be less than or equal to 2^128');
+      require(_b < TWO_128, '_b should be less than 2^128');
+      return _a.mul(_b).add(TWO_127) >> 128;
+    }
+
+    /**
+     * Calculate (_a / 2^128)^_b * 2^128.  Parameter _a should be less than 2^128.
+     *
+     * @param _a left argument
+     * @param _b right argument
+     * @return (_a / 2^128)^_b * 2^128
+     */
+    function pow(uint256 _a, uint256 _b) internal pure returns (uint256 _result) {
+      require(_a < TWO_128, '_a should be less than 2^128');
+
+      _result = TWO_128;
+      while (_b > 0) {
+        if (_b & 1 == 0) {
+          _a = mul (_a, _a);
+          _b >>= 1;
         } else {
-            // We neglect lastConv when timePassed is big enough because lim [ a^t ] = 0 when t -> infinity
-            conviction = oldAmount.mul(D).div(D.sub(aD));
+          _result = mul (_result, _a);
+          _b -= 1;
         }
+      }
     }
 
     /**
