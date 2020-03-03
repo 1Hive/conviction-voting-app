@@ -1,0 +1,141 @@
+{
+  "projectName": "conviction-voting-app",
+  "projectOwner": "1hive",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 75,
+  "commit": true,
+  "commitConvention": "eslint",
+  "contributors": [
+    {
+      "login": "lkngtn",
+      "name": "Luke Duncan",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/4986634?v=4",
+      "profile": "https://github.com/lkngtn",
+      "contributions": [
+        "fundingFinding",
+        "ideas",
+        "projectManagement"
+      ]
+    },
+    {
+      "login": "dizzypaty",
+      "name": "Patricia Davila",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/7205369?v=4",
+      "profile": "https://github.com/dizzypaty",
+      "contributions": [
+        "design",
+        "ideas"
+      ]
+    },
+    {
+      "login": "sembrestels",
+      "name": "David Llop",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/931684?v=4",
+      "profile": "https://github.com/sembrestels",
+      "contributions": [
+        "code",
+        "ideas",
+        "security"
+      ]
+    },
+    {
+      "login": "stellarmagnet",
+      "name": "Yalda Mousavinia",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/2584493?v=4",
+      "profile": "http://spacedecentral.net",
+      "contributions": [
+        "ideas"
+      ]
+    },
+    {
+      "login": "deamme",
+      "name": "Deam",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/9392750?v=4",
+      "profile": "https://twitter.com/deamlabs",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "fabriziovigevani",
+      "name": "Fabrizio Vigevani",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/22663232?v=4",
+      "profile": "https://github.com/fabriziovigevani",
+      "contributions": [
+        "code",
+        "security"
+      ]
+    },
+    {
+      "login": "javieralaves",
+      "name": "Javier Alaves",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/28843778?v=4",
+      "profile": "https://github.com/javieralaves",
+      "contributions": [
+        "design"
+      ]
+    },
+    {
+      "login": "vivianedias",
+      "name": "Viviane Dias",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/9057801?v=4",
+      "profile": "https://github.com/vivianedias",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "SabaunT",
+      "name": "Sabaun Taraki",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/37265857?v=4",
+      "profile": "https://github.com/SabaunT",
+      "contributions": [
+        "test"
+      ]
+    },
+    {
+      "login": "commons-stack",
+      "name": "The Commons Stack",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/48513475?v=4",
+      "profile": "https://github.com/commons-stack",
+      "contributions": [
+        "blog",
+        "ideas",
+        "tool"
+      ]
+    },
+    {
+      "login": "1Hive",
+      "name": "1Hive",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/29875830?v=4",
+      "profile": "http://1hive.org",
+      "contributions": [
+        "financial",
+        "infra"
+      ]
+    },
+    {
+      "login": "aragon",
+      "name": "Aragon",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/24612534?v=4",
+      "profile": "https://aragon.org",
+      "contributions": [
+        "financial"
+      ]
+    },
+    {
+      "login": "P2PModels",
+      "name": "P2P Models",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/35083190?v=4",
+      "profile": "https://p2pmodels.eu",
+      "contributions": [
+        "infra"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7
+}

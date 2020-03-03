@@ -12,7 +12,7 @@ contract ConvictionVotingApp is AragonApp {
     using SafeMath64 for uint64;
 
     // Events
-    event ProposalAdded(address entity, uint256 id, string title, bytes ipfsHash, uint256 amount, address beneficiary);
+    event ProposalAdded(address entity, uint256 id, string title, bytes link, uint256 amount, address beneficiary);
     event StakeChanged(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 id, uint256 conviction);
 
@@ -92,13 +92,13 @@ contract ConvictionVotingApp is AragonApp {
     /**
      * @notice Add proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
      * @param _title Title of the proposal
-     * @param _ipfsHash IPFS file with proposal's description
+     * @param _link IPFS or HTTP link with proposal's description
      * @param _requestedAmount Tokens requested
      * @param _beneficiary Address that will receive payment
      */
     function addProposal(
         string _title,
-        bytes _ipfsHash,
+        bytes _link,
         uint256 _requestedAmount,
         address _beneficiary
     )
@@ -112,7 +112,7 @@ contract ConvictionVotingApp is AragonApp {
             0,
             false
         );
-        emit ProposalAdded(msg.sender, proposalCounter, _title, _ipfsHash, _requestedAmount, _beneficiary);
+        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary);
         proposalCounter++;
     }
 
@@ -155,19 +155,18 @@ contract ConvictionVotingApp is AragonApp {
      * @notice Execute proposal #`id`
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(id): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(id): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param id Proposal id
-     * @param _withdraw True if sender's staked tokens should be withdrawed after execution
+     * @param _withdrawIfPossible True if sender's staked tokens should be withdrawed after execution
      */
-    function executeProposal(uint256 id, bool _withdraw) external isInitialized() {
+    function executeProposal(uint256 id, bool _withdrawIfPossible) external isInitialized() {
         Proposal storage proposal = proposals[id];
         require(!proposal.executed, ERROR_PROPOSAL_ALREADY_EXECUTED);
         proposal.executed = true;
         calculateAndSetConviction(id, proposal.stakedTokens);
         require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE);
         emit ProposalExecuted(id, proposal.convictionLast);
-        // TODO Check if enough funds?
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
-        if (_withdraw) {
-            withdraw(id, proposals[id].stakesPerVoter[msg.sender]);
+        if (_withdrawIfPossible && proposal.stakesPerVoter[msg.sender] > 0) {
+            withdraw(id, proposal.stakesPerVoter[msg.sender]);
         }
     }
 
@@ -299,7 +298,7 @@ contract ConvictionVotingApp is AragonApp {
         uint64 blockNumber = getBlockNumber64();
         assert(proposal.blockLast <= blockNumber);
         if (proposal.blockLast == blockNumber) {
-          return; // Conviction already stored
+            return; // Conviction already stored
         }
         // calculateConviction and store it
         uint256 conviction = calculateConviction(

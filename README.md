@@ -1,6 +1,6 @@
 # Conviction Voting
 
-1Hive & P2P Models' Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
+1Hive's Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
 
 #### 🐲 Project Stage: development
 
@@ -16,18 +16,23 @@ To use this Aragon application, set it up using a token and a vault using:
 
 ```sh
 npm install
-npx aragon devchain
-npm run start:ipfs:template
+npm start # It actually starts `npm run start:ipfs:template`
 ```
 
 If everything is working correctly, your new DAO will be deployed and your browser will open http://localhost:3000/#/YOUR-DAO-ADDRESS. It should look something like this:
 
 ![Deployed DAO with conviction voting app](https://raw.githubusercontent.com/1Hive/conviction-voting-app/master/app/public/meta/screenshot-1.png)
 
-You can see how conviction increases and decreases over time by killing the `aragon devchain` process and executing:
+You can set up mocked data and add funds to the vault by executing:
 
 ```sh
-npx aragon devchain -b 15 # A new block is going to be mined every 15s
+npm run mock-data $YOUR_DAO_ADDR $CONVICTION_VOTING_APP_ID [$AMOUNT]
+```
+
+You can also see how conviction increases and decreases over time by executing:
+
+```sh
+npm run mine-blocks # A new block is going to be mined every 15s
 ```
 
 And refreshing the application in the browser (F5).
@@ -88,3 +93,36 @@ We welcome community contributions!
 Please check out our [open Issues](https://github.com/1Hive/conviction-voting-app/issues) to get started.
 
 If you discover something that could potentially impact security, please notify us immediately. The quickest way to reach us is via the #conviction-voting channel in our [team Keybase chat](https://1hive.org/contribute/keybase). Just say hi and that you discovered a potential security vulnerability and we'll DM you to discuss details.
+
+### Contributors
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/lkngtn"><img src="https://avatars0.githubusercontent.com/u/4986634?v=4" width="75px;" alt=""/><br /><sub><b>Luke Duncan</b></sub></a><br /><a href="#fundingFinding-lkngtn" title="Funding Finding">🔍</a> <a href="#ideas-lkngtn" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-lkngtn" title="Project Management">📆</a></td>
+    <td align="center"><a href="https://github.com/dizzypaty"><img src="https://avatars0.githubusercontent.com/u/7205369?v=4" width="75px;" alt=""/><br /><sub><b>Patricia Davila</b></sub></a><br /><a href="#design-dizzypaty" title="Design">🎨</a> <a href="#ideas-dizzypaty" title="Ideas, Planning, & Feedback">🤔</a></td>
+    <td align="center"><a href="https://github.com/sembrestels"><img src="https://avatars1.githubusercontent.com/u/931684?v=4" width="75px;" alt=""/><br /><sub><b>David Llop</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=sembrestels" title="Code">💻</a> <a href="#ideas-sembrestels" title="Ideas, Planning, & Feedback">🤔</a> <a href="#security-sembrestels" title="Security">🛡️</a></td>
+    <td align="center"><a href="http://spacedecentral.net"><img src="https://avatars3.githubusercontent.com/u/2584493?v=4" width="75px;" alt=""/><br /><sub><b>Yalda Mousavinia</b></sub></a><br /><a href="#ideas-stellarmagnet" title="Ideas, Planning, & Feedback">🤔</a></td>
+    <td align="center"><a href="https://twitter.com/deamlabs"><img src="https://avatars2.githubusercontent.com/u/9392750?v=4" width="75px;" alt=""/><br /><sub><b>Deam</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=deamme" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/fabriziovigevani"><img src="https://avatars3.githubusercontent.com/u/22663232?v=4" width="75px;" alt=""/><br /><sub><b>Fabrizio Vigevani</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=fabriziovigevani" title="Code">💻</a> <a href="#security-fabriziovigevani" title="Security">🛡️</a></td>
+    <td align="center"><a href="https://github.com/javieralaves"><img src="https://avatars2.githubusercontent.com/u/28843778?v=4" width="75px;" alt=""/><br /><sub><b>Javier Alaves</b></sub></a><br /><a href="#design-javieralaves" title="Design">🎨</a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/vivianedias"><img src="https://avatars3.githubusercontent.com/u/9057801?v=4" width="75px;" alt=""/><br /><sub><b>Viviane Dias</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=vivianedias" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/SabaunT"><img src="https://avatars0.githubusercontent.com/u/37265857?v=4" width="75px;" alt=""/><br /><sub><b>Sabaun Taraki</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=SabaunT" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://github.com/commons-stack"><img src="https://avatars1.githubusercontent.com/u/48513475?v=4" width="75px;" alt=""/><br /><sub><b>The Commons Stack</b></sub></a><br /><a href="#blog-commons-stack" title="Blogposts">📝</a> <a href="#ideas-commons-stack" title="Ideas, Planning, & Feedback">🤔</a> <a href="#tool-commons-stack" title="Tools">🔧</a></td>
+    <td align="center"><a href="http://1hive.org"><img src="https://avatars2.githubusercontent.com/u/29875830?v=4" width="75px;" alt=""/><br /><sub><b>1Hive</b></sub></a><br /><a href="#financial-1Hive" title="Financial">💵</a> <a href="#infra-1Hive" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+    <td align="center"><a href="https://aragon.org"><img src="https://avatars1.githubusercontent.com/u/24612534?v=4" width="75px;" alt=""/><br /><sub><b>Aragon</b></sub></a><br /><a href="#financial-aragon" title="Financial">💵</a></td>
+    <td align="center"><a href="https://p2pmodels.eu"><img src="https://avatars1.githubusercontent.com/u/35083190?v=4" width="75px;" alt=""/><br /><sub><b>P2P Models</b></sub></a><br /><a href="#infra-P2PModels" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+  </tr>
+</table>
+
+<!-- markdownlint-enable -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

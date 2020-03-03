@@ -1,186 +1,102 @@
-import React, { useState } from 'react'
-import { useAragonApi } from '@aragon/api-react'
+import React, { useCallback } from 'react'
+import { useGuiStyle, useAppState } from '@aragon/api-react'
 import {
   Main,
   Button,
   SidePanel,
-  Box,
-  DataView,
-  useTheme,
-  Text,
-  Tag,
+  SyncIndicator,
+  IconPlus,
+  Header,
+  GU,
+  useLayout,
 } from '@aragon/ui'
 import styled from 'styled-components'
-import AppHeader from './components/AppHeader'
-import Balance from './components/Balance'
-import ProposalDetail from './components/ProposalDetail'
+
+import ProposalDetail from './screens/ProposalDetail'
+import Proposals from './screens/Proposals'
 import AddProposalPanel from './components/AddProposalPanel'
-import { ConvictionBar, ConvictionTrend } from './components/ConvictionVisuals'
-import { toDecimals } from './lib/math-utils'
 
-function App() {
-  const { api, appState, connectedAccount } = useAragonApi()
-  const { proposals, convictionStakes, requestToken } = appState
-  const activeProposals = proposals.filter(({ executed }) => !executed)
-  const myStakes =
-    (convictionStakes &&
-      convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
-    []
+import useAppLogic from './app-logic'
+import useFilterProposals from './hooks/useFilterProposals'
+import useSelectedProposal from './hooks/useSelectedProposal'
 
-  const myLastStakes = getLastOf(myStakes, 'proposal').filter(
-    ({ tokensStaked }) => tokensStaked > 0
-  )
+const Layout = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: ${2.5 * GU}px;
+`
 
-  const isStaked = proposal =>
-    myLastStakes.find(stake => stake.proposal === proposal.id)
+const App = React.memo(function App() {
+  const { setProposalPanel, proposalPanel, onProposalSubmit } = useAppLogic()
 
-  const [proposalPanel, setProposalPanel] = useState(false)
-  const onProposalSubmit = ({ title, description, amount, beneficiary }) => {
-    const decimals = parseInt(requestToken.decimals)
-    const decimalAmount = toDecimals(amount.trim(), decimals).toString()
-    api.addProposal(title, '0x0', decimalAmount, beneficiary).toPromise()
-    // TODO Store description on IPFS
-    setProposalPanel(false)
-  }
+  const { proposals = [], isSyncing, requestToken } = useAppState()
+
+  const { layoutName } = useLayout()
+  const compactMode = layoutName === 'small'
+
+  const [selectedProposal, selectProposal] = useSelectedProposal(proposals)
+  const handleBack = useCallback(() => selectProposal(-1), [selectProposal])
+  const {
+    filteredProposals,
+    proposalStatusFilter,
+    handleProposalStatusFilterChange,
+  } = useFilterProposals(proposals)
 
   return (
-    <Main assetsUrl="./aragon-ui">
-      <>
-        <AppHeader
-          heading="Conviction Voting"
-          action1={
-            <Button
-              mode="strong"
-              label="Create proposal"
-              onClick={() => setProposalPanel(true)}
-            >
-              Create proposal
-            </Button>
+    <Layout size={layoutName}>
+      <div
+        css={`
+          width: ${layoutName !== 'small' ? '75%' : '100%'};
+        `}
+      >
+        <SyncIndicator visible={isSyncing} />
+        <Header
+          primary="Conviction Voting"
+          secondary={
+            !selectedProposal && (
+              <Button
+                mode="strong"
+                onClick={() => setProposalPanel(true)}
+                label="New proposal"
+                icon={<IconPlus />}
+                display={compactMode ? 'icon' : 'label'}
+              />
+            )
           }
         />
-        <Wrapper>
-          <div css="width: 25%; margin-right: 1rem;">
-            <Box heading="Vault balance">
-              <Balance {...requestToken} />
-            </Box>
-            {myLastStakes.length > 0 &&
-              myLastStakes.map(stake => (
-                <Box heading="My conviction proposal" key={stake.proposal}>
-                  <ProposalInfo
-                    proposal={
-                      proposals.filter(({ id }) => id === stake.proposal)[0]
-                    }
-                    stake={stake}
-                  />
-                </Box>
-              ))}
-          </div>
-          <div css="width: 75%">
-            <DataView
-              fields={[
-                { label: 'Proposal', priority: 1 },
-                { label: 'Requested', priority: 4 },
-                { label: 'Conviction progress', priority: 2 },
-                { label: 'Trend', priority: 5 },
-              ]}
-              entries={activeProposals}
-              renderEntry={proposal => [
-                <IdAndTitle {...proposal} />,
-                <Amount {...proposal} />,
-                <ConvictionBar proposal={proposal} />,
-                <ConvictionTrend proposal={proposal} />,
-              ]}
-              renderEntryExpansion={proposal => (
-                <ProposalDetail
-                  proposal={proposal}
-                  onStake={() =>
-                    api.stakeAllToProposal(proposal.id).toPromise()
-                  }
-                  onWithdraw={() =>
-                    api.withdrawAllFromProposal(proposal.id).toPromise()
-                  }
-                  onExecute={() =>
-                    api.executeProposal(proposal.id, true).toPromise()
-                  }
-                  isStaked={isStaked(proposal)}
-                />
-              )}
-            />
-          </div>
-        </Wrapper>
-        <SidePanel
-          title="Create proposal"
-          opened={proposalPanel}
-          onClose={() => setProposalPanel(false)}
-        >
-          <AddProposalPanel onSubmit={onProposalSubmit} />
-        </SidePanel>
-      </>
+        {selectedProposal ? (
+          <ProposalDetail
+            proposal={selectedProposal}
+            onBack={handleBack}
+            requestToken={requestToken}
+          />
+        ) : (
+          <Proposals
+            proposals={proposals}
+            selectProposal={selectProposal}
+            filteredProposals={filteredProposals}
+            proposalStatusFilter={proposalStatusFilter}
+            handleProposalStatusFilterChange={handleProposalStatusFilterChange}
+            requestToken={requestToken}
+          />
+        )}
+      </div>
+      <SidePanel
+        title="New proposal"
+        opened={proposalPanel}
+        onClose={() => setProposalPanel(false)}
+      >
+        <AddProposalPanel onSubmit={onProposalSubmit} />
+      </SidePanel>
+    </Layout>
+  )
+})
+
+export default () => {
+  const { appearance } = useGuiStyle()
+  return (
+    <Main layout={false} theme={appearance} assetsUrl="./aragon-ui">
+      <App />
     </Main>
   )
 }
-
-function getLastOf(arr, comp) {
-  arr = [...arr].reverse()
-  const unique = arr
-    .map(e => e[comp])
-    // store the keys of the unique objects
-    .map((e, i, final) => final.indexOf(e) === i && i)
-    // eliminate the dead keys & store unique objects
-    .filter(e => arr[e])
-    .map(e => arr[e])
-  return unique
-}
-
-const IdAndTitle = ({ id, name, description }) => {
-  const theme = useTheme()
-  return (
-    <div>
-      <Text color={theme.surfaceContent.toString()}>#{id}</Text>{' '}
-      <Text color={theme.surfaceContentSecondary.toString()}>{name}</Text>
-      <br />
-      <Text color={theme.surfaceContentSecondary.toString()}>
-        {description}
-      </Text>
-    </div>
-  )
-}
-
-const Amount = ({ requestedAmount = 0 }) => {
-  const {
-    appState: {
-      requestToken: { symbol, decimals, verified },
-    },
-  } = useAragonApi()
-  return (
-    <div>
-      <Balance
-        amount={requestedAmount}
-        decimals={decimals}
-        symbol={symbol}
-        verified={verified}
-      />
-    </div>
-  )
-}
-
-const ProposalInfo = ({ proposal, stake }) => {
-  const {
-    appState: {
-      stakeToken: { tokenSymbol },
-    },
-  } = useAragonApi()
-  return (
-    <div>
-      <IdAndTitle {...proposal} />
-      <Tag>{`✓ Supported with ${stake.tokensStaked} ${tokenSymbol}`}</Tag>
-      <ConvictionBar proposal={proposal} />
-    </div>
-  )
-}
-
-const Wrapper = styled.div`
-  display: flex;
-`
-
-export default App

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAragonApi } from '@aragon/api-react'
-import { Timer, Text, Button, Tag, useTheme } from '@aragon/ui'
+import { Timer, Text, Tag, Button, useTheme } from '@aragon/ui'
 import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
@@ -37,7 +37,7 @@ function getStakesAndThreshold(proposal = {}) {
   return { stakes, totalTokensStaked, threshold, max }
 }
 
-function ConvictionChart({ proposal }) {
+export function ConvictionChart({ proposal }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const currentBlock = useBlockNumber()
   const { connectedAccount } = useAragonApi()
@@ -78,11 +78,12 @@ function ConvictionChart({ proposal }) {
   )
 }
 
-const ConvictionBar = ({ proposal }) => {
+export function ConvictionBar({ proposal }) {
   const { connectedAccount } = useAragonApi()
   const { alpha } = getGlobalParams()
   const blockNumber = useBlockNumber()
   const theme = useTheme()
+
   const { stakes, totalTokensStaked, threshold, max } = getStakesAndThreshold(
     proposal
   )
@@ -122,7 +123,30 @@ const ConvictionBar = ({ proposal }) => {
   )
 }
 
-function ConvictionCountdown({ proposal, onExecute }) {
+export function ConvictionButton({ proposal, onStake, onWithdraw, onExecute }) {
+  const { alpha } = getGlobalParams()
+  const blockNumber = useBlockNumber()
+  const { connectedAccount } = useAragonApi()
+  const { stakes, threshold } = getStakesAndThreshold(proposal)
+  const conviction = getCurrentConviction(stakes, blockNumber, alpha)
+  const myStakes = stakes.filter(({ entity }) => entity === connectedAccount)
+  const didIStaked = myStakes.length > 0 && [...myStakes].pop().tokensStaked > 0
+  return conviction >= threshold ? (
+    <Button mode="strong" wide onClick={onExecute}>
+      Execute proposal
+    </Button>
+  ) : didIStaked ? (
+    <Button wide onClick={onWithdraw}>
+      Withdraw support
+    </Button>
+  ) : (
+    <Button mode="strong" wide onClick={onStake}>
+      Support this proposal
+    </Button>
+  )
+}
+
+export function ConvictionCountdown({ proposal }) {
   const { alpha } = getGlobalParams()
   const {
     appState: {
@@ -144,23 +168,23 @@ function ConvictionCountdown({ proposal, onExecute }) {
     alpha
   )
 
-  const WONT_PASS = 0
-  const WILL_PASS = 1
-  const CAN_PASS = 2
-  const [view, setView] = useState(
-    conviction >= threshold ? CAN_PASS : time > 0 ? WILL_PASS : WONT_PASS
-  )
+  const UNABLE_TO_PASS = 0
+  const MAY_PASS = 1
+  const AVAILABLE = 2
+  const getView = () =>
+    conviction >= threshold ? AVAILABLE : time > 0 ? MAY_PASS : UNABLE_TO_PASS
+  const [view, setView] = useState(getView())
+
   const NOW = Date.now()
   const BLOCK_TIME = 1000 * 15
-  const endDate = !isNaN(time) && new Date(NOW + time * BLOCK_TIME)
-
+  const endDate =
+    !isNaN(new Date(NOW + time * BLOCK_TIME).getTime()) &&
+    new Date(NOW + time * BLOCK_TIME)
   useEffect(() => {
-    setView(
-      conviction >= threshold ? CAN_PASS : time > 0 ? WILL_PASS : WONT_PASS
-    )
+    setView(getView())
   }, [conviction, threshold, time])
 
-  return view === WONT_PASS ? (
+  return view === UNABLE_TO_PASS ? (
     <>
       <Text color={theme.negative.toString()}> ✘ Won't pass</Text>
       <div>
@@ -177,31 +201,29 @@ function ConvictionCountdown({ proposal, onExecute }) {
         </Text>
       </div>
     </>
-  ) : view === WILL_PASS ? (
+  ) : view === MAY_PASS ? (
     <>
       <Text color={theme.positive.toString()}> ✓ May pass</Text>
       <br />
       <Text color={theme.surfaceContentSecondary.toString()}>
         Estimate until pass
       </Text>
-      {endDate && <Timer end={endDate} />}
+      {!!endDate && <Timer end={endDate} />}
     </>
   ) : (
     <>
       <Text color={theme.positive.toString()}> ✓ Available for execution</Text>
-      <Button mode="strong" wide onClick={onExecute}>
-        Execute proposal
-      </Button>
     </>
   )
 }
 
-function ConvictionTrend({ proposal }) {
+export function ConvictionTrend({ proposal }) {
   const theme = useTheme()
   const { stakes, max } = getStakesAndThreshold(proposal)
   const blockNumber = useBlockNumber()
   const { alpha } = getGlobalParams()
   const trend = getConvictionTrend(stakes, max, blockNumber, alpha)
+
   const percentage =
     trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
   return (
@@ -228,5 +250,3 @@ function getGlobalParams() {
 const Centered = styled.div`
   text-align: center;
 `
-
-export { ConvictionChart, ConvictionBar, ConvictionCountdown, ConvictionTrend }

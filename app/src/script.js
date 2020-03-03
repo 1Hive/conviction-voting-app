@@ -1,7 +1,7 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import Aragon, { events } from '@aragon/api'
-import { addressesEqual } from './lib/web3-utils'
+import { addressesEqual, toUtf8 } from './lib/web3-utils'
 import { hasLoadedTokenSettings, loadTokenSettings } from './token-settings'
 import tokenAbi from './abi/minimeToken.json'
 import {
@@ -112,30 +112,31 @@ async function initialize([
     }
 
     // Vault event
-    if (addressesEqual(address, vaultAddress)) {
-      if (returnValues.token === requestTokenAddress) {
-        return {
-          ...nextState,
-          requestToken: await getRequestTokenSettings(
-            returnValues.token,
-            vault
-          ),
-        }
+    if (
+      addressesEqual(address, vaultAddress) &&
+      returnValues.token === requestTokenAddress
+    ) {
+      return {
+        ...nextState,
+        requestToken: await getRequestTokenSettings(returnValues.token, vault),
       }
     }
 
     switch (event) {
       case 'ProposalAdded': {
-        const { entity, id, title, amount, beneficiary } = returnValues
+        const { entity, id, title, amount, beneficiary, link } = returnValues
         const newProposal = {
           id: parseInt(id),
           name: title,
-          description: 'Lorem ipsum...',
+          link: link && toUtf8(link), // Can be an HTTP or IPFS link
           requestedAmount: parseInt(amount),
           creator: entity,
           beneficiary,
         }
-        nextState.proposals.push(newProposal)
+        nextState = {
+          ...nextState,
+          proposals: [...nextState.proposals, newProposal],
+        }
         break
       }
       case 'StakeChanged': {
