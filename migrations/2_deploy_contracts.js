@@ -1,6 +1,6 @@
 /* global artifacts */
-var ConvictionVotingApp = artifacts.require('ConvictionVotingApp.sol')
+var ConvictionVoting = artifacts.require('ConvictionVoting.sol')
 
 module.exports = function(deployer) {
-  deployer.deploy(ConvictionVotingApp)
+  deployer.deploy(ConvictionVoting)
 }

@@ -24,5 +24,5 @@
       "network": "mainnet"
     }
   },
-  "path": "contracts/ConvictionVotingApp.sol"
+  "path": "contracts/ConvictionVoting.sol"
 }

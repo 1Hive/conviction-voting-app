@@ -63,7 +63,7 @@ root
 ├ ├── src
 ├ └── package.json
 ├── contracts
-├ ├── ConvictionVotingApp.sol
+├ ├── ConvictionVoting.sol
 ├ └── Template.sol
 ├── migration
 ├── test
@@ -77,7 +77,7 @@ root
   - **src**: Source files.
   - [**package.json**](https://docs.npmjs.com/creating-a-package-json-file): Frontend npm configuration file.
 - **contracts**: Smart Constracts folder.
-  - `ConvictionVotingApp.sol`: Aragon app contract.
+  - `ConvictionVoting.sol`: Aragon app contract.
   - `Template.sol`: [Aragon Template](https://hack.aragon.org/docs/templates-intro) to deploy a fully functional DAO.
 - [**migrations**](https://truffleframework.com/docs/truffle/getting-started/running-migrations): Migrations folder.
 - **test**: Tests folder.

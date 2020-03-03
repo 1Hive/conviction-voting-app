@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "@aragon/templates-shared/contracts/TokenCache.sol";
 import "@aragon/templates-shared/contracts/BaseTemplate.sol";
 
-import "./ConvictionVotingApp.sol";
+import "./ConvictionVoting.sol";
 
 
 contract Template is BaseTemplate, TokenCache {
@@ -140,7 +140,7 @@ contract Template is BaseTemplate, TokenCache {
     )
         internal
     {
-        ConvictionVotingApp app = _installConvictionVoting(_dao, _stakeToken, _vault, _requestToken);
+        ConvictionVoting app = _installConvictionVoting(_dao, _stakeToken, _vault, _requestToken);
         _createConvictionVotingPermissions(_acl, app, _voting, _voting);
         _mockProposalsData(app);
         _createVaultPermissions(_acl, _vault, app, _voting);
@@ -152,17 +152,17 @@ contract Template is BaseTemplate, TokenCache {
         Vault _vault,
         address _requestToken
     )
-        internal returns (ConvictionVotingApp)
+        internal returns (ConvictionVoting)
     {
         bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
         bytes4 selector = bytes4(keccak256("initialize(address,address,address)"));
         bytes memory initializeData = abi.encodeWithSelector(selector, _stakeToken, _vault, _requestToken);
-        return ConvictionVotingApp(_installDefaultApp(_dao, _appId, initializeData));
+        return ConvictionVoting(_installDefaultApp(_dao, _appId, initializeData));
     }
 
     function _createConvictionVotingPermissions(
         ACL _acl,
-        ConvictionVotingApp _app,
+        ConvictionVoting _app,
         address _grantee,
         address _manager
     )
@@ -194,7 +194,7 @@ contract Template is BaseTemplate, TokenCache {
         _vault.deposit(_requestToken, _amount);
     }
 
-    function _mockProposalsData(ConvictionVotingApp _app) internal {
+    function _mockProposalsData(ConvictionVoting _app) internal {
         _app.addProposal("Aragon Sidechain", "0x0", 2000 * 10 ** 18, msg.sender);
         _app.addProposal("Conviction Voting", "0x0", 1000 * 10 ** 18, msg.sender);
         _app.addProposal("Aragon Button", "0x0", 1000 * 10 ** 18, msg.sender);
