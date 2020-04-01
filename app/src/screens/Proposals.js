@@ -72,7 +72,7 @@ const Proposals = React.memo(function Proposals({
           }
           entries={filteredProposals}
           renderEntry={proposal => {
-            return [
+            const entriesElements = [
               <IdAndTitle
                 id={proposal.id}
                 name={proposal.name}
@@ -82,15 +82,19 @@ const Proposals = React.memo(function Proposals({
                 requestedAmount={proposal.requestedAmount}
                 requestToken={requestToken}
               />,
-              <div
-                css={`
-                  width: ${23 * GU};
-                `}
-              >
-                <ConvictionBar proposal={proposal} />
-              </div>,
-              <ConvictionTrend proposal={proposal} />,
             ]
+            if (!proposal.executed)
+              entriesElements.push(
+                <div
+                  css={`
+                    width: ${23 * GU};
+                  `}
+                >
+                  <ConvictionBar proposal={proposal} />
+                </div>,
+                <ConvictionTrend proposal={proposal} />
+              )
+            return entriesElements
           }}
           tableRowHeight={14 * GU}
           heading={
