@@ -16,6 +16,7 @@ import {
   getConvictionTrend,
 } from '../lib/conviction'
 import { useBlockNumber } from '../BlockContext'
+import { fromDecimals } from '../lib/math-utils'
 
 function getStakesAndThreshold(proposal = {}) {
   const { appState } = useAragonApi()
@@ -37,7 +38,7 @@ function getStakesAndThreshold(proposal = {}) {
   return { stakes, totalTokensStaked, threshold, max }
 }
 
-export function ConvictionChart({ proposal }) {
+export function ConvictionChart({ proposal, width = '50%' }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const currentBlock = useBlockNumber()
   const { connectedAccount } = useAragonApi()
@@ -64,6 +65,7 @@ export function ConvictionChart({ proposal }) {
 
   return (
     <LineChart
+      width={width}
       lines={normalize(lines, threshold)}
       total={lines[0] && lines[0].length}
       label={i => i - Math.floor((lines[0].length - 1) / 2)}
@@ -116,7 +118,13 @@ export function ConvictionBar({ proposal }) {
           {Math.round(stakedConviction * 100)}%
         </Text>{' '}
         <Text color={theme.surfaceContentSecondary.toString()}>
-          ({Math.round(neededConviction * 100)}% conviction needed)
+          (
+          {isFinite(neededConviction) ? (
+            `${Math.round(neededConviction * 100)}% `
+          ) : (
+            <React.Fragment>&infin; </React.Fragment>
+          )}
+          conviction needed)
         </Text>
       </div>
     </div>
@@ -147,14 +155,15 @@ export function ConvictionButton({ proposal, onStake, onWithdraw, onExecute }) {
 }
 
 export function ConvictionCountdown({ proposal }) {
-  const { alpha } = getGlobalParams()
+  const { alpha, maxRatio } = getGlobalParams()
   const {
     appState: {
-      stakeToken: { tokenSymbol },
+      stakeToken: { tokenSymbol, tokenDecimals },
     },
   } = useAragonApi()
   const blockNumber = useBlockNumber()
   const theme = useTheme()
+  const { executed } = proposal
   const { stakes, totalTokensStaked, threshold } = getStakesAndThreshold(
     proposal
   )
@@ -171,8 +180,16 @@ export function ConvictionCountdown({ proposal }) {
   const UNABLE_TO_PASS = 0
   const MAY_PASS = 1
   const AVAILABLE = 2
+  const EXECUTED = 3
+
   const getView = () =>
-    conviction >= threshold ? AVAILABLE : time > 0 ? MAY_PASS : UNABLE_TO_PASS
+    executed
+      ? EXECUTED
+      : conviction >= threshold
+      ? AVAILABLE
+      : time > 0
+      ? MAY_PASS
+      : UNABLE_TO_PASS
   const [view, setView] = useState(getView())
 
   const NOW = Date.now()
@@ -189,15 +206,31 @@ export function ConvictionCountdown({ proposal }) {
       <Text color={theme.negative.toString()}> ✘ Won't pass</Text>
       <div>
         <Text color={theme.surfaceContent.toString()}>
-          Insufficient staked tokens
+          {!isNaN(neededTokens)
+            ? 'Insufficient staked tokens'
+            : 'Not enough funds in the organization'}
         </Text>
         <br />
         <Text color={theme.surfaceContentSecondary.toString()}>
-          (At least{' '}
-          <Tag>
-            {neededTokens} {tokenSymbol}
-          </Tag>{' '}
-          more needed).
+          (
+          {!isNaN(neededTokens) ? (
+            <React.Fragment>
+              At least{' '}
+              <Tag>
+                {parseFloat(
+                  fromDecimals(neededTokens.toString(), tokenDecimals)
+                )
+                  .toFixed(2)
+                  .toString()}{' '}
+                {tokenSymbol}
+              </Tag>{' '}
+              more needed
+            </React.Fragment>
+          ) : (
+            `Funding requests must be below ${maxRatio *
+              100}% organization total funds`
+          )}
+          ).
         </Text>
       </div>
     </>
@@ -210,6 +243,8 @@ export function ConvictionCountdown({ proposal }) {
       </Text>
       {!!endDate && <Timer end={endDate} />}
     </>
+  ) : view === EXECUTED ? (
+    <Text color={theme.positive.toString()}> ✓ Executed</Text>
   ) : (
     <>
       <Text color={theme.positive.toString()}> ✓ Available for execution</Text>

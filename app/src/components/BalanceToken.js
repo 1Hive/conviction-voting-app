@@ -17,9 +17,11 @@ const BalanceToken = ({ amount, symbol, verified, convertedAmount = -1 }) => (
   <Wrap>
     <div>
       <Text color={useTheme().surfaceContent.toString()}>
-        {splitAmount(amount.toFixed(3))}{' '}
+        {amount ? splitAmount(amount.toFixed(3)) : ' - '}{' '}
       </Text>
-      <Text color={useTheme().surfaceContent.toString()}>{symbol || '?'}</Text>
+      <Text color={useTheme().surfaceContent.toString()}>
+        {symbol || ' ? '}
+      </Text>
     </div>
     <ConvertedAmount>
       {convertedAmount >= 0
