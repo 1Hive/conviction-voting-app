@@ -1,11 +1,38 @@
-import React, { useMemo, useCallback } from 'react'
+import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { Spring } from 'react-spring'
 import { unselectable, springs } from '@aragon/ui'
 
 const LABELS_HEIGHT = 30
+const WIDTH_DEFAULT = 300
+
+function useMeasuredWidth() {
+  const ref = useRef()
+  const [measuredWidth, setMeasuredWidth] = useState(WIDTH_DEFAULT)
+
+  const onResize = useCallback(() => {
+    if (ref.current) {
+      setMeasuredWidth(ref.current.clientWidth)
+    }
+  }, [])
+
+  const onRef = useCallback(
+    element => {
+      ref.current = element
+      onResize()
+    },
+    [onResize]
+  )
+
+  useEffect(() => {
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [onResize])
+
+  return [measuredWidth, onRef]
+}
 
 const ModifiedLineChart = ({
-  width,
+  width: widthProps,
   height,
   borderColor,
   dotRadius,
@@ -20,6 +47,8 @@ const ModifiedLineChart = ({
   total,
   ...props
 }) => {
+  const [width, onSvgRef] = useMeasuredWidth()
+
   // the total amount of values
   const lines = useMemo(() => {
     return linesProps.map(lineOrValues =>
@@ -90,8 +119,8 @@ const ModifiedLineChart = ({
       {({ progress }) => (
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          width={width}
-          height={height}
+          width={widthProps || 'auto'}
+          height="auto"
           css="display: block"
           {...props}
         >
