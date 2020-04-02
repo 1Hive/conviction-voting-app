@@ -9,7 +9,7 @@ const convertApiUrl = symbols =>
   `${CONVERT_API_BASE}/price?fsym=USD&tsyms=${symbols.join(',')}`
 
 function Balance(props) {
-  const { amount = 0, decimals, symbol, verified } = props
+  const { amount = 0, decimals, symbol, verified, fixedCenter = true } = props
   const [convertRates, setConvertRates] = useState({})
 
   const updateConvertedRates = async ({ verified, symbol }) => {
@@ -42,6 +42,7 @@ function Balance(props) {
         convertedAmount={round(parseFloat(convertedAmount), 5)}
         symbol={symbol}
         verified={verified}
+        fixedCenter={fixedCenter}
       />
     </section>
   )

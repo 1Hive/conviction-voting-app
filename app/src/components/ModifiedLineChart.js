@@ -119,9 +119,10 @@ const ModifiedLineChart = ({
       {({ progress }) => (
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          width={widthProps || 'auto'}
+          width={'auto'}
           height="auto"
           css="display: block"
+          ref={onSvgRef}
           {...props}
         >
           <mask id="chart-mask">{rectangle}</mask>

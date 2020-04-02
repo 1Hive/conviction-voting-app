@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { theme, useTheme, Text } from '@aragon/ui'
+import { theme, useTheme, Text, useLayout } from '@aragon/ui'
 import { formatTokenAmount } from '../lib/utils'
 
 const splitAmount = amount => {
@@ -13,27 +13,37 @@ const splitAmount = amount => {
   )
 }
 
-const BalanceToken = ({ amount, symbol, verified, convertedAmount = -1 }) => (
-  <Wrap>
-    <div>
-      <Text color={useTheme().surfaceContent.toString()}>
-        {amount ? splitAmount(amount.toFixed(3)) : ' - '}{' '}
-      </Text>
-      <Text color={useTheme().surfaceContent.toString()}>
-        {symbol || ' ? '}
-      </Text>
-    </div>
-    <ConvertedAmount>
-      {convertedAmount >= 0
-        ? `(${formatTokenAmount(convertedAmount.toFixed(2))})`
-        : '(−)'}
-    </ConvertedAmount>
-  </Wrap>
-)
+const BalanceToken = ({
+  amount,
+  symbol,
+  verified,
+  convertedAmount = -1,
+  fixedCenter = true,
+}) => {
+  const { layoutName } = useLayout()
+  const compactMode = layoutName === 'small'
+  return (
+    <Wrap compactMode={!fixedCenter || compactMode}>
+      <div>
+        <Text color={useTheme().surfaceContent.toString()}>
+          {amount ? splitAmount(amount.toFixed(3)) : ' - '}{' '}
+        </Text>
+        <Text color={useTheme().surfaceContent.toString()}>
+          {symbol || ' ? '}
+        </Text>
+      </div>
+      <ConvertedAmount>
+        {convertedAmount >= 0
+          ? `(${formatTokenAmount(convertedAmount.toFixed(2))})`
+          : '(−)'}
+      </ConvertedAmount>
+    </Wrap>
+  )
+}
 
 const Wrap = styled.div`
   display: flex;
-  align-items: center;
+  align-items: ${({ compactMode }) => (compactMode ? 'flex-start' : 'center')};
   justify-content: center;
   flex-direction: column;
 `

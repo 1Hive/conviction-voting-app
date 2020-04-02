@@ -1,5 +1,5 @@
 const defaultAlpha = 0.9 // Constant that controls the conviction decay
-export const defaultBeta = 0.2 // Maximum share of funds a proposal can take
+const defaultBeta = 0.2 // Maximum share of funds a proposal can take
 const defaultRho = 0.5 * defaultBeta ** 2 // Tuning param for the threshold function
 
 /**
