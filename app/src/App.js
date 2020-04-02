@@ -7,10 +7,8 @@ import {
   SyncIndicator,
   IconPlus,
   Header,
-  GU,
   useLayout,
 } from '@aragon/ui'
-import styled from 'styled-components'
 
 import ProposalDetail from './screens/ProposalDetail'
 import Proposals from './screens/Proposals'
@@ -19,12 +17,6 @@ import AddProposalPanel from './components/AddProposalPanel'
 import useAppLogic from './app-logic'
 import useFilterProposals from './hooks/useFilterProposals'
 import useSelectedProposal from './hooks/useSelectedProposal'
-
-const Layout = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: ${2.5 * GU}px;
-`
 
 const App = React.memo(function App() {
   const { setProposalPanel, proposalPanel, onProposalSubmit } = useAppLogic()
@@ -43,44 +35,38 @@ const App = React.memo(function App() {
   } = useFilterProposals(proposals)
 
   return (
-    <Layout size={layoutName}>
-      <div
-        css={`
-          width: ${layoutName !== 'small' ? '75%' : '100%'};
-        `}
-      >
-        <SyncIndicator visible={isSyncing} />
-        <Header
-          primary="Conviction Voting"
-          secondary={
-            !selectedProposal && (
-              <Button
-                mode="strong"
-                onClick={() => setProposalPanel(true)}
-                label="New proposal"
-                icon={<IconPlus />}
-                display={compactMode ? 'icon' : 'label'}
-              />
-            )
-          }
+    <React.Fragment>
+      <SyncIndicator visible={isSyncing} />
+      <Header
+        primary="Conviction Voting"
+        secondary={
+          !selectedProposal && (
+            <Button
+              mode="strong"
+              onClick={() => setProposalPanel(true)}
+              label="New proposal"
+              icon={<IconPlus />}
+              display={compactMode ? 'icon' : 'label'}
+            />
+          )
+        }
+      />
+      {selectedProposal ? (
+        <ProposalDetail
+          proposal={selectedProposal}
+          onBack={handleBack}
+          requestToken={requestToken}
         />
-        {selectedProposal ? (
-          <ProposalDetail
-            proposal={selectedProposal}
-            onBack={handleBack}
-            requestToken={requestToken}
-          />
-        ) : (
-          <Proposals
-            proposals={proposals}
-            selectProposal={selectProposal}
-            filteredProposals={filteredProposals}
-            proposalStatusFilter={proposalStatusFilter}
-            handleProposalStatusFilterChange={handleProposalStatusFilterChange}
-            requestToken={requestToken}
-          />
-        )}
-      </div>
+      ) : (
+        <Proposals
+          proposals={proposals}
+          selectProposal={selectProposal}
+          filteredProposals={filteredProposals}
+          proposalStatusFilter={proposalStatusFilter}
+          handleProposalStatusFilterChange={handleProposalStatusFilterChange}
+          requestToken={requestToken}
+        />
+      )}
       <SidePanel
         title="New proposal"
         opened={proposalPanel}
@@ -88,14 +74,14 @@ const App = React.memo(function App() {
       >
         <AddProposalPanel onSubmit={onProposalSubmit} />
       </SidePanel>
-    </Layout>
+    </React.Fragment>
   )
 })
 
 export default () => {
   const { appearance } = useGuiStyle()
   return (
-    <Main layout={false} theme={appearance} assetsUrl="./aragon-ui">
+    <Main theme={appearance} assetsUrl="./aragon-ui">
       <App />
     </Main>
   )

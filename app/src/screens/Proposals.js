@@ -9,21 +9,11 @@ import {
   Tag,
   textStyle,
   useTheme,
+  Split,
 } from '@aragon/ui'
-import styled from 'styled-components'
 
 import Balance from '../components/Balance'
 import { ConvictionBar, ConvictionTrend } from '../components/ConvictionVisuals'
-
-const Wrapper = styled.div`
-  display: grid;
-  grid-template-columns: auto;
-  grid-column-gap: ${2.5 * GU}px;
-  @media (min-width: 768px) {
-    grid-template-columns: 160px auto;
-  }
-  min-height: 100vh;
-`
 
 const Proposals = React.memo(function Proposals({
   proposals,
@@ -36,29 +26,14 @@ const Proposals = React.memo(function Proposals({
   requestToken,
 }) {
   return (
-    <Wrapper>
-      <div>
-        <Box heading="Vault balance">
-          <Balance {...requestToken} />
-        </Box>
-        {myLastStake && myLastStake.tokensStaked > 0 && (
-          <Box heading="My staked proposal" key={myLastStake.proposal}>
-            <ProposalInfo
-              proposal={
-                proposals.filter(({ id }) => id === myLastStake.proposal)[0]
-              }
-              stake={myLastStake}
-            />
-          </Box>
-        )}
-      </div>
-      <div>
+    <Split
+      primary={
         <DataView
           fields={[
-            { label: 'Proposal', priority: 1, align: 'start' },
-            { label: 'Requested', priority: 4, align: 'start' },
-            { label: 'Conviction progress', priority: 2, align: 'start' },
-            { label: 'Trend', priority: 5, align: 'start' },
+            { label: 'Proposal', align: 'start' },
+            { label: 'Requested', align: 'start' },
+            { label: 'Conviction progress', align: 'start' },
+            { label: 'Trend', align: 'start' },
           ]}
           statusEmpty={
             <h2
@@ -107,8 +82,26 @@ const Proposals = React.memo(function Proposals({
             />
           }
         />
-      </div>
-    </Wrapper>
+      }
+      secondary={
+        <div>
+          <Box heading="Vault balance">
+            <Balance {...requestToken} />
+          </Box>
+          {myLastStake && myLastStake.tokensStaked > 0 && (
+            <Box heading="My staked proposal" key={myLastStake.proposal}>
+              <ProposalInfo
+                proposal={
+                  proposals.filter(({ id }) => id === myLastStake.proposal)[0]
+                }
+                stake={myLastStake}
+              />
+            </Box>
+          )}
+        </div>
+      }
+      invert="vertical"
+    />
   )
 })
 

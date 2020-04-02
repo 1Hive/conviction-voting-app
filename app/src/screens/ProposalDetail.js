@@ -23,17 +23,6 @@ import {
 } from '../components/ConvictionVisuals'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 
-/* const Wrapper = styled.div`
-  display: grid;
-  grid-template-columns: auto;
-  grid-column-gap: ${2.5 * GU}px;
-  @media (min-width: 768px) {
-    grid-template-columns: auto ${25 * GU}px;
-  }
-  min-height: 100vh;
-  width: 100%;
-` */
-
 const H2 = styled.h2`
   ${textStyle('label2')};
   color: ${props => props.color};
@@ -161,14 +150,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                       <H2 color={theme.surfaceContentSecondary}>
                         Conviction prediction
                       </H2>
-                      <div
-                        css={`
-                          display: flex;
-                          justify-content: center;
-                        `}
-                      >
-                        <ConvictionChart proposal={proposal} />
-                      </div>
+                      <ConvictionChart proposal={proposal} />
                     </Chart>
                     <ConvictionButton
                       proposal={proposal}
@@ -209,6 +191,7 @@ const Amount = ({
       decimals={decimals}
       symbol={symbol}
       verified={verified}
+      fixedCenter={false}
     />
   </div>
 )

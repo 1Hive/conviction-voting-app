@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAragonApi } from '@aragon/api-react'
-import { Timer, Text, Tag, Button, useTheme } from '@aragon/ui'
+import { Timer, Text, Tag, Button, useTheme, useLayout } from '@aragon/ui'
 import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
@@ -38,7 +38,7 @@ function getStakesAndThreshold(proposal = {}) {
   return { stakes, totalTokensStaked, threshold, max }
 }
 
-export function ConvictionChart({ proposal, width = '50%' }) {
+export function ConvictionChart({ proposal }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const currentBlock = useBlockNumber()
   const { connectedAccount } = useAragonApi()
@@ -65,7 +65,6 @@ export function ConvictionChart({ proposal, width = '50%' }) {
 
   return (
     <LineChart
-      width={width}
       lines={normalize(lines, threshold)}
       total={lines[0] && lines[0].length}
       label={i => i - Math.floor((lines[0].length - 1) / 2)}
@@ -258,11 +257,13 @@ export function ConvictionTrend({ proposal }) {
   const blockNumber = useBlockNumber()
   const { alpha } = getGlobalParams()
   const trend = getConvictionTrend(stakes, max, blockNumber, alpha)
-
+  const { layoutName } = useLayout()
+  const compactMode = layoutName === 'small'
   const percentage =
     trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
+
   return (
-    <Centered>
+    <TrendWrapper compactMode={compactMode}>
       <Text>{trend > 0 ? '↑ Upwards' : '↓ Downwards'}</Text>
       <Text.Block
         size="xxlarge"
@@ -271,7 +272,7 @@ export function ConvictionTrend({ proposal }) {
         {percentage > 0 && '+'}
         {percentage}%
       </Text.Block>
-    </Centered>
+    </TrendWrapper>
   )
 }
 
@@ -282,6 +283,6 @@ function getGlobalParams() {
   return globalParams
 }
 
-const Centered = styled.div`
-  text-align: center;
+const TrendWrapper = styled.div`
+  ${({ compactMode }) => !compactMode && 'text-align: center;'}
 `
