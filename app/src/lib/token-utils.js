@@ -1,4 +1,5 @@
 import { toUtf8 } from './web3-utils'
+import { round } from './math-utils'
 import tokenSymbolAbi from '../abi/token-symbol.json'
 import tokenSymbolBytesAbi from '../abi/token-symbol-bytes.json'
 import tokenNameAbi from '../abi/token-name.json'
@@ -86,3 +87,19 @@ export async function getTokenName(app, address) {
 export function getPresetTokens(networkType) {
   return PRESET_TOKENS.get(networkType) || [ETHER_TOKEN_FAKE_ADDRESS]
 }
+
+export const formatTokenAmount = (
+  amount,
+  decimals = 0,
+  isIncoming,
+  displaySign = false,
+  { rounding = 2 } = {}
+) =>
+  (displaySign ? (isIncoming ? '+' : '-') : '') +
+  Number(round(amount / Math.pow(10, decimals), rounding)).toLocaleString(
+    undefined,
+    {
+      style: 'decimal',
+      maximumFractionDigits: 18,
+    }
+  )

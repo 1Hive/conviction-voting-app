@@ -1,44 +1,95 @@
 import { useState, useEffect, useCallback } from 'react'
+
+import useAppLogic from '../app-logic'
+
 import {
-  getProposalStatus,
+  getProposalSupportStatus,
+  PROPOSAL_STATUS_SUPPORTED,
+  PROPOSAL_STATUS_NOT_SUPPORTED,
   PROPOSAL_STATUS_OPEN,
   PROPOSAL_STATUS_ACCEPTED,
-} from '../utils'
+  getProposalExecutionStatus,
+} from '../proposal-types'
+import { checkInitialLetters } from '../lib/search-utils'
 
 const NULL_FILTER_STATE = -1
-const STATUS_FILTER_OPEN = 1
-const STATUS_FILTER_CLOSED = 2
+const STAKE_STATUS_FILTER_SUPPORTED = 1
+const STAKE_STATUS_FILTER_NOT_SUPPORTED = 2
+const EXECUTION_STATUS_FILTER_OPEN = 0
+const EXECUTION_STATUS_FILTER_ACCEPTED = 1
 
-function testStatusFilter(filter, proposalStatus) {
+function testSupportFilter(filter, proposalStatus) {
   return (
     filter === NULL_FILTER_STATE ||
-    (filter === STATUS_FILTER_OPEN &&
+    (filter === STAKE_STATUS_FILTER_SUPPORTED &&
+      proposalStatus === PROPOSAL_STATUS_SUPPORTED) ||
+    (filter === STAKE_STATUS_FILTER_NOT_SUPPORTED &&
+      proposalStatus === PROPOSAL_STATUS_NOT_SUPPORTED)
+  )
+}
+
+function testExecutionFilter(filter, proposalStatus) {
+  return (
+    (filter === EXECUTION_STATUS_FILTER_OPEN &&
       proposalStatus === PROPOSAL_STATUS_OPEN) ||
-    (filter === STATUS_FILTER_CLOSED &&
+    (filter === EXECUTION_STATUS_FILTER_ACCEPTED &&
       proposalStatus === PROPOSAL_STATUS_ACCEPTED)
+  )
+}
+function testSearchFilter(proposalName, textSearch) {
+  return (
+    proposalName.toUpperCase().includes(textSearch.toUpperCase()) ||
+    checkInitialLetters(proposalName, textSearch)
   )
 }
 
 const useFilterProposals = proposals => {
+  const { myStakes } = useAppLogic()
   const [filteredProposals, setFilteredProposals] = useState(proposals)
-  const [statusFilter, setStatusFilter] = useState(NULL_FILTER_STATE)
-
+  const [supportFilter, setSupportFilter] = useState(NULL_FILTER_STATE)
+  const [executionFilter, setExecutionFilter] = useState(
+    EXECUTION_STATUS_FILTER_OPEN
+  )
+  const [textSearch, setTextSearch] = useState('')
   useEffect(() => {
     const filtered = proposals.filter(proposal => {
-      const proposalStatus = getProposalStatus(proposal)
-      return testStatusFilter(statusFilter, proposalStatus)
+      const proposalExecutionStatus = getProposalExecutionStatus(proposal)
+      const proposalSupportStatus = getProposalSupportStatus(myStakes, proposal)
+
+      return (
+        testExecutionFilter(executionFilter, proposalExecutionStatus) &&
+        testSupportFilter(supportFilter, proposalSupportStatus) &&
+        testSearchFilter(proposal.name, textSearch)
+      )
     })
+
     setFilteredProposals(filtered)
-  }, [statusFilter, setFilteredProposals, proposals])
+  }, [
+    supportFilter,
+    executionFilter,
+    setFilteredProposals,
+    proposals,
+    textSearch,
+  ])
 
   return {
     filteredProposals,
-    proposalStatusFilter: statusFilter,
-    handleProposalStatusFilterChange: useCallback(
-      index => {
-        setStatusFilter(index || NULL_FILTER_STATE)
+    proposalExecutionStatusFilter: executionFilter,
+    proposalSupportStatusFilter: supportFilter,
+    proposalTextFilter: textSearch,
+    handleProposalExecutionFilterChange: useCallback(
+      index => setExecutionFilter(index),
+      [setExecutionFilter]
+    ),
+    handleProposalSupportFilterChange: useCallback(
+      index => setSupportFilter(index || NULL_FILTER_STATE),
+      [setSupportFilter]
+    ),
+    handleSearchTextFilterChange: useCallback(
+      textSearch => {
+        setTextSearch(textSearch)
       },
-      [setStatusFilter]
+      [setTextSearch]
     ),
   }
 }
