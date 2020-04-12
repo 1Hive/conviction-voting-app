@@ -135,6 +135,15 @@
       "contributions": [
         "infra"
       ]
+    },
+    {
+      "login": "fioreb",
+      "name": "fioreb",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/61423083?v=4",
+      "profile": "https://github.com/fioreb",
+      "contributions": [
+        "design"
+      ]
     }
   ],
   "contributorsPerLine": 7

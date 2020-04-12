@@ -118,6 +118,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="http://1hive.org"><img src="https://avatars2.githubusercontent.com/u/29875830?v=4" width="75px;" alt=""/><br /><sub><b>1Hive</b></sub></a><br /><a href="#financial-1Hive" title="Financial">💵</a> <a href="#infra-1Hive" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
     <td align="center"><a href="https://aragon.org"><img src="https://avatars1.githubusercontent.com/u/24612534?v=4" width="75px;" alt=""/><br /><sub><b>Aragon</b></sub></a><br /><a href="#financial-aragon" title="Financial">💵</a></td>
     <td align="center"><a href="https://p2pmodels.eu"><img src="https://avatars1.githubusercontent.com/u/35083190?v=4" width="75px;" alt=""/><br /><sub><b>P2P Models</b></sub></a><br /><a href="#infra-P2PModels" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+    <td align="center"><a href="https://github.com/fioreb"><img src="https://avatars2.githubusercontent.com/u/61423083?v=4" width="75px;" alt=""/><br /><sub><b>fioreb</b></sub></a><br /><a href="#design-fioreb" title="Design">🎨</a></td>
   </tr>
 </table>
 
