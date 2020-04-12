@@ -144,6 +144,15 @@
       "contributions": [
         "design"
       ]
+    },
+    {
+      "login": "PJColombo",
+      "name": "Paulo J. Colombo",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/33203511?v=4",
+      "profile": "https://github.com/PJColombo",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7

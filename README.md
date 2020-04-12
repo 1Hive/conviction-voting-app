@@ -120,6 +120,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://p2pmodels.eu"><img src="https://avatars1.githubusercontent.com/u/35083190?v=4" width="75px;" alt=""/><br /><sub><b>P2P Models</b></sub></a><br /><a href="#infra-P2PModels" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
     <td align="center"><a href="https://github.com/fioreb"><img src="https://avatars2.githubusercontent.com/u/61423083?v=4" width="75px;" alt=""/><br /><sub><b>fioreb</b></sub></a><br /><a href="#design-fioreb" title="Design">🎨</a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/PJColombo"><img src="https://avatars1.githubusercontent.com/u/33203511?v=4" width="75px;" alt=""/><br /><sub><b>Paulo J. Colombo</b></sub></a><br /><a href="https://github.com/1hive/conviction-voting-app/commits?author=PJColombo" title="Code">💻</a></td>
+  </tr>
 </table>
 
 <!-- markdownlint-enable -->
