@@ -191,7 +191,6 @@ const Amount = ({
       decimals={decimals}
       symbol={symbol}
       verified={verified}
-      fixedCenter={false}
     />
   </div>
 )

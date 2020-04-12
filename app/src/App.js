@@ -19,9 +19,15 @@ import useFilterProposals from './hooks/useFilterProposals'
 import useSelectedProposal from './hooks/useSelectedProposal'
 
 const App = React.memo(function App() {
-  const { setProposalPanel, proposalPanel, onProposalSubmit } = useAppLogic()
+  const {
+    myStakes,
+    myLastStake,
+    setProposalPanel,
+    proposalPanel,
+    onProposalSubmit,
+  } = useAppLogic()
 
-  const { proposals = [], isSyncing, requestToken } = useAppState()
+  const { proposals = [], isSyncing, requestToken, stakeToken } = useAppState()
 
   const { layoutName } = useLayout()
   const compactMode = layoutName === 'small'
@@ -30,9 +36,18 @@ const App = React.memo(function App() {
   const handleBack = useCallback(() => selectProposal(-1), [selectProposal])
   const {
     filteredProposals,
-    proposalStatusFilter,
-    handleProposalStatusFilterChange,
+    proposalExecutionStatusFilter,
+    proposalSupportStatusFilter,
+    proposalTextFilter,
+    handleProposalSupportFilterChange,
+    handleProposalExecutionFilterChange,
+    handleSearchTextFilterChange,
   } = useFilterProposals(proposals)
+
+  const handleTabChange = tabIndex => {
+    handleProposalExecutionFilterChange(tabIndex)
+    handleProposalSupportFilterChange(-1)
+  }
 
   return (
     <React.Fragment>
@@ -62,9 +77,16 @@ const App = React.memo(function App() {
           proposals={proposals}
           selectProposal={selectProposal}
           filteredProposals={filteredProposals}
-          proposalStatusFilter={proposalStatusFilter}
-          handleProposalStatusFilterChange={handleProposalStatusFilterChange}
+          proposalExecutionStatusFilter={proposalExecutionStatusFilter}
+          proposalSupportStatusFilter={proposalSupportStatusFilter}
+          proposalTextFilter={proposalTextFilter}
+          handleProposalSupportFilterChange={handleProposalSupportFilterChange}
+          handleExecutionStatusFilterChange={handleTabChange}
+          handleSearchTextFilterChange={handleSearchTextFilterChange}
           requestToken={requestToken}
+          stakeToken={stakeToken}
+          myLastStake={myLastStake}
+          myStakes={myStakes}
         />
       )}
       <SidePanel

@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useAragonApi } from '@aragon/api-react'
-import { Timer, Text, Tag, Button, useTheme, useLayout } from '@aragon/ui'
+import {
+  Timer,
+  Text,
+  Tag,
+  Button,
+  useTheme,
+  useLayout,
+  textStyle,
+} from '@aragon/ui'
 import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
@@ -16,7 +24,7 @@ import {
   getConvictionTrend,
 } from '../lib/conviction'
 import { useBlockNumber } from '../BlockContext'
-import { fromDecimals } from '../lib/math-utils'
+import { formatTokenAmount } from '../lib/token-utils'
 
 function getStakesAndThreshold(proposal = {}) {
   const { appState } = useAragonApi()
@@ -113,18 +121,26 @@ export function ConvictionBar({ proposal }) {
         compact
       />
       <div>
-        <Text color={theme.surfaceContent.toString()}>
-          {Math.round(stakedConviction * 100)}%
-        </Text>{' '}
-        <Text color={theme.surfaceContentSecondary.toString()}>
-          (
-          {isFinite(neededConviction) ? (
-            `${Math.round(neededConviction * 100)}% `
-          ) : (
-            <React.Fragment>&infin; </React.Fragment>
-          )}
-          conviction needed)
-        </Text>
+        <span
+          css={`
+            ${textStyle('body3')}
+          `}
+        >
+          {Math.round(stakedConviction * 100)}%{' '}
+          <span
+            css={`
+              color: ${theme.contentSecondary};
+            `}
+          >
+            (
+            {isFinite(neededConviction) ? (
+              `${Math.round(neededConviction * 100)}% `
+            ) : (
+              <React.Fragment>&infin; </React.Fragment>
+            )}
+            needed)
+          </span>
+        </span>
       </div>
     </div>
   )
@@ -153,7 +169,7 @@ export function ConvictionButton({ proposal, onStake, onWithdraw, onExecute }) {
   )
 }
 
-export function ConvictionCountdown({ proposal }) {
+export function ConvictionCountdown({ proposal, shorter }) {
   const { alpha, maxRatio } = getGlobalParams()
   const {
     appState: {
@@ -203,44 +219,48 @@ export function ConvictionCountdown({ proposal }) {
   return view === UNABLE_TO_PASS ? (
     <>
       <Text color={theme.negative.toString()}> ✘ Won't pass</Text>
-      <div>
-        <Text color={theme.surfaceContent.toString()}>
-          {!isNaN(neededTokens)
-            ? 'Insufficient staked tokens'
-            : 'Not enough funds in the organization'}
-        </Text>
-        <br />
-        <Text color={theme.surfaceContentSecondary.toString()}>
-          (
-          {!isNaN(neededTokens) ? (
-            <React.Fragment>
-              At least{' '}
-              <Tag>
-                {parseFloat(
-                  fromDecimals(neededTokens.toString(), tokenDecimals)
-                )
-                  .toFixed(2)
-                  .toString()}{' '}
-                {tokenSymbol}
-              </Tag>{' '}
-              more needed
-            </React.Fragment>
-          ) : (
-            `Funding requests must be below ${maxRatio *
-              100}% organization total funds`
-          )}
-          ).
-        </Text>
-      </div>
+      {!shorter && (
+        <div>
+          <Text color={theme.surfaceContent.toString()}>
+            {!isNaN(neededTokens)
+              ? 'Insufficient staked tokens'
+              : 'Not enough funds in the organization'}
+          </Text>
+          <br />
+          <Text color={theme.surfaceContentSecondary.toString()}>
+            (
+            {!isNaN(neededTokens) ? (
+              <React.Fragment>
+                At least{' '}
+                <Tag>
+                  {`${formatTokenAmount(
+                    neededTokens,
+                    tokenDecimals
+                  )} ${tokenSymbol}`}
+                </Tag>{' '}
+                more needed
+              </React.Fragment>
+            ) : (
+              `Funding requests must be below ${maxRatio *
+                100}% organization total funds`
+            )}
+            ).
+          </Text>
+        </div>
+      )}
     </>
   ) : view === MAY_PASS ? (
     <>
       <Text color={theme.positive.toString()}> ✓ May pass</Text>
-      <br />
-      <Text color={theme.surfaceContentSecondary.toString()}>
-        Estimate until pass
-      </Text>
-      {!!endDate && <Timer end={endDate} />}
+      {!shorter && (
+        <React.Fragment>
+          <br />
+          <Text color={theme.surfaceContentSecondary.toString()}>
+            Estimate until pass
+          </Text>
+          {!!endDate && <Timer end={endDate} />}
+        </React.Fragment>
+      )}
     </>
   ) : view === EXECUTED ? (
     <Text color={theme.positive.toString()}> ✓ Executed</Text>
@@ -263,15 +283,17 @@ export function ConvictionTrend({ proposal }) {
     trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
 
   return (
-    <TrendWrapper compactMode={compactMode}>
-      <Text>{trend > 0 ? '↑ Upwards' : '↓ Downwards'}</Text>
-      <Text.Block
-        size="xxlarge"
-        color={percentage < 0 ? theme.negative.toString() : ''}
+    <TrendWrapper compactMode={compactMode} color={theme.contentSecondary}>
+      <TrendArrow>{trend > 0 ? '↑' : '↓'}</TrendArrow>
+      <span
+        css={`
+          ${textStyle('body3')}
+          color: ${percentage < 0 ? theme.negative : ''};
+        `}
       >
         {percentage > 0 && '+'}
         {percentage}%
-      </Text.Block>
+      </span>
     </TrendWrapper>
   )
 }
@@ -283,6 +305,14 @@ function getGlobalParams() {
   return globalParams
 }
 
-const TrendWrapper = styled.div`
+const TrendWrapper = styled.span`
+  display: flex;
+  align-items: center;
+  ${({ color }) => color && `color: ${color};`}
   ${({ compactMode }) => !compactMode && 'text-align: center;'}
+`
+
+const TrendArrow = styled.span`
+  ${textStyle('title2')}
+  margin-right: 8px;
 `
