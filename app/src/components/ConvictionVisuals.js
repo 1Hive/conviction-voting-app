@@ -46,7 +46,7 @@ function getStakesAndThreshold(proposal = {}) {
   return { stakes, totalTokensStaked, threshold, max }
 }
 
-export function ConvictionChart({ proposal }) {
+export function ConvictionChart({ proposal, withThreshold = true }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const currentBlock = useBlockNumber()
   const { connectedAccount } = useAragonApi()
@@ -73,21 +73,22 @@ export function ConvictionChart({ proposal }) {
 
   return (
     <LineChart
-      lines={normalize(lines, threshold)}
+      lines={normalize(lines, Math.min(threshold, 100))}
       total={lines[0] && lines[0].length}
       label={i => i - Math.floor((lines[0].length - 1) / 2)}
       captionsHeight={20}
       color={i => [theme.info, theme.infoSurfaceContent][i]}
       threshold={
-        !Number.isNaN(threshold) && threshold !== Number.POSITIVE_INFINITY
-          ? normalizeN(threshold)
-          : 1
+        withThreshold &&
+        !Number.isNaN(threshold) &&
+        threshold !== Number.POSITIVE_INFINITY &&
+        normalizeN(threshold)
       }
     />
   )
 }
 
-export function ConvictionBar({ proposal }) {
+export function ConvictionBar({ proposal, withThreshold = true }) {
   const { connectedAccount } = useAragonApi()
   const { alpha } = getGlobalParams()
   const blockNumber = useBlockNumber()
@@ -117,7 +118,7 @@ export function ConvictionBar({ proposal }) {
         firstSize={myStakedConviction}
         secondSize={stakedConviction - myStakedConviction}
         thirdSize={futureStakedConviction - stakedConviction}
-        requiredSize={neededConviction}
+        requiredSize={withThreshold && neededConviction}
         compact
       />
       <div>
@@ -127,19 +128,28 @@ export function ConvictionBar({ proposal }) {
           `}
         >
           {Math.round(stakedConviction * 100)}%{' '}
-          <span
-            css={`
-              color: ${theme.contentSecondary};
-            `}
-          >
-            (
-            {isFinite(neededConviction) ? (
-              `${Math.round(neededConviction * 100)}% `
-            ) : (
-              <React.Fragment>&infin; </React.Fragment>
-            )}
-            needed)
-          </span>
+          {withThreshold ? (
+            <span
+              css={`
+                color: ${theme.contentSecondary};
+              `}
+            >
+              {isFinite(neededConviction)
+                ? `(${Math.round(neededConviction * 100)}% needed)`
+                : `(&infin; needed)`}
+            </span>
+          ) : (
+            <span
+              css={`
+                color: ${theme.contentSecondary};
+              `}
+            >
+              {Math.round(stakedConviction * 100) !==
+              Math.round(futureStakedConviction * 100)
+                ? `(predicted: ${Math.round(futureStakedConviction * 100)}%)`
+                : `(stable)`}
+            </span>
+          )}
         </span>
       </div>
     </div>
@@ -284,11 +294,10 @@ export function ConvictionTrend({ proposal }) {
 
   return (
     <TrendWrapper compactMode={compactMode} color={theme.contentSecondary}>
-      <TrendArrow>{trend > 0 ? '↑' : '↓'}</TrendArrow>
+      <TrendArrow>{trend > 0 ? '↑' : trend < 0 ? '↓' : '↝'}</TrendArrow>
       <span
         css={`
           ${textStyle('body3')}
-          color: ${percentage < 0 ? theme.negative : ''};
         `}
       >
         {percentage > 0 && '+'}
@@ -313,6 +322,6 @@ const TrendWrapper = styled.span`
 `
 
 const TrendArrow = styled.span`
-  ${textStyle('title2')}
+  ${textStyle('title4')}
   margin-right: 8px;
 `

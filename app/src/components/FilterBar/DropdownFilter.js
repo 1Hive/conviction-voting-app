@@ -14,8 +14,8 @@ const DropwdownFilter = React.memo(
     return (
       <DropdownFilterWrapper>
         <DropDown
-          header="Status"
-          placeholder="Status"
+          header="Support"
+          placeholder="All"
           selected={proposalStatusFilter}
           onChange={handleProposalStatusFilterChange}
           items={[

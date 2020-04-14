@@ -43,13 +43,13 @@ contract Template is BaseTemplate, TokenCache {
         string _stakeTokenSymbol,
         address[] _holders,
         uint256[] _stakes,
-        uint64[3] _votingSettings
+        uint64[3] _votingSettings,
+        uint8 _type
     )
         external
     {
         newToken(_stakeTokenName, _stakeTokenSymbol);
-        newInstance(_holders, _stakes, _votingSettings);
-
+        newInstance(_holders, _stakes, _votingSettings, _type);
     }
 
     /**
@@ -72,10 +72,10 @@ contract Template is BaseTemplate, TokenCache {
     function newInstance(
         address[] memory _holders,
         uint256[] memory _stakes,
-        uint64[3] memory _votingSettings
+        uint64[3] memory _votingSettings,
+        uint8 _type
     )
         public
-        returns (Vault)
     {
         _ensureTemplateSettings(_holders, _stakes, _votingSettings);
 
@@ -83,7 +83,11 @@ contract Template is BaseTemplate, TokenCache {
         MiniMeToken requestToken = _setupRequestToken(dao, acl);
         (Voting voting, MiniMeToken stakeToken, Vault vault) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
         // Setup conviction-voting app
-        _setupConvictionVoting(dao, acl, voting, stakeToken, vault, address(requestToken));
+        if (_type == 0) {
+            _setupConvictionVoting(dao, acl, voting, stakeToken, 0x0, 0x0);
+        } else {
+            _setupConvictionVoting(dao, acl, voting, stakeToken, vault, address(requestToken));
+        }
         _transferRootPermissionsFromTemplateAndFinalizeDAO(dao, voting);
         _fillVault(vault, requestToken, VAULT_BALANCE);
     }
@@ -135,7 +139,7 @@ contract Template is BaseTemplate, TokenCache {
         ACL _acl,
         Voting _voting,
         MiniMeToken _stakeToken,
-        Vault _vault,
+        address _vault,
         address _requestToken
     )
         internal
@@ -143,13 +147,15 @@ contract Template is BaseTemplate, TokenCache {
         ConvictionVoting app = _installConvictionVoting(_dao, _stakeToken, _vault, _requestToken);
         _createConvictionVotingPermissions(_acl, app, _voting, _voting);
         _mockProposalsData(app);
-        _createVaultPermissions(_acl, _vault, app, _voting);
+        if (_vault != 0x0) {
+            _createVaultPermissions(_acl, Vault(_vault), app, _voting);
+        }
     }
 
     function _installConvictionVoting(
         Kernel _dao,
         MiniMeToken _stakeToken,
-        Vault _vault,
+        address _vault,
         address _requestToken
     )
         internal returns (ConvictionVoting)
@@ -170,7 +176,6 @@ contract Template is BaseTemplate, TokenCache {
     {
         _acl.createPermission(ANY_ENTITY, _app, _app.CREATE_PROPOSALS_ROLE(), _manager);
     }
-
 
     function _createVaultPermissions(
         ACL _acl,

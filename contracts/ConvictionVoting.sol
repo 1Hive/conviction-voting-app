@@ -348,7 +348,7 @@ contract ConvictionVoting is AragonApp {
             if (proposal.executed && voterStakes > 0) {
                 withdraw(i, voterStakes);
                 amount = amount.add(voterStakes);
-           }
+            }
             i++;
         }
     }

@@ -189,15 +189,17 @@ const ModifiedLineChart = ({
                 />
               </g>
             ))}
-            <line
-              x1={0}
-              y1={getY(threshold, progress, chartHeight)}
-              x2={width}
-              y2={getY(threshold, progress, chartHeight)}
-              stroke="#979797"
-              strokeWidth="1"
-              strokeDasharray="5 5"
-            />
+            {threshold !== false && (
+              <line
+                x1={0}
+                y1={getY(threshold, progress, chartHeight)}
+                x2={width}
+                y2={getY(threshold, progress, chartHeight)}
+                stroke="#979797"
+                strokeWidth="1"
+                strokeDasharray="5 5"
+              />
+            )}
             <line
               x1={getX(24) * progress}
               y1="0"

@@ -7,7 +7,12 @@ import { toHex } from 'web3-utils'
 // Handles the main logic of the app.
 export default function useAppLogic() {
   const { api, connectedAccount } = useAragonApi()
-  const { proposals = [], requestToken, convictionStakes } = useAppState()
+  const {
+    proposals = [],
+    stakeToken,
+    requestToken,
+    convictionStakes,
+  } = useAppState()
 
   const [proposalPanel, setProposalPanel] = useState(false)
 
@@ -29,11 +34,15 @@ export default function useAppLogic() {
         if (tokensStaked === 0) stakes.delete(currProposalId)
         else {
           const proposal = proposals.find(({ id }) => id === currProposalId)
-          if (proposal && !proposal.executed)
+          if (proposal && !proposal.executed) {
             stakes.set(
               currProposalId,
-              formatTokenAmount(tokensStaked, parseInt(requestToken.decimals))
+              formatTokenAmount(
+                parseInt(tokensStaked),
+                parseInt(stakeToken.tokenDecimals)
+              )
             )
+          }
         }
         return stakes
       },

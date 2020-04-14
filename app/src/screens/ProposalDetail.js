@@ -29,9 +29,6 @@ const H2 = styled.h2`
   margin-bottom: ${1.5 * GU}px;
 `
 
-const Progress = styled.div`
-  width: 100%;
-`
 const Chart = styled.div`
   width: 100%;
 `
@@ -83,12 +80,14 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                     grid-gap: ${layoutName !== 'small' ? 5 * GU : 2.5 * GU}px;
                   `}
                 >
-                  <Amount
-                    requestedAmount={requestedAmount}
-                    requestToken={requestToken}
-                  />
+                  {requestToken && (
+                    <Amount
+                      requestedAmount={requestedAmount}
+                      requestToken={requestToken}
+                    />
+                  )}
                   <div>
-                    <H2 color={theme.surfaceContentSecondary}>Links</H2>
+                    <H2 color={theme.surfaceContentSecondary}>Link</H2>
                     {link ? (
                       <Link href={link} external>
                         Read more
@@ -99,7 +98,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                           ${textStyle('body2')};
                         `}
                       >
-                        No link provided.
+                        No link provided
                       </Text>
                     )}
                   </div>
@@ -120,37 +119,36 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                       />
                     </div>
                   </div>
-                  <div>
-                    <H2 color={theme.surfaceContentSecondary}>Recipient</H2>
-                    <div
-                      css={`
-                        display: flex;
-                        align-items: flex-start;
-                      `}
-                    >
-                      <LocalIdentityBadge
-                        connectedAccount={addressesEqual(
-                          beneficiary,
-                          connectedAccount
-                        )}
-                        entity={beneficiary}
-                      />
+                  {requestToken && (
+                    <div>
+                      <H2 color={theme.surfaceContentSecondary}>Beneficiary</H2>
+                      <div
+                        css={`
+                          display: flex;
+                          align-items: flex-start;
+                        `}
+                      >
+                        <LocalIdentityBadge
+                          connectedAccount={addressesEqual(
+                            beneficiary,
+                            connectedAccount
+                          )}
+                          entity={beneficiary}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 {!executed && (
                   <React.Fragment>
-                    <Progress>
-                      <H2 color={theme.surfaceContentSecondary}>
-                        Conviction Progress
-                      </H2>
-                      <ConvictionBar proposal={proposal} />
-                    </Progress>
                     <Chart>
                       <H2 color={theme.surfaceContentSecondary}>
                         Conviction prediction
                       </H2>
-                      <ConvictionChart proposal={proposal} />
+                      <ConvictionChart
+                        proposal={proposal}
+                        withThreshold={!!requestToken}
+                      />
                     </Chart>
                     <ConvictionButton
                       proposal={proposal}
@@ -170,9 +168,19 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
         }
         secondary={
           <div>
-            <Box heading="Status">
-              <ConvictionCountdown proposal={proposal} />
-            </Box>
+            {requestToken && (
+              <Box heading="Status">
+                <ConvictionCountdown proposal={proposal} />
+              </Box>
+            )}
+            {!proposal.executed && (
+              <Box heading="Conviction Progress">
+                <ConvictionBar
+                  proposal={proposal}
+                  withThreshold={!!requestToken}
+                />
+              </Box>
+            )}
           </div>
         }
       />

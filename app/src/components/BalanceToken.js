@@ -43,7 +43,8 @@ const BalanceToken = ({
             src={tokenIconUrl(tokenAddress, symbol, network && network.type)}
           />
         )}
-        {amount ? splitAmount(amount.toFixed(3)) : ' - '} {symbol || ' ? '}
+        {amount !== undefined ? splitAmount(amount.toFixed(3)) : ' - '}{' '}
+        {symbol || ''}
       </div>
       <ConvertedAmount>
         {convertedAmount >= 0

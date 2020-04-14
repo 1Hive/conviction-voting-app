@@ -11,7 +11,9 @@ import {
   Split,
   Tabs,
 } from '@aragon/ui'
-import { useConnectedAccount } from '@aragon/api-react'
+import { useConnectedAccount, useAppState } from '@aragon/api-react'
+import { useBlockNumber } from '../BlockContext'
+import { getCurrentConviction } from '../lib/conviction'
 
 import {
   ConvictionBar,
@@ -31,7 +33,6 @@ const Proposals = React.memo(
   ({
     proposals,
     selectProposal,
-    // executionTargets,
     filteredProposals,
     proposalExecutionStatusFilter,
     proposalSupportStatusFilter,
@@ -46,27 +47,47 @@ const Proposals = React.memo(
   }) => {
     const theme = useTheme()
     const connectedAccount = useConnectedAccount()
-    const openProposalFields = [
-      { label: 'Conviction progress', align: 'start' },
-      { label: 'Trend', align: 'start' },
-    ]
-    const executedProposalFields = [
-      { label: 'Beneficiary', align: 'start' },
-      { label: 'Link', align: 'start' },
-    ]
+    const convictionFields =
+      proposalExecutionStatusFilter === 0
+        ? [
+            { label: 'Conviction progress', align: 'start' },
+            { label: 'Trend', align: 'start' },
+          ]
+        : []
+    const beneficiaryField =
+      proposalExecutionStatusFilter === 1
+        ? [{ label: 'Beneficiary', align: 'start' }]
+        : []
+    const linkField =
+      proposalExecutionStatusFilter === 1 || !requestToken
+        ? [{ label: 'Link', align: 'start' }]
+        : []
     const tabs = ['Open Proposals', 'Executed Proposals']
-    const fields =
-      proposalExecutionStatusFilter === 0
-        ? openProposalFields
-        : proposalExecutionStatusFilter === 1
-        ? executedProposalFields
-        : []
-    const executedProposals =
-      proposalExecutionStatusFilter === 0
-        ? proposals.filter(({ executed }) => !executed)
-        : proposalExecutionStatusFilter === 1
-        ? proposals.filter(({ executed }) => executed)
-        : []
+    const requestedField = requestToken
+      ? [{ label: 'Requested', align: 'start' }]
+      : []
+    const statusField = requestToken
+      ? [{ label: 'Status', align: 'start' }]
+      : []
+
+    const sortedProposals = filteredProposals
+      .map(proposal => {
+        const {
+          convictionStakes,
+          globalParams: { alpha },
+        } = useAppState()
+        const stakes = convictionStakes.filter(
+          stake => stake.proposal === parseInt(proposal.id)
+        )
+        const blockNumber = useBlockNumber()
+        return {
+          ...proposal,
+          conviction: getCurrentConviction(stakes, blockNumber, alpha),
+        }
+      })
+      .sort(
+        (a, b) => b.conviction - a.conviction // desc order
+      )
 
     const handleTabChange = useCallback(
       tabIndex => {
@@ -86,17 +107,21 @@ const Proposals = React.memo(
       <Split
         primary={
           <div>
-            <Tabs
-              items={tabs}
-              selected={proposalExecutionStatusFilter}
-              onChange={handleTabChange}
-            />
+            {requestToken && (
+              <Tabs
+                items={tabs}
+                selected={proposalExecutionStatusFilter}
+                onChange={handleTabChange}
+              />
+            )}
             <DataView
               fields={[
                 { label: 'Proposal', align: 'start' },
-                { label: 'Requested', align: 'start' },
-                ...fields,
-                { label: 'Status', align: 'start' },
+                ...linkField,
+                ...requestedField,
+                ...convictionFields,
+                ...beneficiaryField,
+                ...statusField,
               ]}
               statusEmpty={
                 <h2
@@ -108,7 +133,7 @@ const Proposals = React.memo(
                   No proposals yet!
                 </h2>
               }
-              entries={filteredProposals}
+              entries={sortedProposals}
               renderEntry={proposal => {
                 const entriesElements = [
                   <IdAndTitle
@@ -116,30 +141,34 @@ const Proposals = React.memo(
                     name={proposal.name}
                     selectProposal={selectProposal}
                   />,
-                  <Amount
-                    requestedAmount={proposal.requestedAmount}
-                    requestToken={requestToken}
-                  />,
                 ]
-                if (!proposal.executed)
+                if (proposal.executed || !requestToken) {
                   entriesElements.push(
-                    <div
-                      css={`
-                        width: ${23 * GU};
-                      `}
-                    >
-                      <ConvictionBar proposal={proposal} />
-                      {myStakes.has(proposal.id) && (
-                        <Tag>
-                          {`✓ Supported: ${myStakes.get(proposal.id)} ${
-                            stakeToken.tokenSymbol
-                          }`}
-                        </Tag>
-                      )}
-                    </div>,
+                    <Link href={proposal.link} external>
+                      Read more
+                    </Link>
+                  )
+                }
+                if (requestToken) {
+                  entriesElements.push(
+                    <Amount
+                      requestedAmount={proposal.requestedAmount}
+                      requestToken={requestToken}
+                    />
+                  )
+                }
+                if (!proposal.executed) {
+                  entriesElements.push(
+                    <ProposalInfo
+                      proposal={proposal}
+                      myStakes={myStakes}
+                      stakeToken={stakeToken}
+                      requestToken={requestToken}
+                    />,
                     <ConvictionTrend proposal={proposal} />
                   )
-                else
+                }
+                if (proposal.executed) {
                   entriesElements.push(
                     <LocalIdentityBadge
                       connectedAccount={addressesEqual(
@@ -147,20 +176,20 @@ const Proposals = React.memo(
                         connectedAccount
                       )}
                       entity={proposal.creator}
-                    />,
-                    <Link href={proposal.link} external>
-                      Read more
-                    </Link>
+                    />
                   )
-                entriesElements.push(
-                  <ConvictionCountdown proposal={proposal} shorter />
-                )
+                }
+                if (requestToken) {
+                  entriesElements.push(
+                    <ConvictionCountdown proposal={proposal} shorter />
+                  )
+                }
                 return entriesElements
               }}
               tableRowHeight={14 * GU}
               heading={
                 <FilterBar
-                  proposalsSize={executedProposals.length}
+                  proposalsSize={filteredProposals.length}
                   proposalStatusFilter={proposalSupportStatusFilter}
                   proposalTextFilter={proposalTextFilter}
                   handleProposalStatusFilterChange={
@@ -176,20 +205,42 @@ const Proposals = React.memo(
         }
         secondary={
           <div>
-            <Box heading="Organization funds">
-              <span
+            <Box heading="Staking tokens">
+              <div
                 css={`
+                  ${textStyle('body2')};
                   color: ${theme.contentSecondary};
-                  ${textStyle('body2')}
                 `}
               >
-                Funding Pool
-              </span>
-              <Balance
-                {...requestToken}
-                color={theme.positive}
-                size={textStyle('title3')}
-              />
+                Your tokens
+              </div>
+              <div
+                css={`
+                  ${textStyle('title2')};
+                `}
+              >
+                {`${
+                  stakeToken.balance !== undefined
+                    ? formatTokenAmount(
+                        parseInt(stakeToken.balance),
+                        parseInt(stakeToken.tokenDecimals)
+                      )
+                    : '-'
+                } ${stakeToken.tokenSymbol}`}
+              </div>
+              <div
+                css={`
+                  ${textStyle('body4')};
+                  color: ${theme.contentSecondary};
+                `}
+              >
+                {stakeToken.balance !== undefined
+                  ? (parseInt(stakeToken.balance) /
+                      parseInt(stakeToken.tokenSupply)) *
+                    100
+                  : '-'}
+                % of total tokens
+              </div>
             </Box>
             {myLastStake && myLastStake.tokensStaked > 0 && (
               <Box heading="My staked proposal" key={myLastStake.proposal}>
@@ -197,14 +248,33 @@ const Proposals = React.memo(
                   proposal={
                     proposals.filter(({ id }) => id === myLastStake.proposal)[0]
                   }
-                  stake={myLastStake}
+                  myStakes={myStakes}
                   stakeToken={stakeToken}
+                  requestToken={requestToken}
+                  selectProposal={selectProposal}
+                />
+              </Box>
+            )}
+            {requestToken && (
+              <Box heading="Organization funds">
+                <span
+                  css={`
+                    color: ${theme.contentSecondary};
+                    ${textStyle('body2')}
+                  `}
+                >
+                  Funding Pool
+                </span>
+                <Balance
+                  {...requestToken}
+                  color={theme.positive}
+                  size={textStyle('title3')}
                 />
               </Box>
             )}
           </div>
         }
-        invert="vertical"
+        invert="horizontal"
       />
     )
   }
@@ -212,20 +282,25 @@ const Proposals = React.memo(
 
 const ProposalInfo = ({
   proposal,
-  stake,
-  stakeToken: { tokenDecimals, tokenSymbol },
+  stakeToken,
+  myStakes,
+  requestToken,
+  selectProposal = false,
 }) => (
-  <div>
-    <IdAndTitle {...proposal} />
-    <Tag
-      css={`
-        margin-left: 5px;
-      `}
-    >{`✓ Voted with ${formatTokenAmount(
-      stake.tokensStaked,
-      tokenDecimals
-    )} ${tokenSymbol}`}</Tag>
-    <ConvictionBar proposal={proposal} />
+  <div
+    css={`
+      width: ${23 * GU}px;
+    `}
+  >
+    {selectProposal && (
+      <IdAndTitle {...proposal} selectProposal={selectProposal} />
+    )}
+    <ConvictionBar proposal={proposal} withThreshold={requestToken} />
+    {myStakes.has(proposal.id) && (
+      <Tag>
+        {`✓ Supported: ${myStakes.get(proposal.id)} ${stakeToken.tokenSymbol}`}
+      </Tag>
+    )}
   </div>
 )
 

@@ -10,6 +10,8 @@ import {
   updateBalances,
 } from './vault-balance'
 
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
+
 const app = new Aragon()
 
 /*
@@ -83,7 +85,7 @@ async function initialize([
     contract: app.external(stakeTokenAddress, tokenAbi),
     address: stakeTokenAddress,
   }
-  const vault = {
+  const vault = vaultAddress !== ZERO_ADDR && {
     contract: app.external(vaultAddress, vaultAbi),
     address: vaultAddress,
   }
@@ -113,6 +115,7 @@ async function initialize([
 
     // Vault event
     if (
+      vaultAddress !== ZERO_ADDR &&
       addressesEqual(address, vaultAddress) &&
       returnValues.token === requestTokenAddress
     ) {
@@ -176,6 +179,16 @@ async function initialize([
       case events.SYNC_STATUS_SYNCED:
         nextState = { ...nextState, isSyncing: false }
         break
+      case events.ACCOUNTS_TRIGGER: {
+        const { account } = returnValues
+        nextState = {
+          ...nextState,
+          stakeToken: {
+            ...nextState.stakeToken,
+            balance: await stakeToken.contract.balanceOf(account).toPromise(),
+          },
+        }
+      }
     }
 
     console.log(nextState)
@@ -183,13 +196,17 @@ async function initialize([
   }
 
   const storeOptions = {
-    externals: [
-      { contract: stakeToken.contract, initializationBlock: 0 },
-      {
-        contract: vault.contract,
-        initializationBlock: await getVaultInitializationBlock(vault.contract),
-      },
-    ],
+    externals: vault
+      ? [
+          { contract: stakeToken.contract, initializationBlock: 0 },
+          {
+            contract: vault.contract,
+            initializationBlock: await getVaultInitializationBlock(
+              vault.contract
+            ),
+          },
+        ]
+      : [{ contract: stakeToken.contract, initializationBlock: 0 }],
     init: initState(stakeToken, vault, requestTokenAddress),
   }
 
@@ -205,14 +222,16 @@ function initState(stakeToken, vault, requestTokenAddress) {
       ? cachedState.stakeTokenSettings
       : await loadTokenSettings(stakeToken.contract)
 
-    const requestTokenSettings = await getRequestTokenSettings(
-      requestTokenAddress,
-      vault
-    )
+    const requestTokenSettings =
+      vault && (await getRequestTokenSettings(requestTokenAddress, vault))
 
-    app.identify(
-      `${stakeTokenSettings.tokenSymbol}-${requestTokenSettings.symbol}`
-    )
+    if (vault) {
+      app.identify(
+        `${stakeTokenSettings.tokenSymbol}-${requestTokenSettings.symbol}`
+      )
+    } else {
+      app.identify(`${stakeTokenSettings.tokenSymbol}`)
+    }
 
     const inititalState = {
       proposals: [],
