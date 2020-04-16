@@ -24,10 +24,10 @@ const deployDAO = async appManager => {
 
   // Create a DAO instance.
   const daoReceipt = await daoFactory.newDAO(appManager)
-  const dao = Kernel.at(getEventArgument(daoReceipt, 'DeployDAO', 'dao'))
+  const dao = await Kernel.at(getEventArgument(daoReceipt, 'DeployDAO', 'dao'))
 
   // Grant the appManager address permission to install apps in the DAO.
-  const acl = ACL.at(await dao.acl())
+  const acl = await ACL.at(await dao.acl())
   const APP_MANAGER_ROLE = await kernelBase.APP_MANAGER_ROLE()
   await acl.createPermission(
     appManager,

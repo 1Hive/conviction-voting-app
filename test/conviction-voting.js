@@ -65,7 +65,7 @@ contract('ConvictionVoting-passing proposal', ([appManager, user, anyAcc]) => {
       false, // setDefault - Whether the app proxy is the default proxy.
       { from: appManager }
     )
-    app = ConvictionVoting.at(
+    app = await ConvictionVoting.at(
       getEventArgument(instanceReceipt, 'NewAppProxy', 'proxy')
     )
 
@@ -243,7 +243,7 @@ contract('ConvictionVoting-failing proposal', ([appManager, user, anyAcc]) => {
       false, // setDefault - Whether the app proxy is the default proxy.
       { from: appManager }
     )
-    app = ConvictionVoting.at(
+    app = await ConvictionVoting.at(
       getEventArgument(instanceReceipt, 'NewAppProxy', 'proxy')
     )
 
