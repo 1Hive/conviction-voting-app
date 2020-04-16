@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 
-import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 
 contract VaultMock {
@@ -12,7 +12,7 @@ contract VaultMock {
         if (_token == address(0)) {
             require(_to.send(_value), "send reverted");
         } else {
-            require(IERC20(_token).transfer(_to, _value), "token transfer reverted");
+            require(ERC20(_token).transfer(_to, _value), "token transfer reverted");
         }
     }
 
@@ -20,7 +20,7 @@ contract VaultMock {
         if (_token == address(0)) {
             return address(this).balance;
         } else {
-            return IERC20(_token).balanceOf(address(this));
+            return ERC20(_token).balanceOf(address(this));
         }
     }
 }
