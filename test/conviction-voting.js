@@ -15,6 +15,7 @@ const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
 
 contract('ConvictionVoting', ([appManager, user]) => {
   let app, stakeToken, requestToken, vault
+  const acc = { [appManager]: 'appManager', [user]: 'user' }
 
   before('deploy dao and app', async () => {
     const { dao, acl } = await deployDAO(appManager)
@@ -82,7 +83,7 @@ contract('ConvictionVoting', ([appManager, user]) => {
     )
   })
   for (let i = 1; i <= 2; i++) {
-    context('Proposal ' + i, async () => {
+    context(`Proposal ${i} (${i * 1000} DAI)`, async () => {
       it('should create proposals', async () => {
         const title = `Proposal ${i}`
         const receipt = await app.addProposal(title, '0x', i * 1000, user, {
@@ -92,13 +93,13 @@ contract('ConvictionVoting', ([appManager, user]) => {
       })
 
       for (const account of [appManager, user]) {
-        it(`should stake an amount of tokens on proposal - by ${account}`, async () => {
+        it(`should stake an amount of tokens on proposal - by ${acc[account]}`, async () => {
           // assume that 1 block ~ 15 seconds
           // +10 blocks
           await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
           const stakesPerAccount = 1000
 
-          const currentProposal = await app.proposals.call(i)
+          const currentProposal = await app.getProposal(i)
           const currentlyStaked = currentProposal[2].toNumber()
 
           // wrong amount
@@ -108,6 +109,11 @@ contract('ConvictionVoting', ([appManager, user]) => {
           const receipt = await app.stakeToProposal(i, stakesPerAccount, {
             from: account,
           })
+          assert.equal(
+            (await app.getProposal(i))[3].toNumber(),
+            account === appManager ? 0 : 7458,
+            'Conviction does not match expectations'
+          )
           const totalTokensStaked = getEventArgument(
             receipt,
             'StakeChanged',
@@ -123,12 +129,12 @@ contract('ConvictionVoting', ([appManager, user]) => {
         })
       }
 
-      it(`should withdraw from proposal - by ${appManager}`, async () => {
+      it(`should withdraw from proposal - by ${acc[appManager]}`, async () => {
         // assume that 1 block ~ 15 seconds
         // +20 blocks
         await timeAdvancer.advanceTimeAndBlocksBy(15 * 20, 20)
 
-        const currentlProposal = await app.proposals.call(i)
+        const currentlProposal = await app.getProposal(i)
         const currentlyStaked = currentlProposal[2]
         const withdrawAmount = 1000
 
@@ -136,34 +142,52 @@ contract('ConvictionVoting', ([appManager, user]) => {
           from: appManager,
         })
         assert.equal(
-          getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
+          (await app.getProposal(i))[3].toNumber(),
+          18628,
+          'Conviction does not match expectations'
+        )
+        assert.equal(
+          getEventArgument(
+            receipt,
+            'StakeChanged',
+            'totalTokensStaked'
+          ).toNumber(),
           currentlyStaked - withdrawAmount
         )
         assert.equal(
-          getEventArgument(receipt, 'StakeChanged', 'tokensStaked'),
+          getEventArgument(receipt, 'StakeChanged', 'tokensStaked').toNumber(),
           0
         )
       })
 
-      it('should stake more tokens - by user', async () => {
+      it(`should stake more tokens - by ${acc[user]}`, async () => {
         // assume that 1 block ~ 15 seconds
         // +10 blocks
         await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
 
-        const currentProposal = await app.proposals.call(i)
+        const currentProposal = await app.getProposal(i)
         const currentlyStaked = currentProposal[2]
         const stakesPerUser = 6000
 
         const receipt = await app.stakeToProposal(i, stakesPerUser, {
           from: user,
         })
+        assert.equal(
+          (await app.getProposal(i))[3].toNumber(),
+          12708,
+          'Conviction does not match expectations'
+        )
 
         assert.equal(
-          getEventArgument(receipt, 'StakeChanged', 'totalTokensStaked'),
+          getEventArgument(
+            receipt,
+            'StakeChanged',
+            'totalTokensStaked'
+          ).toNumber(),
           currentlyStaked.toNumber() + stakesPerUser
         )
         assert.equal(
-          getEventArgument(receipt, 'StakeChanged', 'tokensStaked'),
+          getEventArgument(receipt, 'StakeChanged', 'tokensStaked').toNumber(),
           currentlyStaked.toNumber() + stakesPerUser
         )
       })
@@ -174,8 +198,13 @@ contract('ConvictionVoting', ([appManager, user]) => {
           // +40 blocks
           await timeAdvancer.advanceTimeAndBlocksBy(15 * 40, 40)
           await app.executeProposal(i, false, { from: user })
-          const proposal = await app.proposals.call(i)
-          assert.equal(proposal[5], true, 'Proposal not marked as executed')
+          const proposal = await app.getProposal(i)
+          assert.equal(
+            proposal[3].toNumber(),
+            69238,
+            'Conviction does not match expectations'
+          )
+          assert.isTrue(proposal[5], 'Proposal not marked as executed')
           assert.equal(
             (await requestToken.balanceOf(vault.address)).toNumber(),
             14000,
@@ -196,4 +225,34 @@ contract('ConvictionVoting', ([appManager, user]) => {
       }
     })
   }
+
+  context('Special withdraws', async () => {
+    it('should withdraw when staking after execution', async () => {
+      // We create 3 proposals and stake 10k TKN in each one for 10 blocks
+      for (let i = 3; i <= 5; i++) {
+        await app.addProposal(`Proposal ${i}`, '0x', 1000, appManager, {
+          from: appManager,
+        })
+        await app.stakeToProposal(i, 10000, {
+          from: appManager,
+        })
+        await app.stakeToProposal(i, 1000, {
+          from: user,
+        })
+      }
+      // +10 blocks
+      await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
+      // We execute the proposals
+      for (let i = 3; i <= 5; i++) {
+        await app.executeProposal(i, false, { from: user })
+      }
+      await app.addProposal('Proposal 6', '0x', 1000, appManager, {
+        from: appManager,
+      })
+      // We can stake all tokens on proposal 4
+      await app.stakeToProposal(6, 30000, {
+        from: appManager,
+      })
+    })
+  })
 })

@@ -10,6 +10,7 @@ contract VaultMock {
         require(_value > 0, "transfer zero value error");
 
         if (_token == address(0)) {
+            // solium-disable-next-line security/no-send
             require(_to.send(_value), "send reverted");
         } else {
             require(ERC20(_token).transfer(_to, _value), "token transfer reverted");
