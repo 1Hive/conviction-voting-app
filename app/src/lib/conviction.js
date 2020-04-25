@@ -208,7 +208,7 @@ export function getConvictionTrend(
 
 /**
  * Calculate amount of conviction needed for a proposal to pass. It uses the
- * formula: `threshold = (rho * supply) / (beta - (requeted / funds)) ** 2`.
+ * formula: `threshold = (rho * supply) / (1 - alpha) / (beta - (requeted / funds)) ** 2`.
  * @param {number} requested Amount of requested funds
  * @param {number} funds Total amount of funds
  * @param {number} supply Supply of the token being staked
