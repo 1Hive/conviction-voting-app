@@ -77,9 +77,9 @@ contract('ConvictionVoting', ([appManager, user]) => {
       stakeToken.address,
       vault.address,
       requestToken.address,
-      9,
-      2,
-      2
+      0.9 * 10 ** 7, // alpha = 0.9
+      0.2 * 10 ** 7, // beta = 0.2
+      0.002 * 10 ** 7 // rho = 0.002
     )
   })
   for (let i = 1; i <= 2; i++) {

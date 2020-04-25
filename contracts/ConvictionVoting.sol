@@ -17,8 +17,7 @@ contract ConvictionVoting is AragonApp {
     event ProposalExecuted(uint256 id, uint256 conviction);
 
     // Constants
-    uint256 public constant TIME_UNIT = 1;
-    uint256 public constant D = 10;
+    uint256 public constant D = 10000000;
     uint256 constant TWO_128 = 0x100000000000000000000000000000000; // 2^128
     uint256 constant TWO_127 = 0x80000000000000000000000000000000; // 2^127
 
@@ -57,9 +56,9 @@ contract ConvictionVoting is AragonApp {
     string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CONVICTION_VOTING_ERROR_AMOUNT_CAN_NOT_BE_ZERO";
 
     function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken) public onlyInit {
-        uint256 _decay = 9;
-        uint256 _maxRatio = 2; // 20%
-        uint256 _weight = 2; // 0.5 * maxRatio ^ 2
+        uint256 _decay = 9999599; // 3 days halftime. halftime_alpha = (1/2)**(1/t)
+        uint256 _maxRatio = 2000000; // 20%
+        uint256 _weight = 20000; // 0.05 * maxRatio ^ 2
         initialize(_stakeToken, _vault, _requestToken, _decay, _maxRatio, _weight);
     }
 
@@ -233,7 +232,7 @@ contract ConvictionVoting is AragonApp {
     )
         public view returns(uint256)
     {
-        uint256 t = uint256(_timePassed).div(TIME_UNIT);
+        uint256 t = uint256(_timePassed);
         // atTWO_128 = 2^128 * a^t
         uint256 atTWO_128 = _pow((decay << 128).div(D), t);
         // solium-disable-previous-line
@@ -242,11 +241,12 @@ contract ConvictionVoting is AragonApp {
     }
 
     /**
-     * @dev Formula: ρ * supply / (β - requestedAmount / total)**2
+     * @dev Formula: ρ * supply / (1 - a) / (β - requestedAmount / total)**2
      * For the Solidity implementation we amplify ρ and β and simplify the formula:
-     * weight = ρ * D ** 2
+     * weight = ρ * D
      * maxRatio = β * D
-     * threshold = weight * supply * funds ** 2 / (maxRatio * funds - requestedAmount * D) ** 2
+     * decay = a * D
+     * threshold = weight * supply * D ** 2 * funds ** 2 / (D - decay) / (maxRatio * funds - requestedAmount * D) ** 2
      * @param _requestedAmount Requested amount of tokens on certain proposal
      * @return Threshold a proposal's conviction should surpass in order to be able to
      * executed it.
@@ -256,10 +256,10 @@ contract ConvictionVoting is AragonApp {
         uint256 supply = stakeToken.totalSupply();
         // denom = maxRatio * funds - requestedAmount * D
         uint256 denom = maxRatio.mul(funds).sub(_requestedAmount.mul(D));
-        // threshold = weight * supply * funds ** 2
-        _threshold = weight.mul(supply).mul(funds).mul(funds);
-        // threshold /= denom ** 2
-        _threshold = _threshold.div(denom.mul(denom));
+        // threshold = weight * supply * D ** 2 * funds ** 2
+        _threshold = weight.mul(supply).mul(D).mul(D).mul(funds).mul(funds);
+        // threshold /= (D - decay) * denom ** 2
+        _threshold = _threshold.div(D.sub(decay).mul(denom).mul(denom));
     }
 
     /**

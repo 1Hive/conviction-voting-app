@@ -26,10 +26,12 @@ import {
 import { useBlockNumber } from '../BlockContext'
 import { formatTokenAmount } from '../lib/token-utils'
 
+const TIME_UNIT = (60 * 60 * 24) / 15
+
 function getStakesAndThreshold(proposal = {}) {
   const { appState } = useAragonApi()
   const { convictionStakes, stakeToken, requestToken } = appState
-  const { maxRatio, weight } = getGlobalParams()
+  const { alpha, maxRatio, weight } = getGlobalParams()
   const { requestedAmount } = proposal
   const stakes = convictionStakes.filter(
     stake => stake.proposal === parseInt(proposal.id)
@@ -39,41 +41,49 @@ function getStakesAndThreshold(proposal = {}) {
     requestedAmount,
     requestToken.amount || 0,
     stakeToken.tokenSupply || 0,
+    alpha,
     maxRatio,
     weight
   )
-  const max = getMaxConviction(stakeToken.tokenSupply || 0)
+  const max = getMaxConviction(stakeToken.tokenSupply || 0, alpha)
   return { stakes, totalTokensStaked, threshold, max }
 }
 
 export function ConvictionChart({ proposal, withThreshold = true }) {
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const currentBlock = useBlockNumber()
-  const { connectedAccount } = useAragonApi()
+  const { appState, connectedAccount } = useAragonApi()
+  const { stakeToken } = appState
   const { alpha } = getGlobalParams()
   const theme = useTheme()
 
+  const max = getMaxConviction(stakeToken.tokenSupply || 0, alpha)
+
   const lines = [
-    getConvictionHistory(stakes, currentBlock + 25, alpha),
+    getConvictionHistory(
+      stakes,
+      currentBlock + 25 * TIME_UNIT,
+      alpha,
+      TIME_UNIT
+    ),
     getConvictionHistoryByEntity(
       stakes,
       connectedAccount,
-      currentBlock + 25,
-      alpha
+      currentBlock + 25 * TIME_UNIT,
+      alpha,
+      TIME_UNIT
     ),
   ]
 
-  // Divides all the numbers of an array of arrays by the biggest in the arrays
-  const normalize = (lines, n) => {
-    const max = Math.max(...lines.flat(), n)
-    return lines.map(line => line.map(n => n / max))
+  // We want conviction and threhsold in percentages
+  const normalize = n => n / max
+  const normalizeLines = lines => {
+    return lines.map(line => line.map(normalize))
   }
-
-  const normalizeN = n => n / Math.max(...lines.flat(), n)
 
   return (
     <LineChart
-      lines={normalize(lines, Math.min(threshold, 100))}
+      lines={normalizeLines(lines)}
       total={lines[0] && lines[0].length}
       label={i => i - Math.floor((lines[0].length - 1) / 2)}
       captionsHeight={20}
@@ -82,7 +92,7 @@ export function ConvictionChart({ proposal, withThreshold = true }) {
         withThreshold &&
         !Number.isNaN(threshold) &&
         threshold !== Number.POSITIVE_INFINITY &&
-        normalizeN(threshold)
+        normalize(threshold)
       }
     />
   )
@@ -286,7 +296,7 @@ export function ConvictionTrend({ proposal }) {
   const { stakes, max } = getStakesAndThreshold(proposal)
   const blockNumber = useBlockNumber()
   const { alpha } = getGlobalParams()
-  const trend = getConvictionTrend(stakes, max, blockNumber, alpha)
+  const trend = getConvictionTrend(stakes, max, blockNumber, alpha, TIME_UNIT)
   const { layoutName } = useLayout()
   const compactMode = layoutName === 'small'
   const percentage =

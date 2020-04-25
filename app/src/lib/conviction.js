@@ -1,7 +1,3 @@
-const defaultAlpha = 0.9 // Constant that controls the conviction decay
-const defaultBeta = 0.2 // Maximum share of funds a proposal can take
-const defaultRho = 0.5 * defaultBeta ** 2 // Tuning param for the threshold function
-
 /**
  * Calculate the amount of conviction at certain time from an initial conviction
  * and the amount of staked tokens following the formula:
@@ -12,12 +8,7 @@ const defaultRho = 0.5 * defaultBeta ** 2 // Tuning param for the threshold func
  * @param {number} alpha Constant that controls the conviction decay
  * @return {number} Amount of conviction at time t
  */
-export function calculateConviction(
-  timePassed,
-  initConv,
-  amount,
-  alpha = defaultAlpha
-) {
+export function calculateConviction(timePassed, initConv, amount, alpha) {
   const t = timePassed
   const y0 = initConv
   const x = amount
@@ -34,11 +25,7 @@ export function calculateConviction(
  * @param {string} alpha Constant that controls the conviction decay
  * @return {number} Current conviction
  */
-export function getCurrentConviction(
-  stakes,
-  currentTime,
-  alpha = defaultAlpha
-) {
+export function getCurrentConviction(stakes, currentTime, alpha) {
   const lastStake = [...stakes].pop()
   if (lastStake) {
     const { time, totalTokensStaked, conviction } = lastStake
@@ -55,7 +42,7 @@ export function getCurrentConviction(
 }
 
 // TODO: Move the following code to tests
-export function checkConvictionImplementation(stakes, alpha = defaultAlpha) {
+export function checkConvictionImplementation(stakes, alpha) {
   const { conviction } = convictionFromStakes(stakes, alpha)
   if (stakes.length > 0) {
     const solidityConviction = [...stakes].pop().conviction
@@ -82,7 +69,7 @@ export function getCurrentConvictionByEntity(
   stakes,
   entity,
   currentTime,
-  alpha = defaultAlpha
+  alpha
 ) {
   const entityStakes = stakesByEntity(stakes, entity)
   if (entityStakes.length > 0) {
@@ -108,19 +95,18 @@ export function getCurrentConvictionByEntity(
  * List of token stakes made on a proposal
  * @param {number} currentTime Current block number
  * @param {string} alpha Constant that controls the conviction decay
+ * @param {number} timeUnit Number of blocks a time unit has
  * @returns {number[]} Array with conviction amounts from time t-50 to time t
  */
-export function getConvictionHistory(
-  stakes,
-  currentTime,
-  alpha = defaultAlpha
-) {
+export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
   const history = []
-  let initTime = currentTime - 49
+  let initTime = currentTime - 50 * timeUnit - 1
 
   // Fill the first spots with 0s if currentTime < 50
   while (initTime < 0) {
-    history.push(0)
+    if (initTime % timeUnit === 0) {
+      history.push(0)
+    }
     initTime++
   }
 
@@ -140,7 +126,9 @@ export function getConvictionHistory(
   let i = 0
 
   for (let t = initTime; t <= currentTime; t++) {
-    history.push(calculateConviction(timePassed, lastConv, oldAmount, alpha))
+    if (t % timeUnit === 0) {
+      history.push(calculateConviction(timePassed, lastConv, oldAmount, alpha))
+    }
     // check if new stakes are made at this time
     while (recentStakes.length > i && recentStakes[i].time <= t) {
       oldAmount = recentStakes[i++].totalTokensStaked
@@ -159,10 +147,22 @@ export function getConvictionHistory(
  * @param {string} entity Entity by which we will filter the stakes
  * @param {number} time Current block number
  * @param {string} alpha Constant that controls the conviction decay
+ * @param {number} timeUnit Number of blocks a time unit has
  * @returns {number[]} Array with conviction amounts from time 0 to `time`
  */
-export function getConvictionHistoryByEntity(stakes, entity, time, alpha) {
-  return getConvictionHistory(stakesByEntity(stakes, entity), time, alpha)
+export function getConvictionHistoryByEntity(
+  stakes,
+  entity,
+  time,
+  alpha,
+  timeUnit
+) {
+  return getConvictionHistory(
+    stakesByEntity(stakes, entity),
+    time,
+    alpha,
+    timeUnit
+  )
 }
 
 /**
@@ -175,12 +175,7 @@ export function getConvictionHistoryByEntity(stakes, entity, time, alpha) {
  * > threshold` and `NaN` if conviction will not pass the threshold with the
  * current amount of staked tokens
  */
-export function getRemainingTimeToPass(
-  threshold,
-  conviction,
-  amount,
-  alpha = defaultAlpha
-) {
+export function getRemainingTimeToPass(threshold, conviction, amount, alpha) {
   const a = alpha
   const y = threshold
   const y0 = conviction
@@ -189,13 +184,13 @@ export function getRemainingTimeToPass(
 }
 
 /**
- * Gets conviction trend in percentage for the next `timeSpan` amount of blocks.
+ * Gets conviction trend in percentage for the next `timeUnit` amount of blocks.
  * @param {{time: number, tokensStaked: number, totalTokensStaked: number, conviction: number}[]} stakes
  * List of token stakes made on a proposal
  * @param {number} maxConviction Max conviction possible with current token supply
  * @param {number} time Current block number
- * @param {number} timeSpan Number of blocks we want to cover
  * @param {number} alpha Constant that controls the conviction decay
+ * @param {number} timeUnit Number of blocks a time unit has
  * @returns {number} Number from -1 to 1 that represents the increment or
  * decrement of conviction
  */
@@ -203,11 +198,11 @@ export function getConvictionTrend(
   stakes,
   maxConviction,
   time,
-  timeSpan = 5,
-  alpha
+  alpha,
+  timeUnit = 5
 ) {
   const currentConviction = getCurrentConviction(stakes, time, alpha)
-  const futureConviction = getCurrentConviction(stakes, time + timeSpan, alpha)
+  const futureConviction = getCurrentConviction(stakes, time + timeUnit, alpha)
   return (futureConviction - currentConviction) / maxConviction
 }
 
@@ -217,20 +212,15 @@ export function getConvictionTrend(
  * @param {number} requested Amount of requested funds
  * @param {number} funds Total amount of funds
  * @param {number} supply Supply of the token being staked
+ * @param {number} alpha Constant that controls the decay
  * @param {number} beta Maximum share of funds a proposal can take
  * @param {number} rho Tuning param to set up the threshold (linearly)
  * @returns {number} Threshold
  */
-export function calculateThreshold(
-  requested,
-  funds,
-  supply,
-  beta = defaultBeta,
-  rho = defaultRho
-) {
+export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
   const share = requested / funds
   if (share < beta) {
-    return (rho * supply) / (beta - share) ** 2
+    return (rho * supply) / (1 - alpha) / (beta - share) ** 2
   } else {
     return Number.POSITIVE_INFINITY
   }
@@ -246,7 +236,7 @@ export function calculateThreshold(
  * @returns {number} Minimum amount of needed staked tokens for a proposal to
  * pass
  */
-export function getMinNeededStake(threshold, alpha = defaultAlpha) {
+export function getMinNeededStake(threshold, alpha) {
   const y = threshold
   const a = alpha
   return -a * y + y
@@ -261,7 +251,7 @@ export function getMinNeededStake(threshold, alpha = defaultAlpha) {
  * @param {number} alpha Constant that controls the decay
  * @returns {number} Max amount of conviction possible
  */
-export function getMaxConviction(amount, alpha = defaultAlpha) {
+export function getMaxConviction(amount, alpha) {
   const x = amount
   const a = alpha
   return x / (1 - a)

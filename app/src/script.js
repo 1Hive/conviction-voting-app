@@ -253,14 +253,15 @@ async function getRequestTokenSettings(address, vault) {
 }
 
 async function loadGlobalParams() {
-  const [decay, maxRatio, weight] = await Promise.all([
+  const [decay, maxRatio, weight, D] = await Promise.all([
     app.call('decay').toPromise(),
     app.call('maxRatio').toPromise(),
     app.call('weight').toPromise(),
+    app.call('D').toPromise(),
   ])
   return {
-    alpha: parseInt(decay) / 10,
-    maxRatio: parseInt(maxRatio) / 10,
-    weight: parseInt(weight) / 100,
+    alpha: parseInt(decay) / D,
+    maxRatio: parseInt(maxRatio) / D,
+    weight: parseInt(weight) / D,
   }
 }
