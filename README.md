@@ -2,9 +2,9 @@
 
 1Hive's Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
 
-#### 🐲 Project Stage: development
+#### 🐲 Project Stage: Rinkeby
 
-The Conviction Voting app is still in development. If you are interested in contributing please see our [open issues](https://github.com/1hive/conviction-voting-app).
+The Conviction Voting app has been published to `open.aragonpm.eth` on Rinkeby network. If you experience any issues or are interested in contributing please see review our [open issues](https://github.com/1hive/conviction-voting-app).
 
 #### 🚨 Security Review Status: pre-audit
 
@@ -16,34 +16,47 @@ To use this Aragon application, set it up using a token and a vault using:
 
 ```sh
 npm install
-npm start # It actually starts `npm run start:ipfs:template`
+npm start # It actually starts `npm run start:ipfs:run`
 ```
 
 If everything is working correctly, your new DAO will be deployed and your browser will open http://localhost:3000/#/YOUR-DAO-ADDRESS. It should look something like this:
 
 ![Deployed DAO with conviction voting app](https://raw.githubusercontent.com/1Hive/conviction-voting-app/master/app/public/meta/screenshot-1.png)
 
-You can set up mocked data and add funds to the vault by executing:
+NOTE: What the script `npm run start:ipfs:run` does is running `npm run start:ipfs:template`, kill the devchain, and reinitiate it with a block time of 15s, so we can see conviction growing over time.
+
+## How to deploy Conviction Voting to an organization
+
+Conviction Voting has been published to APM on Rinkeby at `conviction-voting.open.aragonpm.eth`.
+
+To deploy an organization you can use the [Aragon CLI](https://hack.aragon.org/docs/cli-intro.html).
 
 ```sh
-npm run mock-data $YOUR_DAO_ADDR $CONVICTION_VOTING_APP_ID [$AMOUNT]
+aragon dao install <dao-addr> conviction-voting.open.aragonpm.eth --app-init-args <org-token> <vault-addr> <funds-token> 9999599 2000000 20000
 ```
+This are the initalization parameters you can use:
+* **<org-token>**: The token address of the DAO's token
+* **<vault-addr>**: The DAO's main vault/agent address. It can be `0x0000000000000000000000000000000000000000` to set it up for conviction signaling (without money allocation).
+* **<funds-token>**: The token address that is going to be allocated. The token must be in the vault/agent. It can `0x0000000000000000000000000000000000000000` to set it up for conviction signaling (without money allocation).
+* The rest of the parameters are:
+  * `decay = 0.9999599`, which sets up conviction halftime to 3 days.
+  * `maxRatio = 0.2`, which sets the threshold formula to only allow proposals that request less than 20% of the funds. 
+  * `rho = 0.002`, which fine tunes the threshold formula.
 
-You can also see how conviction increases and decreases over time by executing:
+Once the app has been installed, we can create permissions for anybody to create proposals on conviction voting, and for conviction voting to transfer funds from the vault/agent:
 
 ```sh
-npm run mine-blocks # A new block is going to be mined every 15s
+aragon dao acl create <dao-addr> <conviction-voting-app> CREATE_PROPOSALS_ROLE 0xffffffffffffffffffffffffffffffffffffffff <voting-app>
+aragon dao acl create <dao-addr> <vault-app> TRANSFER_ROLE <conviction-voting-app> <voting-app>
 ```
-
-And refreshing the application in the browser (F5).
 
 ## Background
 
 The process of allocating funds in DAOs that are being used today feels very clunky, typically requiring a series of yes/no votes evaluated independently. These organizations also suffer from a number of challenges like 51% attacks, low participation, and overall inability to effectively prioritize and decide when there are many potential options all competing for consideration at once.
 
-[Conviction voting](https://medium.com/giveth/conviction-voting-a-novel-continuous-decision-making-alternative-to-governance-aa746cfb9475) as proposed by Commons Stack and Block Science  provides an interesting solution, that feels more organic and DAO-like than other methods we have seen proposed.
+[Conviction voting](https://medium.com/giveth/conviction-voting-a-novel-continuous-decision-making-alternative-to-governance-aa746cfb9475) as proposed by Commons Stack and Block Science provides an interesting solution, that feels more organic and DAO-like than other methods we have seen proposed.
 
-Our implementation of Conviction Voting as an Aragon application is intended to be used to collectively allocate funds from a shared treasury. It does not currently support voting on other types of proposals.
+Our implementation of Conviction Voting as an Aragon application is intended to be used to collectively allocate funds from a shared treasury, or to signal priorities when used over proposals without money allocation.
 
 Proposals can be submitted for consideration at any time and do not have an explicit expiration.
 

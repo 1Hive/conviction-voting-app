@@ -1,6 +1,6 @@
 {
   "name": "conviction-voting",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "description": "",
   "dependencies": {
     "@aragon/apps-shared-minime": "^1.0.1",

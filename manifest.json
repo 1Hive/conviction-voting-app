@@ -12,9 +12,7 @@
   ],
   "screenshots": [
     { "src": "/meta/screenshot-1.png" },
-    { "src": "/meta/screenshot-2.png" },
-    { "src": "/meta/screenshot-3.png" },
-    { "src": "/meta/screenshot-4.png" }
+    { "src": "/meta/screenshot-2.png" }
   ],
   "start_url": "/index.html",
   "script": "/script.js"
