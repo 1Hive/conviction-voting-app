@@ -185,7 +185,9 @@ async function initialize([
           ...nextState,
           stakeToken: {
             ...nextState.stakeToken,
-            balance: await stakeToken.contract.balanceOf(account).toPromise(),
+            balance: account
+              ? await stakeToken.contract.balanceOf(account).toPromise()
+              : 0,
           },
         }
       }
