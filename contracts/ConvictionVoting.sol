@@ -6,8 +6,6 @@ import "@aragon/apps-vault/contracts/Vault.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
-
-import "@1hive/apps-token-manager/contracts/HookedTokenManager.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 
 
@@ -24,6 +22,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     uint256 public constant D = 10000000;
     uint256 constant TWO_128 = 0x100000000000000000000000000000000; // 2^128
     uint256 constant TWO_127 = 0x80000000000000000000000000000000; // 2^127
+    uint256 constant TWO_64 = 0x10000000000000000; // 2^64
 
     // State
     uint256 public decay;
@@ -58,6 +57,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     string private constant ERROR_PROPOSAL_ALREADY_EXECUTED = "CONVICTION_VOTING_PROPOSAL_ALREADY_EXECUTED";
     string private constant ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE = "CONVICTION_VOTING_ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE";
     string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CONVICTION_VOTING_ERROR_AMOUNT_CAN_NOT_BE_ZERO";
+    string private constant ERROR_AMOUNT_OVER_MAX_RATIO = "CONVICTION_VOTING_ERROR_AMOUNT_OVER_MAX_RATIO";
     string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CONVICTION_VOTING_ERROR_INCORRECT_TOKEN_MANAGER_HOOK";
 
     function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken) public onlyInit {
@@ -258,13 +258,12 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      */
     function calculateThreshold(uint256 _requestedAmount) public view returns (uint256 _threshold) {
         uint256 funds = vault.balance(requestToken);
+        require(maxRatio.mul(funds) > _requestedAmount.mul(D), ERROR_AMOUNT_OVER_MAX_RATIO);
         uint256 supply = stakeToken.totalSupply();
-        // denom = maxRatio * funds - requestedAmount * D
-        uint256 denom = maxRatio.mul(funds).sub(_requestedAmount.mul(D));
-        // threshold = weight * supply * D ** 2 * funds ** 2
-        _threshold = weight.mul(supply).mul(D).mul(D).mul(funds).mul(funds);
-        // threshold /= (D - decay) * denom ** 2
-        _threshold = _threshold.div(D.sub(decay).mul(denom).mul(denom));
+        // denom = maxRatio * 2 ** 64 / D  - requestedAmount * 2 ** 64 / funds
+        uint256 denom = (maxRatio << 64).div(D).sub((_requestedAmount << 64).div(funds));
+        // _threshold = (weight * 2 ** 128 / D) / (denom ** 2 / 2 ** 64) * supply * D / 2 ** 128
+        _threshold = ((weight << 128).div(D).div(denom.mul(denom) >> 64)).mul(D).div(D.sub(decay)).mul(supply) >> 64;
     }
 
     /**
@@ -408,8 +407,9 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     /**
      * @dev Overrides TokenManagerHook's `_onRegisterAsHook`
      */
-    function _onRegisterAsHook(address _tokenManager, uint256 _hookId) internal {
-        require(HookedTokenManager(_tokenManager).token() == stakeToken, ERROR_INCORRECT_TOKEN_MANAGER_HOOK);
+    function _onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
+        //require(_token == address(stakeToken), ERROR_INCORRECT_TOKEN_MANAGER_HOOK);
+        return;
     }
 
     /**
