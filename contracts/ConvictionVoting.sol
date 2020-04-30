@@ -408,8 +408,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @dev Overrides TokenManagerHook's `_onRegisterAsHook`
      */
     function _onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
-        //require(_token == address(stakeToken), ERROR_INCORRECT_TOKEN_MANAGER_HOOK);
-        return;
+        require(_token == address(stakeToken), ERROR_INCORRECT_TOKEN_MANAGER_HOOK);
     }
 
     /**
