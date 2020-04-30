@@ -415,6 +415,9 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @dev Overrides TokenManagerHook's `_onTransfer`
      */
     function _onTransfer(address _from, address _to, uint256 _amount) internal returns (bool) {
+        if (_from == 0x0) {
+            return true; // Do nothing on token mintings
+        }
         uint256 newBalance = stakeToken.balanceOf(_from).sub(_amount);
         if (newBalance < stakesPerVoter[_from]) {
             _withdrawUnstakedTokens(stakesPerVoter[_from].sub(newBalance), _from, false);

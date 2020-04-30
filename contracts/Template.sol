@@ -8,7 +8,7 @@ import "./ConvictionVoting.sol";
 
 
 contract Template is BaseTemplate, TokenCache {
-    bytes32 constant internal TOKEN_MANAGER_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("token-manager")));  // token-manager.open.aragonpm.eth
+    bytes32 constant internal HOOKED_TOKEN_MANAGER_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("token-manager")));  // token-manager.open.aragonpm.eth
 
     string constant private ERROR_EMPTY_HOLDERS = "TEMPLATE_EMPTY_HOLDERS";
     string constant private ERROR_BAD_HOLDERS_STAKES_LEN = "TEMPLATE_BAD_HOLDERS_STAKES_LEN";
@@ -84,18 +84,15 @@ contract Template is BaseTemplate, TokenCache {
 
         (Kernel dao, ACL acl) = _createDAO();
         MiniMeToken requestToken = _setupRequestToken(dao, acl);
-        (Voting voting, HookedTokenManager stakeTokenManager, Vault vault) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
+        (Voting voting, TokenManager stakeTokenManager, Vault vault) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
         // Setup conviction-voting app
-        _createPermissionForTemplate(acl, stakeTokenManager, stakeTokenManager.SET_HOOK_ROLE());
         ConvictionVoting app;
         if (_type == 0) {
             app = _setupConvictionVoting(dao, acl, voting, stakeTokenManager.token(), 0x0, 0x0);
         } else {
             app = _setupConvictionVoting(dao, acl, voting, stakeTokenManager.token(), vault, address(requestToken));
         }
-        stakeTokenManager.registerHook(address(app));
-        _removePermissionFromTemplate(acl, stakeTokenManager, stakeTokenManager.SET_HOOK_ROLE());
-
+        _registerTokenManagerHooks(acl, HookedTokenManager(address(stakeTokenManager)), app);
         _transferRootPermissionsFromTemplateAndFinalizeDAO(dao, voting);
         _fillVault(vault, requestToken, VAULT_BALANCE);
     }
@@ -115,10 +112,10 @@ contract Template is BaseTemplate, TokenCache {
         uint64[3] memory _votingSettings
     )
         internal
-        returns (Voting, HookedTokenManager, Vault)
+        returns (Voting, TokenManager, Vault)
     {
         MiniMeToken token = _popTokenCache(msg.sender);
-        HookedTokenManager tokenManager = _installHookedTokenManagerApp(_dao, token, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
+        TokenManager tokenManager = _installHookedTokenManagerApp(_dao, token, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
         Voting voting = _installVotingApp(_dao, token, _votingSettings);
         Vault vault = _installVaultApp(_dao);
 
@@ -131,13 +128,13 @@ contract Template is BaseTemplate, TokenCache {
     function _setupBasePermissions(
         ACL _acl,
         Voting _voting,
-        HookedTokenManager _tokenManager
+        TokenManager _tokenManager
     )
         internal
     {
         _createEvmScriptsRegistryPermissions(_acl, _voting, _voting);
         _createVotingPermissions(_acl, _voting, _voting, _tokenManager, _voting);
-        _createTokenManagerPermissions(_acl, _tokenManager, _tokenManager, _voting);
+        _createTokenManagerPermissions(_acl, _tokenManager, _voting, _voting);
     }
 
     // Next we install and create permissions for the conviction-voting app
@@ -197,6 +194,12 @@ contract Template is BaseTemplate, TokenCache {
         _acl.createPermission(_grantee, _app, _app.TRANSFER_ROLE(), _manager);
     }
 
+    function _registerTokenManagerHooks(ACL _acl, HookedTokenManager _stakeTokenManager, ConvictionVoting _app) internal {
+        _createPermissionForTemplate(_acl, _stakeTokenManager, _stakeTokenManager.SET_HOOK_ROLE());
+        _stakeTokenManager.registerHook(_app);
+        _removePermissionFromTemplate(_acl, _stakeTokenManager, _stakeTokenManager.SET_HOOK_ROLE());
+    }
+
     function _fillVault(
         Vault _vault,
         MiniMeToken _requestToken,
@@ -220,12 +223,12 @@ contract Template is BaseTemplate, TokenCache {
         bool _transferable,
         uint256 _maxAccountTokens
     )
-        internal returns (HookedTokenManager)
+        internal returns (TokenManager)
     {
-        HookedTokenManager tokenManager = HookedTokenManager(_installDefaultApp(_dao, TOKEN_MANAGER_APP_ID));
+        HookedTokenManager tokenManager = HookedTokenManager(_installDefaultApp(_dao, HOOKED_TOKEN_MANAGER_APP_ID));
         _token.changeController(tokenManager);
         tokenManager.initialize(_token, _transferable, _maxAccountTokens);
-        return tokenManager;
+        return TokenManager(address(tokenManager));
     }
 
     //--------------------------------------------------------------//
