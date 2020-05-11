@@ -5,9 +5,11 @@ import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 import "@aragon/apps-vault/contracts/Vault.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/math/SafeMath64.sol";
+import "@aragon/os/contracts/lib/math/Math.sol";
+import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 
 
-contract ConvictionVoting is AragonApp {
+contract ConvictionVoting is AragonApp, TokenManagerHook {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
 
@@ -20,6 +22,7 @@ contract ConvictionVoting is AragonApp {
     uint256 public constant D = 10000000;
     uint256 constant TWO_128 = 0x100000000000000000000000000000000; // 2^128
     uint256 constant TWO_127 = 0x80000000000000000000000000000000; // 2^127
+    uint256 constant TWO_64 = 0x10000000000000000; // 2^64
 
     // State
     uint256 public decay;
@@ -54,6 +57,8 @@ contract ConvictionVoting is AragonApp {
     string private constant ERROR_PROPOSAL_ALREADY_EXECUTED = "CONVICTION_VOTING_PROPOSAL_ALREADY_EXECUTED";
     string private constant ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE = "CONVICTION_VOTING_ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE";
     string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CONVICTION_VOTING_ERROR_AMOUNT_CAN_NOT_BE_ZERO";
+    string private constant ERROR_AMOUNT_OVER_MAX_RATIO = "CONVICTION_VOTING_ERROR_AMOUNT_OVER_MAX_RATIO";
+    string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CONVICTION_VOTING_ERROR_INCORRECT_TOKEN_MANAGER_HOOK";
 
     function initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken) public onlyInit {
         uint256 _decay = 9999599; // 3 days halftime. halftime_alpha = (1/2)**(1/t)
@@ -120,7 +125,7 @@ contract ConvictionVoting is AragonApp {
       * @param _amount Amount of tokens staked
       */
     function stakeToProposal(uint256 _id, uint256 _amount) external isInitialized() {
-        _stake(_id, _amount);
+        _stake(_id, _amount, msg.sender);
     }
 
     /**
@@ -129,7 +134,7 @@ contract ConvictionVoting is AragonApp {
      */
     function stakeAllToProposal(uint256 _id) external isInitialized() {
         require(stakesPerVoter[msg.sender] == 0, ERROR_STAKING_ALREADY_STAKED);
-        _stake(_id, stakeToken.balanceOf(msg.sender));
+        _stake(_id, stakeToken.balanceOf(msg.sender), msg.sender);
     }
 
     /**
@@ -138,7 +143,7 @@ contract ConvictionVoting is AragonApp {
      * @param _amount Amount of tokens withdrawn
      */
     function withdrawFromProposal(uint256 _id, uint256 _amount) external isInitialized() {
-        _withdraw(_id, _amount);
+        _withdraw(_id, _amount, msg.sender);
     }
 
     /**
@@ -146,7 +151,7 @@ contract ConvictionVoting is AragonApp {
      * @param _id Proposal id
      */
     function withdrawAllFromProposal(uint256 _id) external isInitialized() {
-        _withdraw(_id, proposals[_id].stakesPerVoter[msg.sender]);
+        _withdraw(_id, proposals[_id].stakesPerVoter[msg.sender], msg.sender);
     }
 
     /**
@@ -164,7 +169,7 @@ contract ConvictionVoting is AragonApp {
         emit ProposalExecuted(_id, proposal.convictionLast);
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
         if (_withdrawIfPossible && proposal.stakesPerVoter[msg.sender] > 0) {
-            _withdraw(_id, proposal.stakesPerVoter[msg.sender]);
+            _withdraw(_id, proposal.stakesPerVoter[msg.sender], msg.sender);
         }
     }
 
@@ -253,13 +258,12 @@ contract ConvictionVoting is AragonApp {
      */
     function calculateThreshold(uint256 _requestedAmount) public view returns (uint256 _threshold) {
         uint256 funds = vault.balance(requestToken);
+        require(maxRatio.mul(funds) > _requestedAmount.mul(D), ERROR_AMOUNT_OVER_MAX_RATIO);
         uint256 supply = stakeToken.totalSupply();
-        // denom = maxRatio * funds - requestedAmount * D
-        uint256 denom = maxRatio.mul(funds).sub(_requestedAmount.mul(D));
-        // threshold = weight * supply * D ** 2 * funds ** 2
-        _threshold = weight.mul(supply).mul(D).mul(D).mul(funds).mul(funds);
-        // threshold /= (D - decay) * denom ** 2
-        _threshold = _threshold.div(D.sub(decay).mul(denom).mul(denom));
+        // denom = maxRatio * 2 ** 64 / D  - requestedAmount * 2 ** 64 / funds
+        uint256 denom = (maxRatio << 64).div(D).sub((_requestedAmount << 64).div(funds));
+        // _threshold = (weight * 2 ** 128 / D) / (denom ** 2 / 2 ** 64) * supply * D / 2 ** 128
+        _threshold = ((weight << 128).div(D).div(denom.mul(denom) >> 64)).mul(D).div(D.sub(decay)).mul(supply) >> 64;
     }
 
     /**
@@ -324,41 +328,55 @@ contract ConvictionVoting is AragonApp {
      * @dev Stake an amount of tokens on a proposal
      * @param _id Proposal id
      * @param _amount Amount of staked tokens
+     * @param _from Account from which we stake
      */
-    function _stake(uint256 _id, uint256 _amount) internal {
-        // make sure user does not stake more than she has
+    function _stake(uint256 _id, uint256 _amount, address _from) internal {
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
-        uint256 unstaked = stakeToken.balanceOf(msg.sender).sub(stakesPerVoter[msg.sender]);
+        uint256 unstaked = stakeToken.balanceOf(_from).sub(stakesPerVoter[_from]);
         if (_amount > unstaked) {
-            _withdrawTokensFromExecutedProposals(_amount.sub(unstaked));
+            _withdrawUnstakedTokens(_amount.sub(unstaked), _from, true);
         }
-        require(stakesPerVoter[msg.sender].add(_amount) <= stakeToken.balanceOf(msg.sender), ERROR_STAKED_MORE_THAN_OWNED);
+        // make sure user does not stake more than she has
+        require(stakesPerVoter[_from].add(_amount) <= stakeToken.balanceOf(_from), ERROR_STAKED_MORE_THAN_OWNED);
         Proposal storage proposal = proposals[_id];
         uint256 oldStaked = proposal.stakedTokens;
         proposal.stakedTokens = proposal.stakedTokens.add(_amount);
-        proposal.stakesPerVoter[msg.sender] = proposal.stakesPerVoter[msg.sender].add(_amount);
-        stakesPerVoter[msg.sender] = stakesPerVoter[msg.sender].add(_amount);
+        proposal.stakesPerVoter[_from] = proposal.stakesPerVoter[_from].add(_amount);
+        stakesPerVoter[_from] = stakesPerVoter[_from].add(_amount);
         if (proposal.blockLast == 0) {
             proposal.blockLast = getBlockNumber64();
         }
         _calculateAndSetConviction(_id, oldStaked);
-        emit StakeChanged(msg.sender, _id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeChanged(_from, _id, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
-     * @dev Withdraw staked tokens from executed proposals until
-     * a target amount is reached.
-     * @param _targetAmount Amount of withdrawn tokens.
+     * @dev Withdraw staked tokens from proposals until a target amount is reached.
+     * @param _targetAmount Amount of withdrawn tokens
+     * @param _from Account to withdraw from
+     * @param _onlyExecuted Withdraw only from executed proposals
      */
-    function _withdrawTokensFromExecutedProposals(uint256 _targetAmount) internal {
+    function _withdrawUnstakedTokens(uint256 _targetAmount, address _from, bool _onlyExecuted) internal {
         uint i = 0;
         uint256 amount = 0;
+        uint256 toSubstract;
         while (i < proposalCounter && amount < _targetAmount) {
-            Proposal storage proposal = proposals[i];
-            uint256 voterStakes = proposal.stakesPerVoter[msg.sender];
-            if (proposal.executed && voterStakes > 0) {
-                _withdraw(i, voterStakes);
-                amount = amount.add(voterStakes);
+            if (proposals[i].executed) {
+                toSubstract = proposals[i].stakesPerVoter[_from];
+                if (toSubstract > 0) {
+                    _withdraw(i, toSubstract, _from);
+                    amount = amount.add(toSubstract);
+                }
+            }
+            i++;
+        }
+        i = 0;
+        while (!_onlyExecuted && i < proposalCounter && amount < _targetAmount) {
+            // In open proposals, we only substract the needed amount to reach the target
+            toSubstract = Math.min256(_targetAmount.sub(amount), proposals[i].stakesPerVoter[_from]);
+            if (toSubstract > 0) {
+                _withdraw(i, toSubstract, _from);
+                amount = amount.add(toSubstract);
             }
             i++;
         }
@@ -368,20 +386,42 @@ contract ConvictionVoting is AragonApp {
      * @dev Withdraw an amount of tokens from a proposal
      * @param _id Proposal id
      * @param _amount Amount of withdrawn tokens
+     * @param _from Account to withdraw from
      */
-    function _withdraw(uint256 _id, uint256 _amount) internal {
+    function _withdraw(uint256 _id, uint256 _amount, address _from) internal {
         // make sure voter does not withdraw more than staked on proposal
-        require(proposals[_id].stakesPerVoter[msg.sender] >= _amount, ERROR_WITHDRAWED_MORE_THAN_STAKED);
+        require(proposals[_id].stakesPerVoter[_from] >= _amount, ERROR_WITHDRAWED_MORE_THAN_STAKED);
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
 
         Proposal storage proposal = proposals[_id];
         uint256 oldStaked = proposal.stakedTokens;
         proposal.stakedTokens = proposal.stakedTokens.sub(_amount);
-        proposal.stakesPerVoter[msg.sender] = proposal.stakesPerVoter[msg.sender].sub(_amount);
-        stakesPerVoter[msg.sender] = stakesPerVoter[msg.sender].sub(_amount);
+        proposal.stakesPerVoter[_from] = proposal.stakesPerVoter[_from].sub(_amount);
+        stakesPerVoter[_from] = stakesPerVoter[_from].sub(_amount);
         if (!proposal.executed) {
             _calculateAndSetConviction(_id, oldStaked);
         }
-        emit StakeChanged(msg.sender, _id, proposal.stakesPerVoter[msg.sender], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeChanged(_from, _id, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
+    }
+
+    /**
+     * @dev Overrides TokenManagerHook's `_onRegisterAsHook`
+     */
+    function _onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
+        require(_token == address(stakeToken), ERROR_INCORRECT_TOKEN_MANAGER_HOOK);
+    }
+
+    /**
+     * @dev Overrides TokenManagerHook's `_onTransfer`
+     */
+    function _onTransfer(address _from, address _to, uint256 _amount) internal returns (bool) {
+        if (_from == 0x0) {
+            return true; // Do nothing on token mintings
+        }
+        uint256 newBalance = stakeToken.balanceOf(_from).sub(_amount);
+        if (newBalance < stakesPerVoter[_from]) {
+            _withdrawUnstakedTokens(stakesPerVoter[_from].sub(newBalance), _from, false);
+        }
+        return true;
     }
 }

@@ -91,6 +91,7 @@ async function initialize([
   }
 
   async function reducer(state, { event, returnValues, blockNumber, address }) {
+    console.log(event, returnValues)
     let nextState = { ...state }
 
     if (addressesEqual(address, stakeTokenAddress)) {
@@ -106,7 +107,6 @@ async function initialize([
               tokenSupply,
             },
           }
-          console.log(nextState)
           return nextState
         default:
           return nextState

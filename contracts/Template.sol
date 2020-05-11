@@ -2,11 +2,14 @@ pragma solidity 0.4.24;
 
 import "@aragon/templates-shared/contracts/TokenCache.sol";
 import "@aragon/templates-shared/contracts/BaseTemplate.sol";
+import "@1hive/apps-token-manager/contracts/HookedTokenManager.sol";
 
 import "./ConvictionVoting.sol";
 
 
 contract Template is BaseTemplate, TokenCache {
+    bytes32 constant internal HOOKED_TOKEN_MANAGER_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("hooked-token-manager")));  // hooked-token-manager.open.aragonpm.eth
+
     string constant private ERROR_EMPTY_HOLDERS = "TEMPLATE_EMPTY_HOLDERS";
     string constant private ERROR_BAD_HOLDERS_STAKES_LEN = "TEMPLATE_BAD_HOLDERS_STAKES_LEN";
     string constant private ERROR_BAD_VOTE_SETTINGS = "TEMPLATE_BAD_VOTE_SETTINGS";
@@ -81,13 +84,15 @@ contract Template is BaseTemplate, TokenCache {
 
         (Kernel dao, ACL acl) = _createDAO();
         MiniMeToken requestToken = _setupRequestToken(dao, acl);
-        (Voting voting, MiniMeToken stakeToken, Vault vault) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
+        (Voting voting, TokenManager stakeTokenManager, Vault vault) = _setupBaseApps(dao, acl, _holders, _stakes, _votingSettings);
         // Setup conviction-voting app
+        ConvictionVoting app;
         if (_type == 0) {
-            _setupConvictionVoting(dao, acl, voting, stakeToken, 0x0, 0x0);
+            app = _setupConvictionVoting(dao, acl, voting, stakeTokenManager.token(), 0x0, 0x0);
         } else {
-            _setupConvictionVoting(dao, acl, voting, stakeToken, vault, address(requestToken));
+            app = _setupConvictionVoting(dao, acl, voting, stakeTokenManager.token(), vault, address(requestToken));
         }
+        _registerTokenManagerHooks(acl, HookedTokenManager(address(stakeTokenManager)), app);
         _transferRootPermissionsFromTemplateAndFinalizeDAO(dao, voting);
         _fillVault(vault, requestToken, VAULT_BALANCE);
     }
@@ -107,17 +112,17 @@ contract Template is BaseTemplate, TokenCache {
         uint64[3] memory _votingSettings
     )
         internal
-        returns (Voting, MiniMeToken, Vault)
+        returns (Voting, TokenManager, Vault)
     {
         MiniMeToken token = _popTokenCache(msg.sender);
-        TokenManager tokenManager = _installTokenManagerApp(_dao, token, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
+        TokenManager tokenManager = _installHookedTokenManagerApp(_dao, token, TOKEN_TRANSFERABLE, TOKEN_MAX_PER_ACCOUNT);
         Voting voting = _installVotingApp(_dao, token, _votingSettings);
         Vault vault = _installVaultApp(_dao);
 
         _mintTokens(_acl, tokenManager, _holders, _stakes);
         _setupBasePermissions(_acl, voting, tokenManager);
 
-        return (voting, token, vault);
+        return (voting, tokenManager, vault);
     }
 
     function _setupBasePermissions(
@@ -142,7 +147,7 @@ contract Template is BaseTemplate, TokenCache {
         address _vault,
         address _requestToken
     )
-        internal
+        internal returns (ConvictionVoting)
     {
         ConvictionVoting app = _installConvictionVoting(_dao, _stakeToken, _vault, _requestToken);
         _createConvictionVotingPermissions(_acl, app, _voting, _voting);
@@ -150,6 +155,7 @@ contract Template is BaseTemplate, TokenCache {
         if (_vault != 0x0) {
             _createVaultPermissions(_acl, Vault(_vault), app, _voting);
         }
+        return app;
     }
 
     function _installConvictionVoting(
@@ -188,6 +194,12 @@ contract Template is BaseTemplate, TokenCache {
         _acl.createPermission(_grantee, _app, _app.TRANSFER_ROLE(), _manager);
     }
 
+    function _registerTokenManagerHooks(ACL _acl, HookedTokenManager _stakeTokenManager, ConvictionVoting _app) internal {
+        _createPermissionForTemplate(_acl, _stakeTokenManager, _stakeTokenManager.SET_HOOK_ROLE());
+        _stakeTokenManager.registerHook(_app);
+        _removePermissionFromTemplate(_acl, _stakeTokenManager, _stakeTokenManager.SET_HOOK_ROLE());
+    }
+
     function _fillVault(
         Vault _vault,
         MiniMeToken _requestToken,
@@ -203,6 +215,20 @@ contract Template is BaseTemplate, TokenCache {
         _app.addProposal("Aragon Sidechain", "0x0", 2000 * 10 ** 18, msg.sender);
         _app.addProposal("Conviction Voting", "0x0", 1000 * 10 ** 18, msg.sender);
         _app.addProposal("Aragon Button", "0x0", 1000 * 10 ** 18, msg.sender);
+    }
+
+    function _installHookedTokenManagerApp(
+        Kernel _dao,
+        MiniMeToken _token,
+        bool _transferable,
+        uint256 _maxAccountTokens
+    )
+        internal returns (TokenManager)
+    {
+        HookedTokenManager tokenManager = HookedTokenManager(_installDefaultApp(_dao, HOOKED_TOKEN_MANAGER_APP_ID));
+        _token.changeController(tokenManager);
+        tokenManager.initialize(_token, _transferable, _maxAccountTokens);
+        return TokenManager(address(tokenManager));
     }
 
     //--------------------------------------------------------------//
