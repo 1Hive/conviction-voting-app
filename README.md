@@ -12,7 +12,9 @@ The code in this repository has not been audited.
 
 ## How to run Conviction Voting app locally
 
-To use this Aragon application, set it up using a token and a vault using:
+The Conviction Voting template requires the use of [1Hive's Tokens app](https://github.com/1hive/token-manager-app), so please follow the instructions in the README to deploy the app in the local devchain. Many devchains can coexist in the same computer, make sure you are deploying the Tokens app in the same devchain that is going to be deployed Conviction Voting.
+
+To use the Conviction Voting application, you can simply do:
 
 ```sh
 npm install
