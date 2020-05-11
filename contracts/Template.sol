@@ -8,7 +8,7 @@ import "./ConvictionVoting.sol";
 
 
 contract Template is BaseTemplate, TokenCache {
-    bytes32 constant internal HOOKED_TOKEN_MANAGER_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("token-manager")));  // token-manager.open.aragonpm.eth
+    bytes32 constant internal HOOKED_TOKEN_MANAGER_APP_ID = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("hooked-token-manager")));  // hooked-token-manager.open.aragonpm.eth
 
     string constant private ERROR_EMPTY_HOLDERS = "TEMPLATE_EMPTY_HOLDERS";
     string constant private ERROR_BAD_HOLDERS_STAKES_LEN = "TEMPLATE_BAD_HOLDERS_STAKES_LEN";
