@@ -124,14 +124,14 @@ const Proposals = React.memo(
                 ...statusField,
               ]}
               statusEmpty={
-                <h2
+                <p
                   css={`
                     ${textStyle('title2')};
                     font-weight: 600;
                   `}
                 >
                   No proposals yet!
-                </h2>
+                </p>
               }
               entries={sortedProposals}
               renderEntry={proposal => {

@@ -193,7 +193,6 @@ async function initialize([
       }
     }
 
-    console.log(nextState)
     return nextState
   }
 

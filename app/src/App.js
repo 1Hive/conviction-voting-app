@@ -49,6 +49,8 @@ const App = React.memo(function App() {
     handleProposalSupportFilterChange(-1)
   }
 
+  console.log('hola d')
+
   return (
     <React.Fragment>
       <SyncIndicator visible={isSyncing} />

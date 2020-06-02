@@ -28,7 +28,6 @@ function splitDecimalNumber(num) {
     dec.replace(/0*$/, ''), // trim trailing zeroes
   ]
 }
-
 /**
  * Format a decimal-based number back to a normal number
  *

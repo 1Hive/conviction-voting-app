@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import {
   BackButton,
   Bar,
@@ -6,10 +6,11 @@ import {
   GU,
   Text,
   textStyle,
+  Link,
+  SidePanel,
+  Split,
   useLayout,
   useTheme,
-  Link,
-  Split,
 } from '@aragon/ui'
 import styled from 'styled-components'
 import { useAragonApi } from '@aragon/api-react'
@@ -21,7 +22,9 @@ import {
   ConvictionBar,
   ConvictionChart,
 } from '../components/ConvictionVisuals'
+import usePanelState from '../hooks/usePanelState'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
+import SupportProposal from '../components/panels/SupportProposal'
 
 const H2 = styled.h2`
   ${textStyle('label2')};
@@ -37,6 +40,8 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   const { layoutName } = useLayout()
   const { api, connectedAccount } = useAragonApi()
 
+  const panelState = usePanelState()
+
   const {
     id,
     name,
@@ -46,6 +51,15 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     requestedAmount,
     executed,
   } = proposal
+
+  const handleWithdraw = useCallback(() => {
+    api.withdrawAllFromProposal(id).toPromise()
+  }, [api])
+
+  const handleExecute = useCallback(() => {
+    api.executeProposal(id, true).toPromise()
+  }, [api])
+
   return (
     <div>
       <Bar>
@@ -152,13 +166,9 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                     </Chart>
                     <ConvictionButton
                       proposal={proposal}
-                      onStake={() => api.stakeAllToProposal(id).toPromise()}
-                      onWithdraw={() =>
-                        api.withdrawAllFromProposal(id).toPromise()
-                      }
-                      onExecute={() =>
-                        api.executeProposal(id, true).toPromise()
-                      }
+                      onStake={panelState.requestOpen}
+                      onWithdraw={handleWithdraw}
+                      onExecute={handleExecute}
                     />
                   </React.Fragment>
                 )}
@@ -184,6 +194,13 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
           </div>
         }
       />
+      <SidePanel
+        title="Support this proposal"
+        opened={panelState.visible}
+        onClose={panelState.requestClose}
+      >
+        <SupportProposal id={id} onDone={panelState.requestClose} />
+      </SidePanel>
     </div>
   )
 }
