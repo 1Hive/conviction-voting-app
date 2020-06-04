@@ -156,7 +156,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Execute proposal #`id`
+     * @notice Execute proposal #`_id`
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(_id): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(_id): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param _id Proposal id
      * @param _withdrawIfPossible True if sender's staked tokens should be withdrawed after execution
