@@ -91,23 +91,12 @@ async function initialize([
   }
 
   async function reducer(state, { event, returnValues, blockNumber, address }) {
-    console.log(event, returnValues)
-    let nextState = { ...state }
+    const nextState = { ...state }
 
     if (addressesEqual(address, stakeTokenAddress)) {
       switch (event) {
         case 'Transfer':
-          const tokenSupply = await stakeToken.contract
-            .totalSupply()
-            .toPromise()
-          nextState = {
-            ...nextState,
-            stakeToken: {
-              ...nextState.stakeToken,
-              tokenSupply,
-            },
-          }
-          return nextState
+          return onNewTransfer(nextState, stakeToken.contract)
         default:
           return nextState
       }
@@ -126,75 +115,23 @@ async function initialize([
     }
 
     switch (event) {
-      case 'ProposalAdded': {
-        const { entity, id, title, amount, beneficiary, link } = returnValues
-        const newProposal = {
-          id: parseInt(id),
-          name: title,
-          link: link && toUtf8(link), // Can be an HTTP or IPFS link
-          requestedAmount: parseInt(amount),
-          creator: entity,
-          beneficiary,
-        }
-        nextState = {
-          ...nextState,
-          proposals: [...nextState.proposals, newProposal],
-        }
-        break
-      }
-      case 'StakeChanged': {
-        const {
-          entity,
-          id,
-          tokensStaked,
-          totalTokensStaked,
-          conviction,
-        } = returnValues
-        nextState.convictionStakes.push({
-          entity,
-          proposal: parseInt(id),
-          tokensStaked: parseInt(tokensStaked),
-          totalTokensStaked: parseInt(totalTokensStaked),
-          time: blockNumber,
-          conviction: parseInt(conviction),
-        })
-        break
-      }
-      case 'ProposalExecuted': {
-        const { id } = returnValues
-        nextState = {
-          ...nextState,
-          proposals: nextState.proposals.map(proposal => {
-            if (proposal.id === parseInt(id)) {
-              return { ...proposal, executed: true }
-            }
-            return proposal
-          }),
-        }
-        break
-      }
       case events.SYNC_STATUS_SYNCING:
-        nextState = { ...nextState, isSyncing: true }
-        break
+        return { ...nextState, isSyncing: true }
       case events.SYNC_STATUS_SYNCED:
-        nextState = { ...nextState, isSyncing: false }
-        break
-      case events.ACCOUNTS_TRIGGER: {
-        const { account } = returnValues
-        nextState = {
-          ...nextState,
-          stakeToken: {
-            ...nextState.stakeToken,
-            balance: account
-              ? await stakeToken.contract.balanceOf(account).toPromise()
-              : 0,
-          },
-        }
-      }
+        return { ...nextState, isSyncing: false }
+      case events.ACCOUNTS_TRIGGER:
+        return onUpdatedAccount(nextState, returnValues, stakeToken.contract)
+      case 'ProposalAdded':
+        return onNewProposal(nextState, returnValues)
+      case 'StakeAdded':
+        return onStakeUpdated(nextState, returnValues, blockNumber)
+      case 'StakeWithdrawn':
+        return onStakeUpdated(nextState, returnValues, blockNumber)
+      case 'ProposalExecuted':
+        return onProposalExecuted(nextState, returnValues)
+      default:
+        return nextState
     }
-
-    console.log(nextState)
-    return nextState
   }
 
   const storeOptions = {
@@ -214,6 +151,12 @@ async function initialize([
 
   return app.store(reducer, storeOptions)
 }
+
+/***********************
+ *                     *
+ *   Event Handlers    *
+ *                     *
+ ***********************/
 
 function initState(stakeToken, vault, requestTokenAddress) {
   return async cachedState => {
@@ -248,6 +191,103 @@ function initState(stakeToken, vault, requestTokenAddress) {
   }
 }
 
+// Conviction Voting events //
+async function onUpdatedAccount(state, { account }, stakeTokenContract) {
+  const accountBalance = account
+    ? await stakeTokenContract.balanceOf(account).toPromise()
+    : 0
+
+  return {
+    ...state,
+    stakeToken: {
+      ...state.stakeToken,
+      balance: accountBalance,
+    },
+  }
+}
+
+function onNewProposal(state, returnValues) {
+  const { entity, id, title, amount, beneficiary, link } = returnValues
+
+  const newProposal = {
+    id: parseInt(id),
+    name: title,
+    link: link && toUtf8(link), // Can be an HTTP or IPFS link
+    requestedAmount: parseInt(amount),
+    creator: entity,
+    beneficiary,
+    stakes: [],
+  }
+  return {
+    ...state,
+    proposals: [...state.proposals, newProposal],
+  }
+}
+
+function onStakeUpdated(
+  { proposals, convictionStakes, ...state },
+  returnValues,
+  blockNumber
+) {
+  const { entity, id, tokensStaked } = returnValues
+
+  const updatedProposals = proposals.map(proposal => {
+    if (proposal.id === parseInt(id)) {
+      const updatedStakes = updateProposalStakes(
+        proposal.stakes,
+        entity,
+        tokensStaked
+      )
+      return { ...proposal, stakes: updatedStakes }
+    }
+
+    return proposal
+  })
+
+  const updatedConvictionStakes = updateConvictionStakes(
+    convictionStakes,
+    returnValues,
+    blockNumber
+  )
+
+  return {
+    ...state,
+    convictionStakes: updatedConvictionStakes,
+    proposals: updatedProposals,
+  }
+}
+
+function onProposalExecuted(state, { id }) {
+  return {
+    ...state,
+    proposals: state.proposals.map(proposal => {
+      if (proposal.id === parseInt(id)) {
+        return { ...proposal, executed: true }
+      }
+      return proposal
+    }),
+  }
+}
+
+// Stake token events //
+async function onNewTransfer(state, stakeTokenContract) {
+  const tokenSupply = await stakeTokenContract.totalSupply().toPromise()
+
+  return {
+    ...state,
+    stakeToken: {
+      ...state.stakeToken,
+      tokenSupply,
+    },
+  }
+}
+
+/***********************
+ *                     *
+ *       Helpers       *
+ *                     *
+ ***********************/
+
 async function getRequestTokenSettings(address, vault) {
   return (
     { ...(await updateBalances([], address, app, vault))[0], address } || {}
@@ -266,4 +306,37 @@ async function loadGlobalParams() {
     maxRatio: parseInt(maxRatio) / D,
     weight: parseInt(weight) / D,
   }
+}
+
+function updateProposalStakes(stakes, entity, newTokensStaked) {
+  const index = stakes.findIndex(stake => addressesEqual(stake.entity, entity))
+
+  if (index === -1) {
+    return [...stakes, { entity, amount: newTokensStaked }]
+  }
+
+  const updatedStake = { ...stakes[index], amount: newTokensStaked }
+
+  return [...stakes.slice(0, index), updatedStake, ...stakes.slice(index + 1)]
+}
+
+function updateConvictionStakes(convictionStakes, returnValues, blockNumber) {
+  const {
+    entity,
+    id,
+    tokensStaked,
+    totalTokensStaked,
+    conviction,
+  } = returnValues
+
+  const newStake = {
+    entity,
+    proposal: parseInt(id),
+    tokensStaked: parseInt(tokensStaked),
+    totalTokensStaked: parseInt(totalTokensStaked),
+    time: blockNumber,
+    conviction: parseInt(conviction),
+  }
+
+  return [...convictionStakes, newStake]
 }
