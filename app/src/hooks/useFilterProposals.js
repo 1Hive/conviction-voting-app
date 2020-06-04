@@ -43,8 +43,7 @@ function testSearchFilter(proposalName, textSearch) {
   )
 }
 
-const useFilterProposals = proposals => {
-  const { myStakes } = useAppLogic()
+const useFilterProposals = (proposals, myStakes) => {
   const [filteredProposals, setFilteredProposals] = useState(proposals)
   const [supportFilter, setSupportFilter] = useState(NULL_FILTER_STATE)
   const [executionFilter, setExecutionFilter] = useState(

@@ -21,10 +21,11 @@ import useSelectedProposal from './hooks/useSelectedProposal'
 const App = React.memo(function App() {
   const {
     myStakes,
-    myLastStake,
     setProposalPanel,
     proposalPanel,
     onProposalSubmit,
+    myActiveTokens,
+    totalActiveTokens,
   } = useAppLogic()
 
   const { proposals = [], isSyncing, requestToken, stakeToken } = useAppState()
@@ -42,7 +43,7 @@ const App = React.memo(function App() {
     handleProposalSupportFilterChange,
     handleProposalExecutionFilterChange,
     handleSearchTextFilterChange,
-  } = useFilterProposals(proposals)
+  } = useFilterProposals(proposals, myStakes)
 
   const handleTabChange = tabIndex => {
     handleProposalExecutionFilterChange(tabIndex)
@@ -74,7 +75,6 @@ const App = React.memo(function App() {
         />
       ) : (
         <Proposals
-          proposals={proposals}
           selectProposal={selectProposal}
           filteredProposals={filteredProposals}
           proposalExecutionStatusFilter={proposalExecutionStatusFilter}
@@ -85,8 +85,9 @@ const App = React.memo(function App() {
           handleSearchTextFilterChange={handleSearchTextFilterChange}
           requestToken={requestToken}
           stakeToken={stakeToken}
-          myLastStake={myLastStake}
           myStakes={myStakes}
+          myActiveTokens={myActiveTokens}
+          totalActiveTokens={totalActiveTokens}
         />
       )}
       <SidePanel

@@ -23,15 +23,14 @@ import {
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 import FilterBar from '../components/FilterBar/FilterBar'
 import Balance from '../components/Balance'
+import StakingTokens from './StakingTokens'
 
-import { formatTokenAmount } from '../lib/token-utils'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 
 const ENTRIES_PER_PAGE = 6
 
 const Proposals = React.memo(
   ({
-    proposals,
     selectProposal,
     filteredProposals,
     proposalExecutionStatusFilter,
@@ -40,10 +39,11 @@ const Proposals = React.memo(
     handleProposalSupportFilterChange,
     handleExecutionStatusFilterChange,
     handleSearchTextFilterChange,
-    myLastStake,
     requestToken,
     stakeToken,
     myStakes,
+    myActiveTokens,
+    totalActiveTokens,
   }) => {
     const theme = useTheme()
     const connectedAccount = useConnectedAccount()
@@ -205,56 +205,12 @@ const Proposals = React.memo(
         }
         secondary={
           <div>
-            <Box heading="Staking tokens">
-              <div
-                css={`
-                  ${textStyle('body2')};
-                  color: ${theme.contentSecondary};
-                `}
-              >
-                Your tokens
-              </div>
-              <div
-                css={`
-                  ${textStyle('title2')};
-                `}
-              >
-                {`${
-                  stakeToken.balance !== undefined
-                    ? formatTokenAmount(
-                        parseInt(stakeToken.balance),
-                        parseInt(stakeToken.tokenDecimals)
-                      )
-                    : '-'
-                } ${stakeToken.tokenSymbol}`}
-              </div>
-              <div
-                css={`
-                  ${textStyle('body4')};
-                  color: ${theme.contentSecondary};
-                `}
-              >
-                {stakeToken.balance !== undefined
-                  ? (parseInt(stakeToken.balance) /
-                      parseInt(stakeToken.tokenSupply)) *
-                    100
-                  : '-'}
-                % of total tokens
-              </div>
-            </Box>
-            {myLastStake && myLastStake.tokensStaked > 0 && (
-              <Box heading="My staked proposal" key={myLastStake.proposal}>
-                <ProposalInfo
-                  proposal={
-                    proposals.filter(({ id }) => id === myLastStake.proposal)[0]
-                  }
-                  myStakes={myStakes}
-                  stakeToken={stakeToken}
-                  requestToken={requestToken}
-                  selectProposal={selectProposal}
-                />
-              </Box>
-            )}
+            <StakingTokens
+              stakeToken={stakeToken}
+              myStakes={myStakes}
+              myActiveTokens={myActiveTokens}
+              totalActiveTokens={totalActiveTokens}
+            />
             {requestToken && (
               <Box heading="Organization funds">
                 <span
@@ -286,23 +242,26 @@ const ProposalInfo = ({
   myStakes,
   requestToken,
   selectProposal = false,
-}) => (
-  <div
-    css={`
-      width: ${23 * GU}px;
-    `}
-  >
-    {selectProposal && (
-      <IdAndTitle {...proposal} selectProposal={selectProposal} />
-    )}
-    <ConvictionBar proposal={proposal} withThreshold={requestToken} />
-    {myStakes.has(proposal.id) && (
-      <Tag>
-        {`✓ Supported: ${myStakes.get(proposal.id)} ${stakeToken.tokenSymbol}`}
-      </Tag>
-    )}
-  </div>
-)
+}) => {
+  const myStakeInfo = myStakes.find(stake => stake.proposal === proposal.id)
+  return (
+    <div
+      css={`
+        width: ${23 * GU}px;
+      `}
+    >
+      {selectProposal && (
+        <IdAndTitle {...proposal} selectProposal={selectProposal} />
+      )}
+      <ConvictionBar proposal={proposal} withThreshold={requestToken} />
+      {myStakeInfo && (
+        <Tag>
+          {`✓ Supported: ${myStakeInfo.amount} ${stakeToken.tokenSymbol}`}
+        </Tag>
+      )}
+    </div>
+  )
+}
 
 const IdAndTitle = ({ id, name, selectProposal }) => (
   <Link onClick={() => selectProposal(id)}>

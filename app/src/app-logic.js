@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
+import BN from 'bn.js'
 import { useAragonApi, useAppState } from '@aragon/api-react'
 import { toDecimals } from './lib/math-utils'
-import { formatTokenAmount } from './lib/token-utils'
 import { toHex } from 'web3-utils'
 
 // Handles the main logic of the app.
@@ -15,6 +15,8 @@ export default function useAppLogic() {
   } = useAppState()
 
   const [proposalPanel, setProposalPanel] = useState(false)
+  const [myActiveTokens, setMyActiveTokens] = useState(new BN('0'))
+  const [totalActiveTokens, setTotalActiveTokens] = useState(new BN('0'))
 
   const onProposalSubmit = ({ title, link, amount, beneficiary }) => {
     const decimals = parseInt(requestToken.decimals)
@@ -28,27 +30,38 @@ export default function useAppLogic() {
       convictionStakes.filter(({ entity }) => entity === connectedAccount)) ||
     []
 
-  const myCurrentStakes = useMemo(() => {
-    return myStakesHistory.reduce(
-      (stakes, { proposal: currProposalId, tokensStaked }) => {
-        if (tokensStaked === 0) stakes.delete(currProposalId)
-        else {
-          const proposal = proposals.find(({ id }) => id === currProposalId)
-          if (proposal && !proposal.executed) {
-            stakes.set(
-              currProposalId,
-              formatTokenAmount(
-                parseInt(tokensStaked),
-                parseInt(stakeToken.tokenDecimals)
-              )
-            )
-          }
-        }
-        return stakes
-      },
-      new Map()
-    )
-  }, [myStakesHistory.length])
+  const myActiveStakes = useMemo(() => {
+    if (!connectedAccount || !stakeToken.tokenDecimals || !proposals) {
+      return
+    }
+    return proposals.reduce((myStakes, proposal) => {
+      if (proposal.executed || !proposal.stakes) {
+        return myStakes
+      }
+
+      const totalActive = proposal.stakes.reduce((accumulator, stake) => {
+        return accumulator.add(stake.amount)
+      }, new BN('0'))
+
+      setTotalActiveTokens(prevValue => prevValue.add(totalActive))
+
+      const myStake = proposal.stakes.find(
+        stake => stake.entity === connectedAccount
+      )
+      if (!myStake) {
+        return myStakes
+      }
+
+      myStakes.push({
+        proposal: proposal.id,
+        proposalName: proposal.name,
+        stakedAmount: myStake.amount,
+      })
+      setMyActiveTokens(prevValue => prevValue.add(myStake.amount))
+      return myStakes
+    }, [])
+  }, [proposals.length, connectedAccount, stakeToken.tokenDecimals])
+
   const myLastStake = [...myStakesHistory].pop() || []
 
   return {
@@ -56,6 +69,8 @@ export default function useAppLogic() {
     proposalPanel,
     setProposalPanel,
     myLastStake,
-    myStakes: myCurrentStakes,
+    myStakes: myActiveStakes,
+    myActiveTokens,
+    totalActiveTokens,
   }
 }
