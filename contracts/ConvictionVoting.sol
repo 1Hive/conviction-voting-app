@@ -15,7 +15,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
 
     // Events
     event ProposalAdded(address entity, uint256 id, string title, bytes link, uint256 amount, address beneficiary);
-    event StakeChanged(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event StakeAdded(address entity, uint256 id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event StakeWithdrawn(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 id, uint256 conviction);
 
     // Constants
@@ -347,7 +348,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             proposal.blockLast = getBlockNumber64();
         }
         _calculateAndSetConviction(_id, oldStaked);
-        emit StakeChanged(_from, _id, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeAdded(_from, _id, _amount, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
@@ -401,7 +402,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         if (!proposal.executed) {
             _calculateAndSetConviction(_id, oldStaked);
         }
-        emit StakeChanged(_from, _id, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeWithdrawn(_from, _id, _amount, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
