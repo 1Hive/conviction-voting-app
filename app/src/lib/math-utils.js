@@ -1,3 +1,5 @@
+import BN from 'bn.js'
+
 /**
  * Generic round function, see:
  *  - https://stackoverflow.com/a/18358056/1375656
@@ -85,4 +87,12 @@ export function toDecimals(num, decimals, { truncate = true } = {}) {
     return `${wholeWithBase}.${withoutDecimals.slice(wholeLengthWithBase)}`
   }
   return wholeWithBase
+}
+
+export function pct(a, b) {
+  if (b.eq(new BN(0))) {
+    return 0
+  }
+
+  return (a * 100) / b
 }

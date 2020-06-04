@@ -4,13 +4,23 @@ import BN from 'bn.js'
 import { addressesEqual } from '../lib/web3-utils'
 
 export default function useAccountTotalStaked() {
-  const { convictionStakes = [] } = useAppState()
+  const { proposals = [] } = useAppState()
   const connectedAccount = useConnectedAccount()
 
   const totalStaked = useMemo(() =>
-    convictionStakes
-      .filter(({ entity }) => addressesEqual(entity, connectedAccount))
-      .reduce((acc, { tokensStakedBN }) => acc.add(tokensStakedBN), new BN(0))
+    proposals
+      .filter(({ executed }) => !executed)
+      .reduce((acc, { stakes }) => {
+        const myStake = stakes.find(({ entity }) =>
+          addressesEqual(entity, connectedAccount)
+        )
+
+        if (!myStake) {
+          return acc
+        }
+
+        return acc.add(myStake.amount)
+      }, new BN(0))
   )
 
   return totalStaked

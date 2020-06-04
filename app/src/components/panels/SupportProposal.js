@@ -11,7 +11,7 @@ import {
   useSidePanelFocusOnReady,
   useTheme,
 } from '@aragon/ui'
-import { toDecimals, round } from '../../lib/math-utils'
+import { toDecimals, round, pct } from '../../lib/math-utils'
 import useAccountTotalStaked from '../../hooks/useAccountTotalStaked'
 import { formatTokenAmount } from '../../lib/token-utils'
 
@@ -58,11 +58,10 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
     event => {
       const newAmount = event.target.value
 
-      const newAmountInt = parseInt(newAmount || '0')
       const newAmountBN = new BN(
-        isNaN(newAmountInt)
+        isNaN(event.target.value)
           ? -1
-          : toDecimals(String(newAmountInt), stakeToken.tokenDecimals)
+          : toDecimals(newAmount, stakeToken.tokenDecimals)
       )
 
       setAmount({
@@ -111,7 +110,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   }, [amount])
 
   // Calculate percentages
-  const nonStakedPct = round((nonStakedTokens * 100) / stakeToken.balance)
+  const nonStakedPct = round(pct(nonStakedTokens, stakeToken.balanceBN))
   const stakedPct = 100 - nonStakedPct
 
   return (
@@ -179,13 +178,17 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
           {formatTokenAmount(nonStakedTokens, stakeToken.tokenDecimals)}{' '}
           {stakeToken.tokenSymbol}
         </strong>{' '}
-        ({nonStakedPct}% of your balance) available to support this proposal.
-        You are supporting other proposals with{' '}
-        <strong>
-          {formatTokenAmount(totalStaked, stakeToken.tokenDecimals)} locked
-          tokens
-        </strong>{' '}
-        ({stakedPct}% of your balance).
+        ({nonStakedPct}% of your balance) available to support this proposal.{' '}
+        {totalStaked.gt(0) && (
+          <span>
+            You are supporting other proposals with{' '}
+            <strong>
+              {formatTokenAmount(totalStaked, stakeToken.tokenDecimals)} locked
+              tokens
+            </strong>{' '}
+            ({stakedPct}% of your balance).
+          </span>
+        )}
       </Info>
     </form>
   )
