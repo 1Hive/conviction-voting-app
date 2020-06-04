@@ -4,20 +4,7 @@ import { AragonApi } from '@aragon/api-react'
 import App from './App'
 import { BlockNumberProvider } from './BlockContext'
 import { IdentityProvider } from './identity-manager'
-
-const reducer = state => {
-  if (state === null) {
-    return {
-      globalParams: {},
-      stakeToken: {},
-      requestToken: {},
-      proposals: [],
-      convictionStakes: [],
-      isSyncing: true,
-    }
-  }
-  return state
-}
+import reducer from './app-state-reducer.js'
 
 ReactDOM.render(
   <AragonApi reducer={reducer}>
