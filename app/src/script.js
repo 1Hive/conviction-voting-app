@@ -123,7 +123,7 @@ async function initialize([
         return onUpdatedAccount(nextState, returnValues, stakeToken.contract)
       case 'ProposalAdded':
         return onNewProposal(nextState, returnValues)
-      case 'StakeChanged':
+      case 'StakeAdded':
         return onStakeUpdated(nextState, returnValues, blockNumber)
       case 'StakeWithdrawn':
         return onStakeUpdated(nextState, returnValues, blockNumber)
