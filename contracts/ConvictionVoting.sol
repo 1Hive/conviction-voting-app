@@ -15,7 +15,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
 
     // Events
     event ProposalAdded(address entity, uint256 id, string title, bytes link, uint256 amount, address beneficiary);
-    event StakeChanged(address entity, uint256 id, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event StakeChanged(address entity, uint256 id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event StakeWithdrawn(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 id, uint256 conviction);
 
     // Constants
@@ -120,7 +121,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-      * @notice Stake `@tokenAmount((self.stakeToken(): address), amount)` on proposal #`id`
+      * @notice Stake `@tokenAmount((self.stakeToken(): address), _amount)` on proposal #`_id`
       * @param _id Proposal id
       * @param _amount Amount of tokens staked
       */
@@ -129,7 +130,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Stake all my `(self.stakeToken(): address).symbol(): string` tokens on proposal #`id`
+     * @notice Stake all my `(self.stakeToken(): address).symbol(): string` tokens on proposal #`_id`
      * @param _id Proposal id
      */
     function stakeAllToProposal(uint256 _id) external isInitialized() {
@@ -138,7 +139,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Withdraw `@tokenAmount((self.stakeToken(): address), amount)` previously staked on proposal #`id`
+     * @notice Withdraw `@tokenAmount((self.stakeToken(): address), _amount)` previously staked on proposal #`_id`
      * @param _id Proposal id
      * @param _amount Amount of tokens withdrawn
      */
@@ -147,7 +148,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Withdraw all `(self.stakeToken(): address).symbol(): string` tokens previously staked on proposal #`id`
+     * @notice Withdraw all `(self.stakeToken(): address).symbol(): string` tokens previously staked on proposal #`_id`
      * @param _id Proposal id
      */
     function withdrawAllFromProposal(uint256 _id) external isInitialized() {
@@ -155,7 +156,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Execute proposal #`id`
+     * @notice Execute proposal #`_id`
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(id): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(id): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param _id Proposal id
      * @param _withdrawIfPossible True if sender's staked tokens should be withdrawed after execution
@@ -204,7 +205,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Get stake of voter `voter` on proposal #`id`
+     * @notice Get stake of voter `_voter` on proposal #`_id`
      * @param _id Proposal id
      * @param _voter Entity address that previously might voted on that proposal
      * @return Current amount of staked tokens by voter on proposal
@@ -214,7 +215,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Get total stake of voter `voter` on proposals
+     * @notice Get total stake of voter `_voter` on proposals
      * @param _voter Entity address that previously might voted on that proposal
      * @return Current amount of staked tokens by voter on proposal
      */
@@ -347,7 +348,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             proposal.blockLast = getBlockNumber64();
         }
         _calculateAndSetConviction(_id, oldStaked);
-        emit StakeChanged(_from, _id, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeChanged(_from, _id, _amount, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
@@ -401,7 +402,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         if (!proposal.executed) {
             _calculateAndSetConviction(_id, oldStaked);
         }
-        emit StakeChanged(_from, _id, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeWithdrawn(_from, _id, _amount, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
