@@ -20,6 +20,7 @@ export default function reducer(state) {
       ...stakeToken,
       tokenDecimals: parseInt(stakeToken.tokenDecimals),
       balanceBN: new BN(stakeToken.balance),
+      totalSupplyBN: new BN(stakeToken.totalSupply),
     },
 
     proposals: proposals.map(({ stakes, ...proposal }) => ({

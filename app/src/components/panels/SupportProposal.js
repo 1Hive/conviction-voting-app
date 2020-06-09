@@ -33,9 +33,8 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
 
   const handleEditMode = useCallback(
     editMode => {
-      setAmount(amount => ({
-        ...amount,
-        value: amount.valueBN.gte(0)
+      setAmount(amount => {
+        const newValue = amount.valueBN.gte(0)
           ? formatTokenAmount(
               amount.valueBN,
               stakeToken.tokenDecimals,
@@ -47,8 +46,13 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
                 rounding: stakeToken.tokenDecimals,
               }
             )
-          : '',
-      }))
+          : ''
+
+        return {
+          ...amount,
+          value: newValue,
+        }
+      })
     },
     [stakeToken]
   )
@@ -160,10 +164,10 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
       />
       {errorMessage && (
         <Info
+          mode="warning"
           css={`
             margin-top: ${2 * GU}px;
           `}
-          mode="warning"
         >
           {errorMessage}
         </Info>

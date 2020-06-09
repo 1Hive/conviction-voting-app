@@ -26,15 +26,6 @@ import usePanelState from '../hooks/usePanelState'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 import SupportProposal from '../components/panels/SupportProposal'
 
-const H2 = styled.h2`
-  ${textStyle('label2')};
-  color: ${props => props.color};
-  margin-bottom: ${1.5 * GU}px;
-`
-
-const Chart = styled.div`
-  width: 100%;
-`
 function ProposalDetail({ proposal, onBack, requestToken }) {
   const theme = useTheme()
   const { layoutName } = useLayout()
@@ -101,7 +92,9 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                     />
                   )}
                   <div>
-                    <H2 color={theme.surfaceContentSecondary}>Link</H2>
+                    <Heading color={theme.surfaceContentSecondary}>
+                      Link
+                    </Heading>
                     {link ? (
                       <Link href={link} external>
                         Read more
@@ -117,7 +110,9 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                     )}
                   </div>
                   <div>
-                    <H2 color={theme.surfaceContentSecondary}>Created By</H2>
+                    <Heading color={theme.surfaceContentSecondary}>
+                      Created By
+                    </Heading>
                     <div
                       css={`
                         display: flex;
@@ -135,7 +130,9 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                   </div>
                   {requestToken && (
                     <div>
-                      <H2 color={theme.surfaceContentSecondary}>Beneficiary</H2>
+                      <Heading color={theme.surfaceContentSecondary}>
+                        Beneficiary
+                      </Heading>
                       <div
                         css={`
                           display: flex;
@@ -155,15 +152,15 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                 </div>
                 {!executed && (
                   <React.Fragment>
-                    <Chart>
-                      <H2 color={theme.surfaceContentSecondary}>
+                    <div css="width: 100%;">
+                      <Heading color={theme.surfaceContentSecondary}>
                         Conviction prediction
-                      </H2>
+                      </Heading>
                       <ConvictionChart
                         proposal={proposal}
                         withThreshold={!!requestToken}
                       />
-                    </Chart>
+                    </div>
                     <ConvictionButton
                       proposal={proposal}
                       onStake={panelState.requestOpen}
@@ -210,7 +207,7 @@ const Amount = ({
   requestToken: { symbol, decimals, verified },
 }) => (
   <div>
-    <H2 color={useTheme().surfaceContentSecondary}>Amount</H2>
+    <Heading color={useTheme().surfaceContentSecondary}>Amount</Heading>
     <Balance
       amount={requestedAmount}
       decimals={decimals}
@@ -219,5 +216,11 @@ const Amount = ({
     />
   </div>
 )
+
+const Heading = styled.h2`
+  ${textStyle('label2')};
+  color: ${props => props.color};
+  margin-bottom: ${1.5 * GU}px;
+`
 
 export default ProposalDetail

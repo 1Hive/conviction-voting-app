@@ -167,8 +167,8 @@ contract Template is BaseTemplate, TokenCache {
         internal returns (ConvictionVoting)
     {
         bytes32 _appId = keccak256(abi.encodePacked(apmNamehash("open"), keccak256("conviction-voting")));
-        bytes4 selector = bytes4(keccak256("initialize(address,address,address)"));
-        bytes memory initializeData = abi.encodeWithSelector(selector, _stakeToken, _vault, _requestToken);
+        bytes4 selector = bytes4(keccak256("initialize(address,address,address,uint256,uint256)"));
+        bytes memory initializeData = abi.encodeWithSelector(selector, _stakeToken, _vault, _requestToken, 5000000, 2000000);
         return ConvictionVoting(_installDefaultApp(_dao, _appId, initializeData));
     }
 
