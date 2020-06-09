@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useAragonApi } from '@aragon/api-react'
 import {
-  Timer,
-  Text,
-  Tag,
   Button,
+  Info,
+  Tag,
+  Text,
+  textStyle,
+  Timer,
   useTheme,
   useLayout,
-  textStyle,
 } from '@aragon/ui'
-import LineChart from './ModifiedLineChart'
+import BN from 'bn.js'
 import styled from 'styled-components'
+import LineChart from './ModifiedLineChart'
 import SummaryBar from './SummaryBar'
 import {
   getConvictionHistory,
@@ -169,23 +171,48 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
 export function ConvictionButton({ proposal, onStake, onWithdraw, onExecute }) {
   const { alpha } = getGlobalParams()
   const blockNumber = useBlockNumber()
-  const { connectedAccount } = useAragonApi()
+  const {
+    appState: { stakeToken },
+    connectedAccount,
+  } = useAragonApi()
   const { stakes, threshold } = getStakesAndThreshold(proposal)
+
   const conviction = getCurrentConviction(stakes, blockNumber, alpha)
   const myStakes = stakes.filter(({ entity }) => entity === connectedAccount)
   const didIStaked = myStakes.length > 0 && [...myStakes].pop().tokensStaked > 0
-  return conviction >= threshold ? (
-    <Button mode="strong" wide onClick={onExecute}>
-      Execute proposal
-    </Button>
-  ) : didIStaked ? (
-    <Button wide onClick={onWithdraw}>
-      Withdraw support
-    </Button>
-  ) : (
-    <Button mode="strong" wide onClick={onStake}>
-      Support this proposal
-    </Button>
+
+  if (conviction >= threshold) {
+    return (
+      <Button mode="strong" wide onClick={onExecute}>
+        Execute proposal
+      </Button>
+    )
+  }
+
+  if (didIStaked) {
+    return (
+      <Button wide onClick={onWithdraw}>
+        Withdraw support
+      </Button>
+    )
+  }
+
+  const canStake = stakeToken.balanceBN.gt(new BN('0'))
+
+  return (
+    <>
+      <Button mode="strong" wide onClick={onStake} disabled={!canStake}>
+        Support this proposal
+      </Button>
+      {!canStake && (
+        <Info mode="warning">
+          The currently connected account does not hold any{' '}
+          <strong>{stakeToken.tokenSymbol}</strong> tokens and therefore cannot
+          participate in this proposal. Make sure your accounts are holding{' '}
+          <strong>{stakeToken.tokenSymbol}</strong>.
+        </Info>
+      )}
+    </>
   )
 }
 
