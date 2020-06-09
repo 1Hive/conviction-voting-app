@@ -256,7 +256,7 @@ const ProposalInfo = ({
       <ConvictionBar proposal={proposal} withThreshold={requestToken} />
       {myStakeInfo && (
         <Tag>
-          {`✓ Supported: ${myStakeInfo.amount} ${stakeToken.tokenSymbol}`}
+          {`✓ Supported: ${myStakeInfo.stakedAmount} ${stakeToken.tokenSymbol}`}
         </Tag>
       )}
     </div>
