@@ -14,6 +14,7 @@ import {
 import { useConnectedAccount, useAppState } from '@aragon/api-react'
 import { useBlockNumber } from '../BlockContext'
 import { getCurrentConviction } from '../lib/conviction'
+import { formatTokenAmount } from '../lib/token-utils'
 
 import {
   ConvictionBar,
@@ -256,7 +257,10 @@ const ProposalInfo = ({
       <ConvictionBar proposal={proposal} withThreshold={requestToken} />
       {myStakeInfo && (
         <Tag>
-          {`✓ Supported: ${myStakeInfo.stakedAmount} ${stakeToken.tokenSymbol}`}
+          {`✓ Supported: ${formatTokenAmount(
+            parseInt(myStakeInfo.stakedAmount),
+            parseInt(stakeToken.tokenDecimals)
+          )} ${stakeToken.tokenSymbol}`}
         </Tag>
       )}
     </div>

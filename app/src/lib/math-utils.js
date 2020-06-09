@@ -30,7 +30,6 @@ function splitDecimalNumber(num) {
     dec.replace(/0*$/, ''), // trim trailing zeroes
   ]
 }
-
 /**
  * Format a decimal-based number back to a normal number
  *
@@ -194,4 +193,12 @@ export function stakesPercentages(
         adjustedStakes.slice(0, firstZeroIndex - 1),
         adjustedStakes[firstZeroIndex - 1].percentage
       )
+}
+
+export function pct(a, b) {
+  if (b.eq(new BN(0))) {
+    return 0
+  }
+
+  return (a * 100) / b
 }

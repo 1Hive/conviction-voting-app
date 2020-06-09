@@ -88,18 +88,38 @@ export function getPresetTokens(networkType) {
   return PRESET_TOKENS.get(networkType) || [ETHER_TOKEN_FAKE_ADDRESS]
 }
 
-export const formatTokenAmount = (
+export function formatDecimals(value, digits) {
+  try {
+    return value.toLocaleString('en-US', {
+      style: 'decimal',
+      maximumFractionDigits: digits,
+    })
+  } catch (err) {
+    if (err.name === 'RangeError') {
+      // Fallback to Number.prototype.toString()
+      // if the language tag is not supported.
+      return value.toString()
+    }
+    throw err
+  }
+}
+
+export function formatTokenAmount(
   amount,
   decimals = 0,
   isIncoming,
   displaySign = false,
-  { rounding = 2 } = {}
-) =>
-  (displaySign ? (isIncoming ? '+' : '-') : '') +
-  Number(round(amount / Math.pow(10, decimals), rounding)).toLocaleString(
-    undefined,
-    {
-      style: 'decimal',
-      maximumFractionDigits: 18,
-    }
+  { rounding = 2, commas = true, replaceZeroBy = '0' } = {}
+) {
+  const roundedAmount = round(amount / Math.pow(10, decimals), rounding)
+  const formattedAmount = formatDecimals(roundedAmount, 18)
+
+  if (formattedAmount === '0') {
+    return replaceZeroBy
+  }
+
+  return (
+    (displaySign ? (isIncoming ? '+' : '-') : '') +
+    (commas ? formattedAmount : formattedAmount.replace(',', ''))
   )
+}

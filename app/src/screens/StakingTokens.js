@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import BN from 'bn.js'
 import {
   Box,
   Distribution,
@@ -9,7 +10,7 @@ import {
   useViewport,
 } from '@aragon/ui'
 import { formatTokenAmount } from '../lib/token-utils'
-import { stakesPercentages } from '../lib/math-utils'
+import { stakesPercentages, pct } from '../lib/math-utils'
 
 const DISTRIBUTION_ITEMS_MAX = 6
 
@@ -34,23 +35,31 @@ function displayedStakes(stakes, total) {
 const StakingTokens = React.memo(function StakingTokens({
   stakeToken,
   myStakes,
-  myActiveTokens,
   totalActiveTokens,
 }) {
   const theme = useTheme()
   const { below } = useViewport()
   const compact = below('large')
 
+  const myActiveTokens = useMemo(() => {
+    if (!myStakes) {
+      return null
+    }
+    return myStakes.reduce((accumulator, stake) => {
+      return accumulator.add(stake.stakedAmount)
+    }, new BN('0'))
+  }, [myStakes])
+
   const stakes = useMemo(() => {
     if (!myStakes || !myActiveTokens) {
-      return
+      return null
     }
     return displayedStakes(myStakes, myActiveTokens)
   }, [myStakes, myActiveTokens])
 
   const inactiveTokens = useMemo(() => {
     if (!stakeToken.balance || !myActiveTokens) {
-      return
+      return null
     }
     return stakeToken.balance - myActiveTokens
   }, [stakeToken.balance, myActiveTokens])
@@ -94,9 +103,7 @@ const StakingTokens = React.memo(function StakingTokens({
               `}
             >
               {stakeToken.balance
-                ? (parseInt(stakeToken.balance) /
-                    parseInt(stakeToken.tokenSupply)) *
-                  100
+                ? pct(stakeToken.balance, stakeToken.totalSupplyBN)
                 : '-'}
               % of total tokens
             </div>
