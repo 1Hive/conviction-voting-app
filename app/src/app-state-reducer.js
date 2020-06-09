@@ -12,9 +12,16 @@ export default function reducer(state) {
     }
   }
 
-  const { proposals } = state
+  const { proposals, stakeToken } = state
   return {
     ...state,
+
+    stakeToken: {
+      ...stakeToken,
+      tokenDecimals: parseInt(stakeToken.tokenDecimals),
+      balanceBN: new BN(stakeToken.balance),
+      totalSupplyBN: new BN(stakeToken.totalSupply),
+    },
 
     proposals: proposals.map(({ stakes, ...proposal }) => ({
       ...proposal,
