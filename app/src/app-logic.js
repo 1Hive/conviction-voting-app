@@ -1,27 +1,20 @@
-import { useState, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useAragonApi, useAppState } from '@aragon/api-react'
-import { toDecimals } from './lib/math-utils'
+
 import { formatTokenAmount } from './lib/token-utils'
 import { toHex } from 'web3-utils'
 
 // Handles the main logic of the app.
 export default function useAppLogic() {
   const { api, connectedAccount } = useAragonApi()
-  const {
-    proposals = [],
-    stakeToken,
-    requestToken,
-    convictionStakes,
-  } = useAppState()
+  const { proposals = [], stakeToken, convictionStakes } = useAppState()
 
   const [proposalPanel, setProposalPanel] = useState(false)
 
-  const onProposalSubmit = ({ title, link, amount, beneficiary }) => {
-    const decimals = parseInt(requestToken.decimals)
-    const decimalAmount = toDecimals(amount.trim(), decimals).toString()
-    api.addProposal(title, toHex(link), decimalAmount, beneficiary).toPromise()
+  const onProposalSubmit = useCallback((title, link, amount, beneficiary) => {
+    api.addProposal(title, toHex(link), amount, beneficiary).toPromise()
     setProposalPanel(false)
-  }
+  }, [])
 
   const myStakesHistory =
     (convictionStakes &&
