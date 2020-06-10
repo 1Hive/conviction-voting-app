@@ -105,10 +105,6 @@ const AddProposalPanel = ({ onSubmit }) => {
         errors.push('Invalid requested amount')
       }
 
-      // if (amount.valueBN.gt(nonStakedTokens)) {
-      //   return 'Insufficient balance'
-      // }
-
       if (beneficiary && !isAddress(beneficiary)) {
         errors.push('Beneficiary is not a valid ethereum address')
       }
