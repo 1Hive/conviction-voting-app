@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAragonApi } from '@aragon/api-react'
+import BigNumber from 'bignumber.js'
 import {
   Timer,
   Text,
@@ -31,21 +32,34 @@ const TIME_UNIT = (60 * 60 * 24) / 15
 function getStakesAndThreshold(proposal = {}) {
   const { appState } = useAragonApi()
   const { convictionStakes, stakeToken, requestToken } = appState
-  const { alpha, maxRatio, weight } = getGlobalParams()
-  const { requestedAmount } = proposal
+  const {
+    alpha,
+    maxRatio,
+    weight,
+    alphaBN,
+    maxRatioBN,
+    weightBN,
+  } = getGlobalParams()
+  const { requestedAmount, requestedAmountBN } = proposal
+
   const stakes = convictionStakes.filter(
     stake => stake.proposal === parseInt(proposal.id)
   )
   const { totalTokensStaked } = [...stakes].pop() || { totalTokensStaked: 0 }
-  const threshold = calculateThreshold(
-    requestedAmount,
-    requestToken.amount || 0,
-    stakeToken.tokenSupply || 0,
-    alpha,
-    maxRatio,
-    weight
+
+  const threshold2 = calculateThreshold2(
+    requestedAmountBN,
+    requestToken.amountBN || new BigNumber('0'),
+    stakeToken.totalSupplyBNN || new BigNumber('0'),
+    alphaBN,
+    maxRatioBN,
+    weightBN
   )
-  const max = getMaxConviction(stakeToken.tokenSupply || 0, alpha)
+
+  const max = getMaxConviction(
+    stakeToken.totalSupplyBNN || new BigNumber('0'),
+    alpha
+  )
   return { stakes, totalTokensStaked, threshold, max }
 }
 
@@ -199,6 +213,7 @@ export function ConvictionCountdown({ proposal, shorter }) {
   const blockNumber = useBlockNumber()
   const theme = useTheme()
   const { executed } = proposal
+
   const { stakes, totalTokensStaked, threshold } = getStakesAndThreshold(
     proposal
   )

@@ -1,3 +1,5 @@
+import BigNumber from 'bignumber.js'
+const oneBN = new BigNumber('1')
 /**
  * Calculate the amount of conviction at certain time from an initial conviction
  * and the amount of staked tokens following the formula:
@@ -217,10 +219,23 @@ export function getConvictionTrend(
  * @param {number} rho Tuning param to set up the threshold (linearly)
  * @returns {number} Threshold
  */
+// export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
+//   const share = requested / funds
+//   if (share < beta) {
+//     return (rho * supply) / (1 - alpha) / (beta - share) ** 2
+//   } else {
+//     return Number.POSITIVE_INFINITY
+//   }
+// }
+
 export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
-  const share = requested / funds
-  if (share < beta) {
-    return (rho * supply) / (1 - alpha) / (beta - share) ** 2
+  const share = requested.div(funds)
+
+  if (share.lt(beta)) {
+    return rho
+      .multipliedBy(supply)
+      .div(oneBN.minus(alpha))
+      .div(beta.minus(share).pow(2))
   } else {
     return Number.POSITIVE_INFINITY
   }
@@ -254,7 +269,7 @@ export function getMinNeededStake(threshold, alpha) {
 export function getMaxConviction(amount, alpha) {
   const x = amount
   const a = alpha
-  return x / (1 - a)
+  return x.div(oneBN.minus(a))
 }
 
 function convictionFromStakes(stakes, alpha) {

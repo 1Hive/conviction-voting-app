@@ -85,6 +85,7 @@ async function initialize([
     contract: app.external(stakeTokenAddress, tokenAbi),
     address: stakeTokenAddress,
   }
+
   const vault = vaultAddress !== ZERO_ADDR && {
     contract: app.external(vaultAddress, vaultAbi),
     address: vaultAddress,
@@ -214,6 +215,7 @@ function onNewProposal(state, returnValues) {
     name: title,
     link: link && toUtf8(link), // Can be an HTTP or IPFS link
     requestedAmount: parseInt(amount),
+    requestedAmountBN: amount,
     creator: entity,
     beneficiary,
     stakes: [],
@@ -302,9 +304,10 @@ async function loadGlobalParams() {
     app.call('D').toPromise(),
   ])
   return {
-    alpha: parseInt(decay) / D,
-    maxRatio: parseInt(maxRatio) / D,
-    weight: parseInt(weight) / D,
+    decay,
+    maxRatio,
+    weight,
+    pctBase: D,
   }
 }
 
