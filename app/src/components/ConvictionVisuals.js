@@ -47,7 +47,7 @@ function getStakesAndThreshold(proposal = {}) {
   )
   const { totalTokensStaked } = [...stakes].pop() || { totalTokensStaked: 0 }
 
-  const threshold2 = calculateThreshold2(
+  const threshold = calculateThreshold(
     requestedAmountBN,
     requestToken.amountBN || new BigNumber('0'),
     stakeToken.totalSupplyBNN || new BigNumber('0'),
@@ -58,7 +58,7 @@ function getStakesAndThreshold(proposal = {}) {
 
   const max = getMaxConviction(
     stakeToken.totalSupplyBNN || new BigNumber('0'),
-    alpha
+    alphaBN
   )
   return { stakes, totalTokensStaked, threshold, max }
 }
