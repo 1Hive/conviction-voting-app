@@ -1,8 +1,9 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
   BackButton,
   Bar,
   Box,
+  Button,
   GU,
   Text,
   textStyle,
@@ -18,19 +19,25 @@ import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBa
 import Balance from '../components/Balance'
 import {
   ConvictionCountdown,
-  ConvictionButton,
   ConvictionBar,
   ConvictionChart,
 } from '../components/ConvictionVisuals'
 import usePanelState from '../hooks/usePanelState'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
+import { useBlockNumber } from '../BlockContext'
+import { getStakesAndThreshold } from '../lib/proposals-utils'
+import { getCurrentConviction } from '../lib/conviction'
 import SupportProposal from '../components/panels/SupportProposal'
 
 function ProposalDetail({ proposal, onBack, requestToken }) {
   const theme = useTheme()
   const { layoutName } = useLayout()
-  const { api, connectedAccount } = useAragonApi()
+  const { api, connectedAccount, appState } = useAragonApi()
+  const {
+    globalParams: { alpha },
+  } = appState
 
+  const blockNumber = useBlockNumber()
   const panelState = usePanelState()
 
   const {
@@ -43,13 +50,51 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     executed,
   } = proposal
 
-  const handleWithdraw = useCallback(() => {
-    api.withdrawAllFromProposal(id).toPromise()
-  }, [api])
+  const { stakes, threshold } = getStakesAndThreshold(proposal)
+  const conviction = getCurrentConviction(stakes, blockNumber, alpha)
+  const myStakes = stakes.filter(({ entity }) => entity === connectedAccount)
+  const didIStaked = myStakes.length > 0 && [...myStakes].pop().tokensStaked > 0
 
   const handleExecute = useCallback(() => {
     api.executeProposal(id, true).toPromise()
-  }, [api])
+  }, [api, id])
+
+  const handleStake = useCallback(() => {
+    api.stakeAllToProposal(id).toPromise()
+  }, [api, id])
+
+  const handleWithdraw = useCallback(() => {
+    api.withdrawAllFromProposal(id).toPromise()
+  }, [api, id])
+
+  const mode = useMemo(() => {
+    if (conviction.gte(threshold)) {
+      return 'execute'
+    }
+    if (didIStaked) {
+      return 'update'
+    }
+    return 'support'
+  }, [conviction, threshold, didIStaked])
+
+  const buttonMode = useMemo(() => {
+    if (mode === 'execute') {
+      return { text: 'Execute proposal', action: handleExecute, mode: 'strong' }
+    }
+    // TOD - Update mode is intended for the change support feature, the button name will be changed on next pr
+    if (mode === 'update') {
+      return {
+        text: 'Withdraw support',
+        action: handleWithdraw,
+        mode: 'normal',
+      }
+    }
+    return {
+      text: 'Support this proposal',
+      action: panelState.requestOpen,
+      mode: 'strong',
+    }
+  }, [mode, handleExecute, handleStake, handleWithdraw, panelState])
 
   return (
     <div>
@@ -161,12 +206,13 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                         withThreshold={!!requestToken}
                       />
                     </div>
-                    <ConvictionButton
-                      proposal={proposal}
-                      onStake={panelState.requestOpen}
-                      onWithdraw={handleWithdraw}
-                      onExecute={handleExecute}
-                    />
+                    <Button
+                      wide
+                      mode={buttonMode.mode}
+                      onClick={buttonMode.action}
+                    >
+                      {buttonMode.text}
+                    </Button>
                   </React.Fragment>
                 )}
               </section>

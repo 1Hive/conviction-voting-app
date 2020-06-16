@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react'
-import BN from 'bn.js'
 import {
   Box,
   Distribution,
@@ -11,6 +10,7 @@ import {
 } from '@aragon/ui'
 import { formatTokenAmount } from '../lib/token-utils'
 import { stakesPercentages, pct } from '../lib/math-utils'
+import BigNumber from '../lib/bigNumber'
 
 const DISTRIBUTION_ITEMS_MAX = 6
 
@@ -41,13 +41,15 @@ const StakingTokens = React.memo(function StakingTokens({
   const { below } = useViewport()
   const compact = below('large')
 
+  console.log(' stakeToken.balance ', stakeToken.balance)
+
   const myActiveTokens = useMemo(() => {
     if (!myStakes) {
       return null
     }
     return myStakes.reduce((accumulator, stake) => {
-      return accumulator.add(stake.stakedAmount)
-    }, new BN('0'))
+      return accumulator.plus(stake.stakedAmount)
+    }, new BigNumber('0'))
   }, [myStakes])
 
   const stakes = useMemo(() => {
@@ -90,8 +92,8 @@ const StakingTokens = React.memo(function StakingTokens({
               {`${
                 stakeToken.balance
                   ? formatTokenAmount(
-                      parseInt(stakeToken.balance),
-                      parseInt(stakeToken.tokenDecimals)
+                      stakeToken.balance,
+                      stakeToken.tokenDecimals
                     )
                   : '-'
               } ${stakeToken.tokenSymbol}`}
@@ -103,14 +105,14 @@ const StakingTokens = React.memo(function StakingTokens({
               `}
             >
               {stakeToken.balance
-                ? pct(stakeToken.balance, stakeToken.totalSupplyBN)
+                ? pct(stakeToken.balance, stakeToken.totalSupply)
                 : '-'}
               % of total tokens
             </div>
           </Field>
         </div>
       </div>
-      {myStakes && myStakes.length > 0 && (
+      {myStakes && myActiveTokens.gt(new BigNumber('0')) && (
         <div
           css={`
             border-bottom: 1px solid ${theme.border};
@@ -136,8 +138,8 @@ const StakingTokens = React.memo(function StakingTokens({
                 {`${
                   myActiveTokens
                     ? formatTokenAmount(
-                        parseInt(myActiveTokens),
-                        parseInt(stakeToken.tokenDecimals)
+                        myActiveTokens,
+                        stakeToken.tokenDecimals
                       )
                     : '-'
                 } ${stakeToken.tokenSymbol}`}
@@ -149,10 +151,7 @@ const StakingTokens = React.memo(function StakingTokens({
                 `}
               >
                 Total Active Tokens:{' '}
-                {formatTokenAmount(
-                  parseInt(totalActiveTokens),
-                  parseInt(stakeToken.tokenDecimals)
-                )}{' '}
+                {formatTokenAmount(totalActiveTokens, stakeToken.tokenDecimals)}{' '}
                 {stakeToken.tokenSymbol}
               </div>
             </Field>
@@ -209,10 +208,7 @@ const StakingTokens = React.memo(function StakingTokens({
           >
             {`${
               inactiveTokens
-                ? formatTokenAmount(
-                    parseInt(inactiveTokens),
-                    parseInt(stakeToken.tokenDecimals)
-                  )
+                ? formatTokenAmount(inactiveTokens, stakeToken.tokenDecimals)
                 : '-'
             } ${stakeToken.tokenSymbol}`}
           </div>
