@@ -157,25 +157,11 @@ export function ConvictionCountdown({ proposal, shorter }) {
 
   const conviction = getCurrentConviction(stakes, blockNumber, alpha)
 
-  console.log('conviction ', conviction)
-
-  console.log('threshold ', threshold)
+  console.log('conviction calculated ', conviction.toNumber())
 
   const minTokensNeeded = getMinNeededStake(threshold, alpha)
 
   const neededTokens = minTokensNeeded.minus(totalTokensStaked)
-
-  console.log('neededTokens ', neededTokens)
-
-  console.log('neededTokens ', neededTokens)
-
-  console.log(
-    'REMAINING TIME PARMS ',
-    threshold.toNumber(),
-    conviction.toNumber(),
-    totalTokensStaked.toNumber(),
-    alpha.toNumber()
-  )
 
   const time = getRemainingTimeToPass(
     threshold,
@@ -183,8 +169,6 @@ export function ConvictionCountdown({ proposal, shorter }) {
     totalTokensStaked,
     alpha
   )
-
-  console.log('TIMEEEE ', time)
 
   const UNABLE_TO_PASS = 0
   const MAY_PASS = 1

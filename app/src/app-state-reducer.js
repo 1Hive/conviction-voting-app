@@ -26,12 +26,6 @@ export default function reducer(state) {
 
   const pctBaseBN = new BigNumber(globalParams.pctBase.toString())
 
-  const a = new BigNumber('0.9')
-  const aPowT = a.pow(109440)
-
-  console.log('A - Number ', a.toNumber())
-  console.log('aPowT ', aPowT.toNumber())
-
   return {
     ...state,
     globalParams: {

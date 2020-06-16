@@ -37,6 +37,14 @@ export function getCurrentConviction(stakes, currentTime, alpha) {
   const lastStake = [...stakes].pop()
   if (lastStake) {
     const { time, totalTokensStaked, conviction } = lastStake
+
+    console.log(
+      'CALCULATE conviction ',
+      currentTime - time,
+      conviction.toNumber(),
+      totalTokensStaked.toNumber(),
+      alpha.toNumber()
+    )
     // Calculate from last stake to now
     return calculateConviction(
       currentTime - time,
@@ -45,7 +53,7 @@ export function getCurrentConviction(stakes, currentTime, alpha) {
       alpha
     )
   } else {
-    return 0
+    return BigNumber('0')
   }
 }
 
@@ -109,7 +117,6 @@ export function getCurrentConvictionByEntity(
 export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
   const history = []
   let initTime = currentTime - 50 * timeUnit - 1
-  console.log('currentTime ', currentTime, initTime)
 
   // Fill the first spots with 0s if currentTime < 50
   while (initTime < 0) {
