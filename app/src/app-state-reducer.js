@@ -26,10 +26,6 @@ export default function reducer(state) {
   return {
     ...state,
     globalParams: {
-      // alpha: parseInt(globalParams.decay) / globalParams.pctBase,
-      // maxRatio: parseInt(globalParams.maxRatio) / globalParams.pctBase,
-      // weight: parseInt(globalParams.weight) / globalParams.pctBase,
-
       alpha: new BigNumber(globalParams.decay.toString()).div(pctBaseBN),
       maxRatio: new BigNumber(globalParams.maxRatio.toString()).div(pctBaseBN),
       weight: new BigNumber(globalParams.weight.toString()).div(pctBaseBN),

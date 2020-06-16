@@ -90,8 +90,8 @@ const StakingTokens = React.memo(function StakingTokens({
               {`${
                 stakeToken.balance
                   ? formatTokenAmount(
-                      parseInt(stakeToken.balance),
-                      parseInt(stakeToken.tokenDecimals)
+                      stakeToken.balance,
+                      stakeToken.tokenDecimals
                     )
                   : '-'
               } ${stakeToken.tokenSymbol}`}
@@ -136,8 +136,8 @@ const StakingTokens = React.memo(function StakingTokens({
                 {`${
                   myActiveTokens
                     ? formatTokenAmount(
-                        parseInt(myActiveTokens),
-                        parseInt(stakeToken.tokenDecimals)
+                        myActiveTokens,
+                        stakeToken.tokenDecimals
                       )
                     : '-'
                 } ${stakeToken.tokenSymbol}`}
@@ -149,10 +149,7 @@ const StakingTokens = React.memo(function StakingTokens({
                 `}
               >
                 Total Active Tokens:{' '}
-                {formatTokenAmount(
-                  parseInt(totalActiveTokens),
-                  parseInt(stakeToken.tokenDecimals)
-                )}{' '}
+                {formatTokenAmount(totalActiveTokens, stakeToken.tokenDecimals)}{' '}
                 {stakeToken.tokenSymbol}
               </div>
             </Field>
@@ -209,10 +206,7 @@ const StakingTokens = React.memo(function StakingTokens({
           >
             {`${
               inactiveTokens
-                ? formatTokenAmount(
-                    parseInt(inactiveTokens),
-                    parseInt(stakeToken.tokenDecimals)
-                  )
+                ? formatTokenAmount(inactiveTokens, stakeToken.tokenDecimals)
                 : '-'
             } ${stakeToken.tokenSymbol}`}
           </div>
