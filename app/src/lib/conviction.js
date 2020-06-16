@@ -1,3 +1,5 @@
+import BigNumber from './bigNumber'
+const oneBN = new BigNumber('1')
 /**
  * Calculate the amount of conviction at certain time from an initial conviction
  * and the amount of staked tokens following the formula:
@@ -13,8 +15,10 @@ export function calculateConviction(timePassed, initConv, amount, alpha) {
   const y0 = initConv
   const x = amount
   const a = alpha
-  const y = y0 * a ** t + (x * (1 - a ** t)) / (1 - a)
-  return y
+
+  return y0
+    .multipliedBy(a.pow(t))
+    .plus(x.multipliedBy(oneBN.minus(a.pow(t))).div(oneBN.minus(a)))
 }
 
 /**
@@ -29,6 +33,7 @@ export function getCurrentConviction(stakes, currentTime, alpha) {
   const lastStake = [...stakes].pop()
   if (lastStake) {
     const { time, totalTokensStaked, conviction } = lastStake
+
     // Calculate from last stake to now
     return calculateConviction(
       currentTime - time,
@@ -37,7 +42,7 @@ export function getCurrentConviction(stakes, currentTime, alpha) {
       alpha
     )
   } else {
-    return 0
+    return BigNumber('0')
   }
 }
 
@@ -85,7 +90,7 @@ export function getCurrentConvictionByEntity(
       alpha
     )
   } else {
-    return 0
+    return new BigNumber('0')
   }
 }
 
@@ -105,7 +110,7 @@ export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
   // Fill the first spots with 0s if currentTime < 50
   while (initTime < 0) {
     if (initTime % timeUnit === 0) {
-      history.push(0)
+      history.push(BigNumber('0'))
     }
     initTime++
   }
@@ -115,7 +120,11 @@ export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
 
   let { totalTokensStaked: oldAmount, conviction: lastConv, time: lastTime } = [
     ...oldStakes,
-  ].pop() || { totalTokensStaked: 0, conviction: 0, time: 0 }
+  ].pop() || {
+    totalTokensStaked: new BigNumber('0'),
+    conviction: new BigNumber('0'),
+    time: 0,
+  }
   lastConv = calculateConviction(
     initTime - lastTime,
     lastConv,
@@ -180,7 +189,22 @@ export function getRemainingTimeToPass(threshold, conviction, amount, alpha) {
   const y = threshold
   const y0 = conviction
   const x = amount
-  return Math.log(((a - 1) * y + x) / ((a - 1) * y0 + x)) / Math.log(a)
+
+  return (
+    Math.log(
+      a
+        .minus(oneBN)
+        .multipliedBy(y)
+        .plus(x)
+        .div(
+          a
+            .minus(oneBN)
+            .multipliedBy(y0)
+            .plus(x)
+        )
+        .toNumber()
+    ) / Math.log(a.toNumber())
+  )
 }
 
 /**
@@ -203,7 +227,7 @@ export function getConvictionTrend(
 ) {
   const currentConviction = getCurrentConviction(stakes, time, alpha)
   const futureConviction = getCurrentConviction(stakes, time + timeUnit, alpha)
-  return (futureConviction - currentConviction) / maxConviction
+  return futureConviction.minus(currentConviction).div(maxConviction)
 }
 
 /**
@@ -217,10 +241,15 @@ export function getConvictionTrend(
  * @param {number} rho Tuning param to set up the threshold (linearly)
  * @returns {number} Threshold
  */
+
 export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
-  const share = requested / funds
-  if (share < beta) {
-    return (rho * supply) / (1 - alpha) / (beta - share) ** 2
+  const share = requested.div(funds)
+
+  if (share.lt(beta)) {
+    return rho
+      .multipliedBy(supply)
+      .div(oneBN.minus(alpha))
+      .div(beta.minus(share).pow(2))
   } else {
     return Number.POSITIVE_INFINITY
   }
@@ -239,7 +268,11 @@ export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 export function getMinNeededStake(threshold, alpha) {
   const y = threshold
   const a = alpha
-  return -a * y + y
+
+  return a
+    .negated()
+    .multipliedBy(y)
+    .plus(y)
 }
 
 /**
@@ -254,7 +287,7 @@ export function getMinNeededStake(threshold, alpha) {
 export function getMaxConviction(amount, alpha) {
   const x = amount
   const a = alpha
-  return x / (1 - a)
+  return x.div(oneBN.minus(a))
 }
 
 function convictionFromStakes(stakes, alpha) {
@@ -266,7 +299,7 @@ function convictionFromStakes(stakes, alpha) {
       lastTime = stake.time
       return [lastConv, lastTime, amount]
     },
-    [0, 0, 0] // Initial conviction, time, and amount to 0
+    [new BigNumber('0'), 0, new BigNumber('0')] // Initial conviction, time, and amount to 0
   )
   return { conviction, time, totalTokensStaked }
 }
