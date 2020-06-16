@@ -1,4 +1,4 @@
-import BN from 'bn.js'
+import BigNumber from './bigNumber'
 
 /**
  * Generic round function, see:
@@ -105,10 +105,13 @@ export function toDecimals(num, decimals, { truncate = true } = {}) {
  */
 export function stakesPercentages(
   amounts,
-  { total = new BN(-1), maxIncluded = amounts.length } = {}
+  { total = new BigNumber(-1), maxIncluded = amounts.length } = {}
 ) {
-  if (total.eqn(-1)) {
-    total = amounts.reduce((total, value) => total.add(value), new BN(0))
+  if (total.eq(-1)) {
+    total = amounts.reduce(
+      (total, value) => total.plus(value),
+      new BigNumber(0)
+    )
   }
 
   // percentage + two digits (only to sort them by closest to the next integer)
@@ -120,9 +123,9 @@ export function stakesPercentages(
     .map((amount, index) => ({
       amount,
       index,
-      percentage: amount.muln(pctPrecision).div(total),
+      percentage: amount.multipliedBy(pctPrecision).div(total),
     }))
-    .sort((a, b) => b.percentage.cmp(a.percentage))
+    .sort((a, b) => b.percentage.comparedTo(a.percentage))
 
   // convert the percentage back to a number
   const stakePercentageAsNumber = stake => ({
@@ -137,8 +140,8 @@ export function stakesPercentages(
     addRest(
       includedStakes,
       excludedStakes.reduce(
-        (total, stake) => total.add(stake.percentage),
-        new BN(0)
+        (total, stake) => total.plus(stake.percentage),
+        new BigNumber(0)
       )
     )
 
@@ -196,7 +199,7 @@ export function stakesPercentages(
 }
 
 export function pct(a, b) {
-  if (b.eq(new BN(0))) {
+  if (b.eq(new BigNumber(0))) {
     return 0
   }
 
