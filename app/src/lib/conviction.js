@@ -254,7 +254,14 @@ export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 export function getMinNeededStake(threshold, alpha) {
   const y = threshold
   const a = alpha
-  return -a * y + y
+  // -a * y + y
+
+  console.log('NUMBERSS!!! ', y.toNumber(), a.toNumber())
+
+  return a
+    .negated()
+    .multipliedBy(y)
+    .plus(y)
 }
 
 /**

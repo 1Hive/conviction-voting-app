@@ -1,5 +1,5 @@
-import BN from 'bn.js'
 import BigNumber from 'bignumber.js'
+import BN from 'BN.js'
 
 export default function reducer(state) {
   if (state === null) {
@@ -13,48 +13,51 @@ export default function reducer(state) {
     }
   }
 
-  const { proposals, stakeToken, globalParams, requestToken } = state
+  const {
+    proposals,
+    stakeToken,
+    globalParams,
+    requestToken,
+    convictionStakes,
+  } = state
 
-  console.log('globalParams ', globalParams)
   const pctBaseBN = new BigNumber(globalParams.pctBase.toString())
-  console.log('pctBaseBN ', pctBaseBN)
-
-  const test = new BigNumber(globalParams.decay.toString()).div(pctBaseBN)
-
-  console.log('test!!! ', test.toNumber())
 
   return {
     ...state,
     globalParams: {
-      alpha: parseInt(globalParams.decay) / globalParams.pctBase,
-      maxRatio: parseInt(globalParams.maxRatio) / globalParams.pctBase,
-      weight: parseInt(globalParams.weight) / globalParams.pctBase,
+      // alpha: parseInt(globalParams.decay) / globalParams.pctBase,
+      // maxRatio: parseInt(globalParams.maxRatio) / globalParams.pctBase,
+      // weight: parseInt(globalParams.weight) / globalParams.pctBase,
 
-      alphaBN: new BigNumber(globalParams.decay.toString()).div(pctBaseBN),
-      maxRatioBN: new BigNumber(globalParams.maxRatio.toString()).div(
-        pctBaseBN
-      ),
-      weightBN: new BigNumber(globalParams.weight.toString()).div(pctBaseBN),
+      alpha: new BigNumber(globalParams.decay.toString()).div(pctBaseBN),
+      maxRatio: new BigNumber(globalParams.maxRatio.toString()).div(pctBaseBN),
+      weight: new BigNumber(globalParams.weight.toString()).div(pctBaseBN),
     },
     stakeToken: {
       ...stakeToken,
       tokenDecimals: parseInt(stakeToken.tokenDecimals),
-      balanceBN: new BN(stakeToken.balance),
-      totalSupplyBN: new BN(stakeToken.tokenSupply),
-      totalSupplyBNN: new BigNumber(stakeToken.tokenSupply.toString()),
+      balance: new BigNumber(stakeToken.balance),
+      totalSupply: new BigNumber(stakeToken.tokenSupply),
     },
     requestToken: {
       ...requestToken,
-      amountBN: new BigNumber(requestToken.amount.toString()),
+      amount: new BigNumber(requestToken.amount.toString()),
     },
 
     proposals: proposals.map(({ stakes, ...proposal }) => ({
       ...proposal,
-      requestedAmountBN: new BigNumber(proposal.requestedAmountBN.toString()),
+      requestedAmount: new BigNumber(proposal.requestedAmount),
       stakes: stakes.map(({ amount, ...stake }) => ({
         ...stake,
-        amount: new BN(amount),
+        amount: new BigNumber(amount),
       })),
+    })),
+    convictionStakes: convictionStakes.map(convictionStake => ({
+      ...convictionStake,
+      tokensStaked: BigNumber(convictionStake.tokensStaked),
+      totalTokensStaked: BigNumber(convictionStake.totalTokensStaked),
+      conviction: BigNumber(convictionStake.conviction),
     })),
   }
 }

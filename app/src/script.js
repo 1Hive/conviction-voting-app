@@ -214,8 +214,7 @@ function onNewProposal(state, returnValues) {
     id: parseInt(id),
     name: title,
     link: link && toUtf8(link), // Can be an HTTP or IPFS link
-    requestedAmount: parseInt(amount),
-    requestedAmountBN: amount,
+    requestedAmount: amount,
     creator: entity,
     beneficiary,
     stakes: [],
@@ -335,10 +334,10 @@ function updateConvictionStakes(convictionStakes, returnValues, blockNumber) {
   const newStake = {
     entity,
     proposal: parseInt(id),
-    tokensStaked: parseInt(tokensStaked),
-    totalTokensStaked: parseInt(totalTokensStaked),
+    tokensStaked,
+    totalTokensStaked,
     time: blockNumber,
-    conviction: parseInt(conviction),
+    conviction,
   }
 
   return [...convictionStakes, newStake]

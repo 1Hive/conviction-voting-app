@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react'
-import BN from 'bn.js'
 import {
   Box,
   Distribution,
@@ -11,6 +10,7 @@ import {
 } from '@aragon/ui'
 import { formatTokenAmount } from '../lib/token-utils'
 import { stakesPercentages, pct } from '../lib/math-utils'
+import BigNumber from 'bignumber.js'
 
 const DISTRIBUTION_ITEMS_MAX = 6
 
@@ -46,8 +46,8 @@ const StakingTokens = React.memo(function StakingTokens({
       return null
     }
     return myStakes.reduce((accumulator, stake) => {
-      return accumulator.add(stake.stakedAmount)
-    }, new BN('0'))
+      return accumulator.plus(stake.stakedAmount)
+    }, new BigNumber('0'))
   }, [myStakes])
 
   const stakes = useMemo(() => {
@@ -103,7 +103,7 @@ const StakingTokens = React.memo(function StakingTokens({
               `}
             >
               {stakeToken.balance
-                ? pct(stakeToken.balance, stakeToken.totalSupplyBN)
+                ? pct(stakeToken.balance, stakeToken.totalSupply)
                 : '-'}
               % of total tokens
             </div>

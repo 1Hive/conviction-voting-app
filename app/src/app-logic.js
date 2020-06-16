@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import BN from 'bn.js'
+import BigNumber from 'bignumber.js'
 import { useAragonApi, useAppState } from '@aragon/api-react'
 import { toDecimals } from './lib/math-utils'
 import { toHex } from 'web3-utils'
@@ -20,7 +20,7 @@ export default function useAppLogic() {
 
   const { myStakes, totalActiveTokens } = useMemo(() => {
     if (!connectedAccount || !stakeToken.tokenDecimals || !proposals) {
-      return { myStakes: [], totalActiveTokens: new BN('0') }
+      return { myStakes: [], totalActiveTokens: new BigNumber('0') }
     }
 
     return proposals.reduce(
@@ -30,10 +30,10 @@ export default function useAppLogic() {
         }
 
         const totalActive = proposal.stakes.reduce((accumulator, stake) => {
-          return accumulator.add(stake.amount)
-        }, new BN('0'))
+          return accumulator.plus(stake.amount)
+        }, new BigNumber('0'))
 
-        totalActiveTokens = totalActiveTokens.add(totalActive)
+        totalActiveTokens = totalActiveTokens.plus(totalActive)
 
         const myStake = proposal.stakes.find(
           stake => stake.entity === connectedAccount
@@ -48,7 +48,7 @@ export default function useAppLogic() {
         }
         return { myStakes, totalActiveTokens }
       },
-      { myStakes: [], totalActiveTokens: new BN('0') }
+      { myStakes: [], totalActiveTokens: new BigNumber('0') }
     )
   }, [proposals, connectedAccount, stakeToken.tokenDecimals])
 
