@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import BN from 'bn.js'
+import BigNumber from '../../lib/bigNumber'
 import { useAragonApi } from '@aragon/api-react'
 import {
   Button,
@@ -19,7 +19,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   const theme = useTheme()
   const [amount, setAmount] = useState({
     value: '0',
-    valueBN: new BN(0),
+    valueBN: new BigNumber('0'),
   })
 
   const {
@@ -29,7 +29,8 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   const inputRef = useSidePanelFocusOnReady()
 
   const totalStaked = useAccountTotalStaked()
-  const nonStakedTokens = stakeToken.balanceBN.sub(totalStaked)
+
+  const nonStakedTokens = stakeToken.balance.minus(totalStaked)
 
   const handleEditMode = useCallback(
     editMode => {
@@ -62,7 +63,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
     event => {
       const newAmount = event.target.value
 
-      const newAmountBN = new BN(
+      const newAmountBN = new BigNumber(
         isNaN(event.target.value)
           ? -1
           : toDecimals(newAmount, stakeToken.tokenDecimals)
@@ -102,7 +103,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   )
 
   const errorMessage = useMemo(() => {
-    if (amount.valueBN.eq(new BN(-1))) {
+    if (amount.valueBN.eq(new BigNumber(-1))) {
       return 'Invalid amount'
     }
 
@@ -114,7 +115,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   }, [amount])
 
   // Calculate percentages
-  const nonStakedPct = round(pct(nonStakedTokens, stakeToken.balanceBN))
+  const nonStakedPct = round(pct(nonStakedTokens, stakeToken.balance))
   const stakedPct = 100 - nonStakedPct
 
   return (
@@ -160,7 +161,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
         wide
         type="submit"
         mode="strong"
-        disabled={amount.valueBN.eq(new BN(0)) || Boolean(errorMessage)}
+        disabled={amount.valueBN.eq(new BigNumber(0)) || Boolean(errorMessage)}
       />
       {errorMessage && (
         <Info
