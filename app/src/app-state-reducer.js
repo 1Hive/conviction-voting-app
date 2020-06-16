@@ -1,4 +1,8 @@
-import BN from 'bn.js'
+import BigNumber from './lib/bigNumber'
+
+/** const yy = y0
+    .multipliedBy(a.pow(t))
+    .plus(x.multipliedBy(oneBN.minus(a.pow(t))).div(oneBN.minus(a))) */
 
 export default function reducer(state) {
   if (state === null) {
@@ -12,23 +16,47 @@ export default function reducer(state) {
     }
   }
 
-  const { proposals, stakeToken } = state
+  const {
+    proposals,
+    stakeToken,
+    globalParams,
+    requestToken,
+    convictionStakes,
+  } = state
+
+  const pctBaseBN = new BigNumber(globalParams.pctBase.toString())
+
   return {
     ...state,
-
+    globalParams: {
+      alpha: new BigNumber(globalParams.decay.toString()).div(pctBaseBN),
+      maxRatio: new BigNumber(globalParams.maxRatio.toString()).div(pctBaseBN),
+      weight: new BigNumber(globalParams.weight.toString()).div(pctBaseBN),
+    },
     stakeToken: {
       ...stakeToken,
       tokenDecimals: parseInt(stakeToken.tokenDecimals),
-      balanceBN: new BN(stakeToken.balance),
-      totalSupplyBN: new BN(stakeToken.tokenSupply),
+      balance: new BigNumber(stakeToken.balance),
+      totalSupply: new BigNumber(stakeToken.tokenSupply),
+    },
+    requestToken: {
+      ...requestToken,
+      amount: new BigNumber(requestToken.amount.toString()),
     },
 
     proposals: proposals.map(({ stakes, ...proposal }) => ({
       ...proposal,
+      requestedAmount: new BigNumber(proposal.requestedAmount),
       stakes: stakes.map(({ amount, ...stake }) => ({
         ...stake,
-        amount: new BN(amount),
+        amount: new BigNumber(amount),
       })),
+    })),
+    convictionStakes: convictionStakes.map(convictionStake => ({
+      ...convictionStake,
+      tokensStaked: BigNumber(convictionStake.tokensStaked),
+      totalTokensStaked: BigNumber(convictionStake.totalTokensStaked),
+      conviction: BigNumber(convictionStake.conviction),
     })),
   }
 }
