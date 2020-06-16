@@ -110,7 +110,7 @@ export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
   // Fill the first spots with 0s if currentTime < 50
   while (initTime < 0) {
     if (initTime % timeUnit === 0) {
-      history.push(0)
+      history.push(BigNumber('0'))
     }
     initTime++
   }
@@ -136,6 +136,13 @@ export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
 
   for (let t = initTime; t <= currentTime; t++) {
     if (t % timeUnit === 0) {
+      const conviction = calculateConviction(
+        timePassed,
+        lastConv,
+        oldAmount,
+        alpha
+      )
+      console.log('conviction graph ', conviction.toNumber())
       history.push(calculateConviction(timePassed, lastConv, oldAmount, alpha))
     }
     // check if new stakes are made at this time

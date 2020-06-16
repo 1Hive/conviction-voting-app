@@ -68,7 +68,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   }, [api, id])
 
   const mode = useMemo(() => {
-    if (conviction >= threshold) {
+    if (conviction.gte(threshold)) {
       return 'execute'
     }
     if (didIStaked) {
