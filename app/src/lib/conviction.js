@@ -104,8 +104,12 @@ export function getCurrentConvictionByEntity(
  * @returns {number[]} Array with conviction amounts from time t-50 to time t
  */
 export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
+  console.log('calling conviction graph ')
+  console.log('currentTime ', currentTime)
   const history = []
   let initTime = currentTime - 50 * timeUnit - 1
+
+  console.log('init Time ', initTime)
 
   // Fill the first spots with 0s if currentTime < 50
   while (initTime < 0) {
