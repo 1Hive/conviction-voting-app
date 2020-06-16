@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import BigNumber from 'bignumber.js'
+import BigNumber from '../../lib/bigNumber'
 import { useAragonApi } from '@aragon/api-react'
 import {
   Button,
@@ -29,7 +29,8 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   const inputRef = useSidePanelFocusOnReady()
 
   const totalStaked = useAccountTotalStaked()
-  const nonStakedTokens = stakeToken.balanceBN.minus(totalStaked)
+
+  const nonStakedTokens = stakeToken.balance.minus(totalStaked)
 
   const handleEditMode = useCallback(
     editMode => {
@@ -114,7 +115,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   }, [amount])
 
   // Calculate percentages
-  const nonStakedPct = round(pct(nonStakedTokens, stakeToken.balanceBN))
+  const nonStakedPct = round(pct(nonStakedTokens, stakeToken.balance))
   const stakedPct = 100 - nonStakedPct
 
   return (

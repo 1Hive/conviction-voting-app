@@ -1,5 +1,8 @@
-import BigNumber from 'bignumber.js'
-import BN from 'BN.js'
+import BigNumber from './lib/bigNumber'
+
+/** const yy = y0
+    .multipliedBy(a.pow(t))
+    .plus(x.multipliedBy(oneBN.minus(a.pow(t))).div(oneBN.minus(a))) */
 
 export default function reducer(state) {
   if (state === null) {
@@ -23,7 +26,11 @@ export default function reducer(state) {
 
   const pctBaseBN = new BigNumber(globalParams.pctBase.toString())
 
-  console.log('WEIGHT!!!! ', globalParams.weight)
+  const a = new BigNumber('0.9')
+  const aPowT = a.pow(109440)
+
+  console.log('A - Number ', a.toNumber())
+  console.log('aPowT ', aPowT.toNumber())
 
   return {
     ...state,

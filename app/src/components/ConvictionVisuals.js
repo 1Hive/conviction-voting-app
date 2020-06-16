@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import BN from 'bn.js'
 import { useAragonApi } from '@aragon/api-react'
 import { Timer, Text, Tag, useTheme, useLayout, textStyle } from '@aragon/ui'
 import LineChart from './ModifiedLineChart'
@@ -157,17 +156,26 @@ export function ConvictionCountdown({ proposal, shorter }) {
   )
 
   const conviction = getCurrentConviction(stakes, blockNumber, alpha)
-  // console.log('values ', threshold, alpha.toNumber())
+
+  console.log('conviction ', conviction)
+
+  console.log('threshold ', threshold)
+
   const minTokensNeeded = getMinNeededStake(threshold, alpha)
-
-  console.log('MIN!!!! ', minTokensNeeded.toNumber())
-
-  // const minTokensNeededBN = new BN(minTokensNeeded.toString())
-  // const totalTokensStakedBN = new BN(totalTokensStaked.toString())
 
   const neededTokens = minTokensNeeded.minus(totalTokensStaked)
 
-  console.log('neededTokens ', neededTokens.toNumber())
+  console.log('neededTokens ', neededTokens)
+
+  console.log('neededTokens ', neededTokens)
+
+  console.log(
+    'REMAINING TIME PARMS ',
+    threshold.toNumber(),
+    conviction.toNumber(),
+    totalTokensStaked.toNumber(),
+    alpha.toNumber()
+  )
 
   const time = getRemainingTimeToPass(
     threshold,
@@ -175,6 +183,8 @@ export function ConvictionCountdown({ proposal, shorter }) {
     totalTokensStaked,
     alpha
   )
+
+  console.log('TIMEEEE ', time)
 
   const UNABLE_TO_PASS = 0
   const MAY_PASS = 1

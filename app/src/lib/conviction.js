@@ -1,5 +1,6 @@
-import BigNumber from 'bignumber.js'
+import BigNumber from './bigNumber'
 const oneBN = new BigNumber('1')
+// BigNumber.config({ POW_PRECISION: 100 })
 /**
  * Calculate the amount of conviction at certain time from an initial conviction
  * and the amount of staked tokens following the formula:
@@ -15,7 +16,12 @@ export function calculateConviction(timePassed, initConv, amount, alpha) {
   const y0 = initConv
   const x = amount
   const a = alpha
-  const y = y0 * a ** t + (x * (1 - a ** t)) / (1 - a)
+  // const y = y0 * a ** t + (x * (1 - a ** t)) / (1 - a)
+
+  const y = y0
+    .multipliedBy(a.pow(t))
+    .plus(x.multipliedBy(oneBN.minus(a.pow(t))).div(oneBN.minus(a)))
+
   return y
 }
 
@@ -103,6 +109,7 @@ export function getCurrentConvictionByEntity(
 export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
   const history = []
   let initTime = currentTime - 50 * timeUnit - 1
+  console.log('currentTime ', currentTime, initTime)
 
   // Fill the first spots with 0s if currentTime < 50
   while (initTime < 0) {
@@ -117,7 +124,11 @@ export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
 
   let { totalTokensStaked: oldAmount, conviction: lastConv, time: lastTime } = [
     ...oldStakes,
-  ].pop() || { totalTokensStaked: 0, conviction: 0, time: 0 }
+  ].pop() || {
+    totalTokensStaked: new BigNumber('0'),
+    conviction: new BigNumber('0'),
+    time: 0,
+  }
   lastConv = calculateConviction(
     initTime - lastTime,
     lastConv,
@@ -219,14 +230,6 @@ export function getConvictionTrend(
  * @param {number} rho Tuning param to set up the threshold (linearly)
  * @returns {number} Threshold
  */
-// export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
-//   const share = requested / funds
-//   if (share < beta) {
-//     return (rho * supply) / (1 - alpha) / (beta - share) ** 2
-//   } else {
-//     return Number.POSITIVE_INFINITY
-//   }
-// }
 
 export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
   const share = requested.div(funds)
@@ -254,9 +257,6 @@ export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 export function getMinNeededStake(threshold, alpha) {
   const y = threshold
   const a = alpha
-  // -a * y + y
-
-  console.log('NUMBERSS!!! ', y.toNumber(), a.toNumber())
 
   return a
     .negated()
@@ -288,7 +288,7 @@ function convictionFromStakes(stakes, alpha) {
       lastTime = stake.time
       return [lastConv, lastTime, amount]
     },
-    [0, 0, 0] // Initial conviction, time, and amount to 0
+    [new BigNumber('0'), 0, new BigNumber('0')] // Initial conviction, time, and amount to 0
   )
   return { conviction, time, totalTokensStaked }
 }

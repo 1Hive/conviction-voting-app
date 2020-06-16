@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import BigNumber from 'bignumber.js'
+import BigNumber from './lib/bigNumber'
 import { useAragonApi, useAppState } from '@aragon/api-react'
 import { toDecimals } from './lib/math-utils'
 import { toHex } from 'web3-utils'

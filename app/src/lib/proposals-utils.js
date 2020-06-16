@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAragonApi } from '@aragon/api-react'
 import { calculateThreshold, getMaxConviction } from '../lib/conviction'
-import BigNumber from 'bignumber.js'
+import BigNumber from './bigNumber'
 
 export function getStakesAndThreshold(proposal = {}) {
   const { appState } = useAragonApi()
@@ -25,16 +25,6 @@ export function getStakesAndThreshold(proposal = {}) {
       return accumulator.plus(stake.amount)
     }, new BigNumber('0'))
   }, [proposal])
-
-  console.log(
-    'PARAMETERSSS!!! ',
-    requestedAmount,
-    requestToken.amount.toNumber(),
-    stakeToken.totalSupply.toNumber(),
-    alpha.toNumber(),
-    maxRatio.toNumber(),
-    weight.toNumber()
-  )
 
   const threshold = calculateThreshold(
     requestedAmount,

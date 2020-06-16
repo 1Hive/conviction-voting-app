@@ -10,7 +10,7 @@ import {
 } from '@aragon/ui'
 import { formatTokenAmount } from '../lib/token-utils'
 import { stakesPercentages, pct } from '../lib/math-utils'
-import BigNumber from 'bignumber.js'
+import BigNumber from '../lib/bigNumber'
 
 const DISTRIBUTION_ITEMS_MAX = 6
 
