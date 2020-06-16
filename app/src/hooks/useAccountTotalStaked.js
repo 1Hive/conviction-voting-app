@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAppState, useConnectedAccount } from '@aragon/api-react'
-import BN from 'bn.js'
+import BigNumber from '../lib/bigNumber'
 import { addressesEqual } from '../lib/web3-utils'
 
 export default function useAccountTotalStaked() {
@@ -19,8 +19,8 @@ export default function useAccountTotalStaked() {
           return acc
         }
 
-        return acc.add(myStake.amount)
-      }, new BN(0))
+        return acc.plus(myStake.amount)
+      }, new BigNumber(0))
   )
 
   return totalStaked
