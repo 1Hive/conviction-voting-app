@@ -30,16 +30,13 @@ export function ConvictionChart({ proposal, withThreshold = true }) {
   const currentBlock = useBlockNumber()
   const theme = useTheme()
 
-  const line1 = getConvictionHistory(
-    stakes,
-    currentBlock + 25 * TIME_UNIT,
-    alpha,
-    TIME_UNIT
-  )
-
-  console.log('LINE 1 ', line1)
   const lines = [
-    line1,
+    getConvictionHistory(
+      stakes,
+      currentBlock + 25 * TIME_UNIT,
+      alpha,
+      TIME_UNIT
+    ),
     getConvictionHistoryByEntity(
       stakes,
       connectedAccount,

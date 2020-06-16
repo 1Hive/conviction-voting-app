@@ -41,6 +41,8 @@ const StakingTokens = React.memo(function StakingTokens({
   const { below } = useViewport()
   const compact = below('large')
 
+  console.log(' stakeToken.balance ', stakeToken.balance)
+
   const myActiveTokens = useMemo(() => {
     if (!myStakes) {
       return null
@@ -110,7 +112,7 @@ const StakingTokens = React.memo(function StakingTokens({
           </Field>
         </div>
       </div>
-      {myStakes && myStakes.length > 0 && (
+      {myStakes && myActiveTokens.gt(new BigNumber('0')) && (
         <div
           css={`
             border-bottom: 1px solid ${theme.border};

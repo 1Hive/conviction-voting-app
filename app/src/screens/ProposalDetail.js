@@ -81,9 +81,10 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     if (mode === 'execute') {
       return { text: 'Execute proposal', action: handleExecute, mode: 'strong' }
     }
+    // TOD - Update mode is intended for the change support feature, the button name will be changed on next pr
     if (mode === 'update') {
       return {
-        text: 'Change support',
+        text: 'Withdraw support',
         action: handleWithdraw,
         mode: 'normal',
       }
