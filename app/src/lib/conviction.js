@@ -1,6 +1,5 @@
 import BigNumber from './bigNumber'
 const oneBN = new BigNumber('1')
-// BigNumber.config({ POW_PRECISION: 100 })
 /**
  * Calculate the amount of conviction at certain time from an initial conviction
  * and the amount of staked tokens following the formula:
@@ -16,13 +15,10 @@ export function calculateConviction(timePassed, initConv, amount, alpha) {
   const y0 = initConv
   const x = amount
   const a = alpha
-  // const y = y0 * a ** t + (x * (1 - a ** t)) / (1 - a)
 
-  const y = y0
+  return y0
     .multipliedBy(a.pow(t))
     .plus(x.multipliedBy(oneBN.minus(a.pow(t))).div(oneBN.minus(a)))
-
-  return y
 }
 
 /**
@@ -38,13 +34,6 @@ export function getCurrentConviction(stakes, currentTime, alpha) {
   if (lastStake) {
     const { time, totalTokensStaked, conviction } = lastStake
 
-    console.log(
-      'CALCULATE conviction ',
-      currentTime - time,
-      conviction.toNumber(),
-      totalTokensStaked.toNumber(),
-      alpha.toNumber()
-    )
     // Calculate from last stake to now
     return calculateConviction(
       currentTime - time,
@@ -101,7 +90,7 @@ export function getCurrentConvictionByEntity(
       alpha
     )
   } else {
-    return 0
+    return new BigNumber('0')
   }
 }
 
@@ -200,7 +189,22 @@ export function getRemainingTimeToPass(threshold, conviction, amount, alpha) {
   const y = threshold
   const y0 = conviction
   const x = amount
-  return Math.log(((a - 1) * y + x) / ((a - 1) * y0 + x)) / Math.log(a)
+
+  return (
+    Math.log(
+      a
+        .minus(oneBN)
+        .multipliedBy(y)
+        .plus(x)
+        .div(
+          a
+            .minus(oneBN)
+            .multipliedBy(y0)
+            .plus(x)
+        )
+        .toNumber()
+    ) / Math.log(a.toNumber())
+  )
 }
 
 /**
@@ -223,7 +227,7 @@ export function getConvictionTrend(
 ) {
   const currentConviction = getCurrentConviction(stakes, time, alpha)
   const futureConviction = getCurrentConviction(stakes, time + timeUnit, alpha)
-  return (futureConviction - currentConviction) / maxConviction
+  return futureConviction.minus(currentConviction).div(maxConviction)
 }
 
 /**

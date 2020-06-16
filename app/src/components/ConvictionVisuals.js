@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useMemo } from 'react'
 import { useAragonApi } from '@aragon/api-react'
 import { Timer, Text, Tag, useTheme, useLayout, textStyle } from '@aragon/ui'
 import LineChart from './ModifiedLineChart'
@@ -17,6 +17,7 @@ import {
 import { useBlockNumber } from '../BlockContext'
 import { formatTokenAmount } from '../lib/token-utils'
 import { getStakesAndThreshold } from '../lib/proposals-utils'
+import BigNumber from '../lib/bigNumber'
 
 const TIME_UNIT = (60 * 60 * 24) / 15
 
@@ -79,6 +80,7 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
   const { stakes, totalTokensStaked, threshold, max } = getStakesAndThreshold(
     proposal
   )
+
   const conviction = getCurrentConviction(stakes, blockNumber, alpha)
   const myConviction =
     (connectedAccount &&
@@ -90,17 +92,21 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
       )) ||
     0
   const futureConviction = getMaxConviction(totalTokensStaked, alpha)
-  const myStakedConviction = myConviction / max
-  const stakedConviction = conviction / max
-  const futureStakedConviction = futureConviction / max
-  const neededConviction = threshold / max
+  const myStakedConviction = myConviction.div(max)
+  const stakedConviction = conviction.div(max)
+  const futureStakedConviction = futureConviction.div(max)
+  const neededConviction = threshold.div(max)
+
+  const secondSize = stakedConviction.minus(myStakedConviction)
+  const thirdSize = futureStakedConviction.minus(stakedConviction)
+
   return (
     <div>
       <SummaryBar
-        firstSize={myStakedConviction}
-        secondSize={stakedConviction - myStakedConviction}
-        thirdSize={futureStakedConviction - stakedConviction}
-        requiredSize={withThreshold && neededConviction}
+        firstSize={myStakedConviction.toNumber()}
+        secondSize={secondSize.toNumber()}
+        thirdSize={thirdSize.toNumber()}
+        requiredSize={withThreshold && neededConviction.toNumber()}
         compact
       />
       <div>
@@ -157,8 +163,6 @@ export function ConvictionCountdown({ proposal, shorter }) {
 
   const conviction = getCurrentConviction(stakes, blockNumber, alpha)
 
-  console.log('conviction calculated ', conviction.toNumber())
-
   const minTokensNeeded = getMinNeededStake(threshold, alpha)
 
   const neededTokens = minTokensNeeded.minus(totalTokensStaked)
@@ -175,24 +179,21 @@ export function ConvictionCountdown({ proposal, shorter }) {
   const AVAILABLE = 2
   const EXECUTED = 3
 
-  const getView = () =>
-    executed
+  const view = useMemo(() => {
+    return executed
       ? EXECUTED
-      : conviction >= threshold
+      : conviction.gte(threshold)
       ? AVAILABLE
       : time > 0
       ? MAY_PASS
       : UNABLE_TO_PASS
-  const [view, setView] = useState(getView())
+  }, [conviction, threshold, time])
 
   const NOW = Date.now()
   const BLOCK_TIME = 1000 * 15
   const endDate =
     !isNaN(new Date(NOW + time * BLOCK_TIME).getTime()) &&
     new Date(NOW + time * BLOCK_TIME)
-  useEffect(() => {
-    setView(getView())
-  }, [conviction, threshold, time])
 
   return view === UNABLE_TO_PASS ? (
     <>
@@ -260,8 +261,9 @@ export function ConvictionTrend({ proposal }) {
   const trend = getConvictionTrend(stakes, max, blockNumber, alpha, TIME_UNIT)
   const { layoutName } = useLayout()
   const compactMode = layoutName === 'small'
-  const percentage =
-    trend > 0.1 ? Math.round(trend * 100) : Math.round(trend * 1000) / 10
+  const percentage = trend.gt(new BigNumber('0.1'))
+    ? Math.round(trend.toNumber() * 100)
+    : Math.round(trend.toNumber() * 1000) / 10
 
   return (
     <TrendWrapper compactMode={compactMode} color={theme.contentSecondary}>
