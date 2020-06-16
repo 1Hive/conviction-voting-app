@@ -26,6 +26,16 @@ export function getStakesAndThreshold(proposal = {}) {
     }, new BigNumber('0'))
   }, [proposal])
 
+  console.log(
+    'PARAMETERSSS!!! ',
+    requestedAmount,
+    requestToken.amount.toNumber(),
+    stakeToken.totalSupply.toNumber(),
+    alpha.toNumber(),
+    maxRatio.toNumber(),
+    weight.toNumber()
+  )
+
   const threshold = calculateThreshold(
     requestedAmount,
     requestToken.amount || new BigNumber('0'),

@@ -23,6 +23,8 @@ export default function reducer(state) {
 
   const pctBaseBN = new BigNumber(globalParams.pctBase.toString())
 
+  console.log('WEIGHT!!!! ', globalParams.weight)
+
   return {
     ...state,
     globalParams: {
