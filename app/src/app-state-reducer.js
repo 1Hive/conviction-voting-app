@@ -1,9 +1,5 @@
 import BigNumber from './lib/bigNumber'
 
-/** const yy = y0
-    .multipliedBy(a.pow(t))
-    .plus(x.multipliedBy(oneBN.minus(a.pow(t))).div(oneBN.minus(a))) */
-
 export default function reducer(state) {
   if (state === null) {
     return {
