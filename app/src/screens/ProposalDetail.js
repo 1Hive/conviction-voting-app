@@ -52,7 +52,9 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
 
   const { stakes, threshold } = getStakesAndThreshold(proposal)
   const conviction = getCurrentConviction(stakes, blockNumber, alpha)
-  const myStakes = stakes.filter(({ entity }) => entity === connectedAccount)
+  const myStakes = stakes.filter(({ entity }) =>
+    addressesEqual(entity, connectedAccount)
+  )
   const didIStaked = myStakes.length > 0 && [...myStakes].pop().tokensStaked > 0
 
   const handleExecute = useCallback(() => {
@@ -67,22 +69,12 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     api.withdrawAllFromProposal(id).toPromise()
   }, [api, id])
 
-  const mode = useMemo(() => {
+  const buttonProps = useMemo(() => {
     if (conviction.gte(threshold)) {
-      return 'execute'
-    }
-    if (didIStaked) {
-      return 'update'
-    }
-    return 'support'
-  }, [conviction, threshold, didIStaked])
-
-  const buttonMode = useMemo(() => {
-    if (mode === 'execute') {
       return { text: 'Execute proposal', action: handleExecute, mode: 'strong' }
     }
     // TOD - Update mode is intended for the change support feature, the button name will be changed on next pr
-    if (mode === 'update') {
+    if (didIStaked) {
       return {
         text: 'Withdraw support',
         action: handleWithdraw,
@@ -94,7 +86,14 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
       action: panelState.requestOpen,
       mode: 'strong',
     }
-  }, [mode, handleExecute, handleStake, handleWithdraw, panelState])
+  }, [
+    conviction,
+    didIStaked,
+    handleExecute,
+    handleStake,
+    handleWithdraw,
+    panelState,
+  ])
 
   return (
     <div>
@@ -208,10 +207,10 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                     </div>
                     <Button
                       wide
-                      mode={buttonMode.mode}
-                      onClick={buttonMode.action}
+                      mode={buttonProps.mode}
+                      onClick={buttonProps.action}
                     >
-                      {buttonMode.text}
+                      {buttonProps.text}
                     </Button>
                   </React.Fragment>
                 )}

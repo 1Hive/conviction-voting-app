@@ -8,7 +8,7 @@ const oneBN = new BigNumber('1')
  * @param {number} initConv Amount of conviction at time 0
  * @param {number} amount Staked tokens at time 0
  * @param {number} alpha Constant that controls the conviction decay
- * @return {number} Amount of conviction at time t
+ * @return {BigNumber} Amount of conviction at time t
  */
 export function calculateConviction(timePassed, initConv, amount, alpha) {
   const t = timePassed
@@ -27,7 +27,7 @@ export function calculateConviction(timePassed, initConv, amount, alpha) {
  * List of token stakes made on a proposal
  * @param {number} currentTime Current block
  * @param {string} alpha Constant that controls the conviction decay
- * @return {number} Current conviction
+ * @return {BigNumber} Current conviction
  */
 export function getCurrentConviction(stakes, currentTime, alpha) {
   const lastStake = [...stakes].pop()
@@ -68,7 +68,7 @@ export function checkConvictionImplementation(stakes, alpha) {
  * @param {string} entity Entity by which we will filter the stakes
  * @param {number} currentTime Current block
  * @param {string} alpha Constant that controls the conviction decay
- * @return {number} Current conviction
+ * @return {BigNumber} Current conviction
  */
 export function getCurrentConvictionByEntity(
   stakes,
@@ -101,7 +101,7 @@ export function getCurrentConvictionByEntity(
  * @param {number} currentTime Current block number
  * @param {string} alpha Constant that controls the conviction decay
  * @param {number} timeUnit Number of blocks a time unit has
- * @returns {number[]} Array with conviction amounts from time t-50 to time t
+ * @returns {BigNumber[]} Array with conviction amounts from time t-50 to time t
  */
 export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
   const history = []
@@ -157,7 +157,7 @@ export function getConvictionHistory(stakes, currentTime, alpha, timeUnit) {
  * @param {number} time Current block number
  * @param {string} alpha Constant that controls the conviction decay
  * @param {number} timeUnit Number of blocks a time unit has
- * @returns {number[]} Array with conviction amounts from time 0 to `time`
+ * @returns {BigNumber[]} Array with conviction amounts from time 0 to `time`
  */
 export function getConvictionHistoryByEntity(
   stakes,
@@ -215,7 +215,7 @@ export function getRemainingTimeToPass(threshold, conviction, amount, alpha) {
  * @param {number} time Current block number
  * @param {number} alpha Constant that controls the conviction decay
  * @param {number} timeUnit Number of blocks a time unit has
- * @returns {number} Number from -1 to 1 that represents the increment or
+ * @returns {BigNumber} Number from -1 to 1 that represents the increment or
  * decrement of conviction
  */
 export function getConvictionTrend(
@@ -239,7 +239,7 @@ export function getConvictionTrend(
  * @param {number} alpha Constant that controls the decay
  * @param {number} beta Maximum share of funds a proposal can take
  * @param {number} rho Tuning param to set up the threshold (linearly)
- * @returns {number} Threshold
+ * @returns {BigNumber} Threshold
  */
 
 export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
@@ -251,7 +251,7 @@ export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
       .div(oneBN.minus(alpha))
       .div(beta.minus(share).pow(2))
   } else {
-    return Number.POSITIVE_INFINITY
+    return null
   }
 }
 
@@ -262,7 +262,7 @@ export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
  * to be staked (`x`) in order for conviction to arribe a certain threshold `y`.
  * @param {number} threshold Amount of conviction needed for a proposal to pass
  * @param {number} alpha Constant that controls the decay
- * @returns {number} Minimum amount of needed staked tokens for a proposal to
+ * @returns {BigNumber} Minimum amount of needed staked tokens for a proposal to
  * pass
  */
 export function getMinNeededStake(threshold, alpha) {
@@ -282,7 +282,7 @@ export function getMinNeededStake(threshold, alpha) {
  * the limit when time `t` is infinite.
  * @param {number} amount Staked tokens
  * @param {number} alpha Constant that controls the decay
- * @returns {number} Max amount of conviction possible
+ * @returns {BigNumber} Max amount of conviction possible
  */
 export function getMaxConviction(amount, alpha) {
   const x = amount

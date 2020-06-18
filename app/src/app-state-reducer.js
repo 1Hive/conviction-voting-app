@@ -20,14 +20,14 @@ export default function reducer(state) {
     convictionStakes,
   } = state
 
-  const pctBaseBN = new BigNumber(globalParams.pctBase.toString())
+  const pctBaseBN = new BigNumber(globalParams.pctBase)
 
   return {
     ...state,
     globalParams: {
-      alpha: new BigNumber(globalParams.decay.toString()).div(pctBaseBN),
-      maxRatio: new BigNumber(globalParams.maxRatio.toString()).div(pctBaseBN),
-      weight: new BigNumber(globalParams.weight.toString()).div(pctBaseBN),
+      alpha: new BigNumber(globalParams.decay).div(pctBaseBN),
+      maxRatio: new BigNumber(globalParams.maxRatio).div(pctBaseBN),
+      weight: new BigNumber(globalParams.weight).div(pctBaseBN),
     },
     stakeToken: {
       ...stakeToken,
@@ -37,7 +37,7 @@ export default function reducer(state) {
     },
     requestToken: {
       ...requestToken,
-      amount: new BigNumber(requestToken.amount.toString()),
+      amount: new BigNumber(requestToken.amount),
     },
 
     proposals: proposals.map(({ stakes, ...proposal }) => ({

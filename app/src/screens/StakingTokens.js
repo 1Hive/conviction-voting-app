@@ -41,8 +41,6 @@ const StakingTokens = React.memo(function StakingTokens({
   const { below } = useViewport()
   const compact = below('large')
 
-  console.log(' stakeToken.balance ', stakeToken.balance)
-
   const myActiveTokens = useMemo(() => {
     if (!myStakes) {
       return null

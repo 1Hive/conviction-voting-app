@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { useAragonApi } from '@aragon/api-react'
+import { useAragonApi, useAppState } from '@aragon/api-react'
 import { Timer, Text, Tag, useTheme, useLayout, textStyle } from '@aragon/ui'
 import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
@@ -62,7 +62,7 @@ export function ConvictionChart({ proposal, withThreshold = true }) {
       threshold={
         withThreshold &&
         !Number.isNaN(threshold) &&
-        threshold !== Number.POSITIVE_INFINITY &&
+        threshold &&
         normalize(threshold)
       }
     />
@@ -81,6 +81,10 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
     proposal
   )
 
+  console.log('proposal , ', proposal)
+
+  console.log('threshold , max', threshold, max)
+
   const conviction = getCurrentConviction(stakes, blockNumber, alpha)
   const myConviction =
     (connectedAccount &&
@@ -96,6 +100,8 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
   const stakedConviction = conviction.div(max)
   const futureStakedConviction = futureConviction.div(max)
   const neededConviction = threshold.div(max)
+
+  console.log('neededConviction ', neededConviction)
 
   const secondSize = stakedConviction.minus(myStakedConviction)
   const thirdSize = futureStakedConviction.minus(stakedConviction)
@@ -145,15 +151,11 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
 }
 
 export function ConvictionCountdown({ proposal, shorter }) {
-  const { appState } = useAragonApi()
   const {
     globalParams: { alpha, maxRatio },
-  } = appState
-  const {
-    appState: {
-      stakeToken: { tokenSymbol, tokenDecimals },
-    },
-  } = useAragonApi()
+    stakeToken: { tokenSymbol, tokenDecimals },
+  } = useAppState()
+
   const blockNumber = useBlockNumber()
   const theme = useTheme()
   const { executed } = proposal
@@ -180,13 +182,16 @@ export function ConvictionCountdown({ proposal, shorter }) {
   const EXECUTED = 3
 
   const view = useMemo(() => {
-    return executed
-      ? EXECUTED
-      : conviction.gte(threshold)
-      ? AVAILABLE
-      : time > 0
-      ? MAY_PASS
-      : UNABLE_TO_PASS
+    if (executed) {
+      return EXECUTED
+    }
+    if (conviction.gte(threshold)) {
+      return AVAILABLE
+    }
+    if (time > 0) {
+      return MAY_PASS
+    }
+    return UNABLE_TO_PASS
   }, [conviction, threshold, time])
 
   const NOW = Date.now()
@@ -251,10 +256,10 @@ export function ConvictionCountdown({ proposal, shorter }) {
 }
 
 export function ConvictionTrend({ proposal }) {
-  const { appState } = useAragonApi()
   const {
     globalParams: { alpha },
-  } = appState
+  } = useAppState()
+
   const theme = useTheme()
   const { stakes, max } = getStakesAndThreshold(proposal)
   const blockNumber = useBlockNumber()
