@@ -23,6 +23,7 @@ import {
   ConvictionChart,
 } from '../components/ConvictionVisuals'
 import usePanelState from '../hooks/usePanelState'
+import { useConvictionHistory } from '../hooks/useConvictionHistory'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 import SupportProposal from '../components/panels/SupportProposal'
 
@@ -30,6 +31,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   const theme = useTheme()
   const { layoutName } = useLayout()
   const { api, connectedAccount } = useAragonApi()
+  const chartLines = useConvictionHistory(proposal)
 
   const panelState = usePanelState()
 
@@ -197,6 +199,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                       <ConvictionChart
                         proposal={proposal}
                         withThreshold={!!requestToken}
+                        lines={chartLines}
                       />
                     </div>
                     <Button

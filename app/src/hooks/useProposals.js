@@ -6,8 +6,6 @@ import {
   calculateThreshold,
   getCurrentConviction,
   getCurrentConvictionByEntity,
-  getConvictionHistory,
-  getConvictionHistoryByEntity,
   getConvictionTrend,
   getMaxConviction,
   getMinNeededStake,
@@ -23,12 +21,10 @@ export function useProposals() {
     convictionStakes,
     stakeToken,
     requestToken,
-  } = useAppState()
-  const latestBlock = useLatestBlock()
-
-  const {
     globalParams: { alpha, maxRatio, weight },
   } = useAppState()
+
+  const latestBlock = useLatestBlock()
 
   const proposalsWithData = useMemo(() => {
     return proposals.map(proposal => {
@@ -74,21 +70,6 @@ export function useProposals() {
       const futureStakedConviction = futureConviction.div(maxConviction)
       const neededConviction = threshold.div(maxConviction)
 
-      const convictionHistory = getConvictionHistory(
-        stakes,
-        latestBlock.number + 25 * TIME_UNIT,
-        alpha,
-        TIME_UNIT
-      )
-
-      const userConvictionHistory = getConvictionHistoryByEntity(
-        stakes,
-        connectedAccount,
-        latestBlock.number + 25 * TIME_UNIT,
-        alpha,
-        TIME_UNIT
-      )
-
       const minTokensNeeded = getMinNeededStake(threshold, alpha)
 
       const neededTokens = minTokensNeeded.minus(totalTokensStaked)
@@ -117,8 +98,6 @@ export function useProposals() {
         futureConviction,
         futureStakedConviction,
         neededConviction,
-        convictionHistory,
-        userConvictionHistory,
         maxConviction,
         threshold,
         minTokensNeeded,

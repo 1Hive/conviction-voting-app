@@ -7,16 +7,9 @@ import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
 import { formatTokenAmount } from '../lib/token-utils'
 
-export function ConvictionChart({ proposal, withThreshold = true }) {
-  const {
-    convictionHistory,
-    userConvictionHistory,
-    maxConviction,
-    threshold,
-  } = proposal
+export function ConvictionChart({ proposal, withThreshold = true, lines }) {
+  const { maxConviction, threshold } = proposal
   const theme = useTheme()
-
-  const lines = [convictionHistory, userConvictionHistory]
 
   // We want conviction and threhsold in percentages
   const normalize = n => n / maxConviction
