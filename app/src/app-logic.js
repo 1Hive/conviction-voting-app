@@ -3,11 +3,13 @@ import BigNumber from './lib/bigNumber'
 import { useAragonApi, useAppState } from '@aragon/api-react'
 import { toDecimals } from './lib/math-utils'
 import { toHex } from 'web3-utils'
+import { useProposals } from './hooks/useProposals'
 
 // Handles the main logic of the app.
 export default function useAppLogic() {
   const { api, connectedAccount } = useAragonApi()
-  const { proposals = [], stakeToken, requestToken } = useAppState()
+  const { stakeToken, requestToken, isSyncing } = useAppState()
+  const [proposals, blockHasLoaded] = useProposals()
 
   const [proposalPanel, setProposalPanel] = useState(false)
 
@@ -53,6 +55,8 @@ export default function useAppLogic() {
   }, [proposals, connectedAccount, stakeToken.tokenDecimals])
 
   return {
+    proposals,
+    isSyncing: isSyncing || !blockHasLoaded,
     onProposalSubmit,
     proposalPanel,
     setProposalPanel,

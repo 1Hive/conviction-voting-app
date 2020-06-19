@@ -1,53 +1,25 @@
 import React, { useMemo } from 'react'
-import { useAragonApi, useAppState } from '@aragon/api-react'
+import { useAppState } from '@aragon/api-react'
 import { Timer, Text, Tag, useTheme, useLayout, textStyle } from '@aragon/ui'
+import BigNumber from '../lib/bigNumber'
 import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
 import SummaryBar from './SummaryBar'
-import {
-  getConvictionHistory,
-  getConvictionHistoryByEntity,
-  getMaxConviction,
-  getMinNeededStake,
-  getRemainingTimeToPass,
-  getCurrentConviction,
-  getCurrentConvictionByEntity,
-  getConvictionTrend,
-} from '../lib/conviction'
-import { useBlockNumber } from '../BlockContext'
 import { formatTokenAmount } from '../lib/token-utils'
-import { getStakesAndThreshold } from '../lib/proposals-utils'
-import BigNumber from '../lib/bigNumber'
-
-const TIME_UNIT = (60 * 60 * 24) / 15
 
 export function ConvictionChart({ proposal, withThreshold = true }) {
-  const { appState, connectedAccount } = useAragonApi()
   const {
-    globalParams: { alpha },
-  } = appState
-  const { stakes, threshold, max } = getStakesAndThreshold(proposal)
-  const currentBlock = useBlockNumber()
+    convictionHistory,
+    userConvictionHistory,
+    maxConviction,
+    threshold,
+  } = proposal
   const theme = useTheme()
 
-  const lines = [
-    getConvictionHistory(
-      stakes,
-      currentBlock + 25 * TIME_UNIT,
-      alpha,
-      TIME_UNIT
-    ),
-    getConvictionHistoryByEntity(
-      stakes,
-      connectedAccount,
-      currentBlock + 25 * TIME_UNIT,
-      alpha,
-      TIME_UNIT
-    ),
-  ]
+  const lines = [convictionHistory, userConvictionHistory]
 
   // We want conviction and threhsold in percentages
-  const normalize = n => n / max
+  const normalize = n => n / maxConviction
   const normalizeLines = lines => {
     return lines.map(line => line.map(normalize))
   }
@@ -70,46 +42,22 @@ export function ConvictionChart({ proposal, withThreshold = true }) {
 }
 
 export function ConvictionBar({ proposal, withThreshold = true }) {
-  const { connectedAccount, appState } = useAragonApi()
-  const {
-    globalParams: { alpha },
-  } = appState
-  const blockNumber = useBlockNumber()
   const theme = useTheme()
 
-  const { stakes, totalTokensStaked, threshold, max } = getStakesAndThreshold(
-    proposal
-  )
+  const {
+    userStakedConviction,
+    stakedConviction,
+    futureStakedConviction,
+    neededConviction,
+  } = proposal
 
-  console.log('proposal , ', proposal)
-
-  console.log('threshold , max', threshold, max)
-
-  const conviction = getCurrentConviction(stakes, blockNumber, alpha)
-  const myConviction =
-    (connectedAccount &&
-      getCurrentConvictionByEntity(
-        stakes,
-        connectedAccount,
-        blockNumber,
-        alpha
-      )) ||
-    0
-  const futureConviction = getMaxConviction(totalTokensStaked, alpha)
-  const myStakedConviction = myConviction.div(max)
-  const stakedConviction = conviction.div(max)
-  const futureStakedConviction = futureConviction.div(max)
-  const neededConviction = threshold.div(max)
-
-  console.log('neededConviction ', neededConviction)
-
-  const secondSize = stakedConviction.minus(myStakedConviction)
+  const secondSize = stakedConviction.minus(userStakedConviction)
   const thirdSize = futureStakedConviction.minus(stakedConviction)
 
   return (
     <div>
       <SummaryBar
-        firstSize={myStakedConviction.toNumber()}
+        firstSize={userStakedConviction.toNumber()}
         secondSize={secondSize.toNumber()}
         thirdSize={thirdSize.toNumber()}
         requiredSize={withThreshold && neededConviction.toNumber()}
@@ -129,7 +77,9 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
               `}
             >
               {isFinite(neededConviction)
-                ? `(${Math.round(neededConviction * 100)}% needed)`
+                ? `(${Math.round(
+                    neededConviction.multipliedBy(new BigNumber('100'))
+                  )}% needed)`
                 : `(&infin; needed)`}
             </span>
           ) : (
@@ -152,29 +102,18 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
 
 export function ConvictionCountdown({ proposal, shorter }) {
   const {
-    globalParams: { alpha, maxRatio },
+    globalParams: { maxRatio },
     stakeToken: { tokenSymbol, tokenDecimals },
   } = useAppState()
 
-  const blockNumber = useBlockNumber()
   const theme = useTheme()
-  const { executed } = proposal
-  const { stakes, totalTokensStaked, threshold } = getStakesAndThreshold(
-    proposal
-  )
-
-  const conviction = getCurrentConviction(stakes, blockNumber, alpha)
-
-  const minTokensNeeded = getMinNeededStake(threshold, alpha)
-
-  const neededTokens = minTokensNeeded.minus(totalTokensStaked)
-
-  const time = getRemainingTimeToPass(
+  const {
+    executed,
     threshold,
-    conviction,
-    totalTokensStaked,
-    alpha
-  )
+    remainingTimeToPass,
+    neededTokens,
+    currentConviction,
+  } = proposal
 
   const UNABLE_TO_PASS = 0
   const MAY_PASS = 1
@@ -185,20 +124,22 @@ export function ConvictionCountdown({ proposal, shorter }) {
     if (executed) {
       return EXECUTED
     }
-    if (conviction.gte(threshold)) {
+    if (currentConviction.gte(threshold)) {
       return AVAILABLE
     }
-    if (time > 0) {
+    if (remainingTimeToPass > 0) {
       return MAY_PASS
     }
     return UNABLE_TO_PASS
-  }, [conviction, threshold, time])
+  }, [currentConviction, threshold, remainingTimeToPass])
 
   const NOW = Date.now()
+
+  // TODO - create a file with block time per env
   const BLOCK_TIME = 1000 * 15
   const endDate =
-    !isNaN(new Date(NOW + time * BLOCK_TIME).getTime()) &&
-    new Date(NOW + time * BLOCK_TIME)
+    !isNaN(new Date(NOW + remainingTimeToPass * BLOCK_TIME).getTime()) &&
+    new Date(NOW + remainingTimeToPass * BLOCK_TIME)
 
   return view === UNABLE_TO_PASS ? (
     <>
@@ -256,23 +197,21 @@ export function ConvictionCountdown({ proposal, shorter }) {
 }
 
 export function ConvictionTrend({ proposal }) {
-  const {
-    globalParams: { alpha },
-  } = useAppState()
+  const { convictionTrend } = proposal
 
   const theme = useTheme()
-  const { stakes, max } = getStakesAndThreshold(proposal)
-  const blockNumber = useBlockNumber()
-  const trend = getConvictionTrend(stakes, max, blockNumber, alpha, TIME_UNIT)
   const { layoutName } = useLayout()
   const compactMode = layoutName === 'small'
-  const percentage = trend.gt(new BigNumber('0.1'))
-    ? Math.round(trend.toNumber() * 100)
-    : Math.round(trend.toNumber() * 1000) / 10
+
+  const percentage = convictionTrend.gt(new BigNumber('0.1'))
+    ? Math.round(convictionTrend.toNumber() * 100)
+    : Math.round(convictionTrend.toNumber() * 1000) / 10
 
   return (
     <TrendWrapper compactMode={compactMode} color={theme.contentSecondary}>
-      <TrendArrow>{trend > 0 ? '↑' : trend < 0 ? '↓' : '↝'}</TrendArrow>
+      <TrendArrow>
+        {convictionTrend > 0 ? '↑' : convictionTrend < 0 ? '↓' : '↝'}
+      </TrendArrow>
       <span
         css={`
           ${textStyle('body3')}
