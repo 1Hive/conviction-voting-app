@@ -12,7 +12,7 @@ import { loadAppConfig } from './helpers'
  */
 export function getTemplateForApp(appId: string): string | null {
   if (
-    appId ===
+    appId ==
     '0x16c0b0af27b5e169e5f678055840d7ab2b312519d7700a06554c287619f4b9f9'
   ) {
     return 'ConvictionVoting'

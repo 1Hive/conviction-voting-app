@@ -55,6 +55,9 @@ export function loadAppConfig(appAddress: Address): void {
   config.weight = convictionVoting.weight()
   config.maxRatio = convictionVoting.maxRatio()
 
+  config.appAddress = appAddress
+  config.orgAddress = convictionVoting.kernel()
+
   config.save()
 }
 
