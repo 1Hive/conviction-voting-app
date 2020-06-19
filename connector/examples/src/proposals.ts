@@ -11,7 +11,7 @@ function proposalId(proposal: Proposal): string {
   )
 }
 
-function describeProposal(proposal: Proposal) {
+function describeProposal(proposal: Proposal): void {
   console.log(`PROPOSAL ${proposalId(proposal)}`)
   console.log(`Name: ${proposal.name}`)
   console.log(`Link: ${proposal.link}`)
@@ -19,7 +19,7 @@ function describeProposal(proposal: Proposal) {
   console.log(`Beneficiary: ${proposal.beneficiary}`)
 }
 
-async function main() {
+async function main(): Promise<void> {
   const org = await connect(
     '0x8494952a4b27ba5ceb70da756af1179e16c27604',
     'thegraph',

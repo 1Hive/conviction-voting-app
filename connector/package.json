@@ -24,16 +24,17 @@
     "@aragon/connect-thegraph": "^0.2.0",
     "graphql-tag": "^2.10.3"
   },
-  "description": "Access and interact with Aragon Organizations and their apps.",
+  "description": "Access organizations and interact with Convcition Voting apps.",
   "keywords": [
     "ethereum",
     "javascript",
     "web3",
     "dapp",
-    "aragon"
+    "aragon",
+    "1hive"
   ],
   "author": "1Hive",
-  "homepage": "https://github.com/aragon/connect",
-  "bugs": "https://github.com/aragon/connect/issues",
-  "repository": "https://github.com/aragon/connect"
+  "homepage": "https://github.com/1Hive/conviction-voting-app",
+  "bugs": "https://github.com/1Hive/conviction-voting-app/issues",
+  "repository": "https://github.com/1Hive/conviction-voting-app"
 }
