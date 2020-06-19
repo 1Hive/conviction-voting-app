@@ -11,9 +11,7 @@ import {
   Split,
   Tabs,
 } from '@aragon/ui'
-import { useConnectedAccount, useAppState } from '@aragon/api-react'
-import { useBlockNumber } from '../BlockContext'
-import { getCurrentConviction } from '../lib/conviction'
+import { useConnectedAccount } from '@aragon/api-react'
 import { formatTokenAmount } from '../lib/token-utils'
 
 import {
@@ -71,24 +69,9 @@ const Proposals = React.memo(
       ? [{ label: 'Status', align: 'start' }]
       : []
 
-    const sortedProposals = filteredProposals
-      .map(proposal => {
-        const {
-          convictionStakes,
-          globalParams: { alpha },
-        } = useAppState()
-        const stakes = convictionStakes.filter(
-          stake => stake.proposal === parseInt(proposal.id)
-        )
-        const blockNumber = useBlockNumber()
-        return {
-          ...proposal,
-          conviction: getCurrentConviction(stakes, blockNumber, alpha),
-        }
-      })
-      .sort(
-        (a, b) => b.conviction - a.conviction // desc order
-      )
+    const sortedProposals = filteredProposals.sort(
+      (a, b) => b.currentConviction - a.currentConviction // desc order
+    )
 
     const handleTabChange = useCallback(
       tabIndex => {

@@ -35,14 +35,15 @@ export function getCurrentConviction(stakes, currentTime, alpha) {
     const { time, totalTokensStaked, conviction } = lastStake
 
     // Calculate from last stake to now
-    return calculateConviction(
+    const ret = calculateConviction(
       currentTime - time,
       conviction,
       totalTokensStaked,
       alpha
     )
+    return ret
   } else {
-    return BigNumber('0')
+    return new BigNumber('0')
   }
 }
 
@@ -76,22 +77,27 @@ export function getCurrentConvictionByEntity(
   currentTime,
   alpha
 ) {
-  const entityStakes = stakesByEntity(stakes, entity)
-  if (entityStakes.length > 0) {
-    const { time, totalTokensStaked, conviction } = convictionFromStakes(
-      entityStakes,
-      alpha
-    )
-    // Calculate from last stake to now
-    return calculateConviction(
-      currentTime - time,
-      conviction,
-      totalTokensStaked,
-      alpha
-    )
-  } else {
+  if (!entity) {
     return new BigNumber('0')
   }
+
+  const entityStakes = stakesByEntity(stakes, entity)
+
+  if (!entityStakes.length > 0) {
+    return new BigNumber('0')
+  }
+
+  const { time, totalTokensStaked, conviction } = convictionFromStakes(
+    entityStakes,
+    alpha
+  )
+  // Calculate from last stake to now
+  return calculateConviction(
+    currentTime - time,
+    conviction,
+    totalTokensStaked,
+    alpha
+  )
 }
 
 /**
