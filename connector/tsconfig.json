@@ -1,11 +1,21 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "alwaysStrict": true,
+    "baseUrl": ".",
     "composite": true,
     "declaration": true,
-    "outDir": "dist",
-    "rootDir": "src"
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2019",
+    "rootDir": "./"
   },
-  "include": ["src"],
-  "references": [{ "path": "../connect-core" }]
+  "include": ["./src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "subgraph", "**/__test__/**"],
 }
