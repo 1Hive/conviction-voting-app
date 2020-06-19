@@ -12,13 +12,9 @@ export function parseProposals(
     throw new Error('Unable to parse proposals.')
   }
 
-  const datas = proposals.map(
-    (proposal: ProposalDataGql): ProposalDataGql => {
-      return proposal
-    }
-  )
-
-  return datas.map((data: ProposalData) => {
+  const convertedProposals =  proposals.map((data: ProposalData) => {
     return new Proposal(data, connector)
   })
+
+  return convertedProposals
 }

@@ -40,10 +40,10 @@ export default class Proposal extends Entity implements ProposalData {
   }
 
   async stakes({ first = 1000, skip = 0 } = {}): Promise<Cast[]> {
-    return this._connector.stakesForProposal(this.id, first, skip)
+    return this._connector.stakeHistory(this.id, first, skip)
   }
 
   onStakes(callback: Function): { unsubscribe: Function } {
-    return this._connector.onStakesForProposal(this.id, callback)
+    return this._connector.onStakeHistory(this.id, callback)
   }
 }

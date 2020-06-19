@@ -12,6 +12,7 @@
 // 4. Generate and paste output here
 
 export type Maybe<T> = T | null
+export type Exact<T extends { [key: string]: any }> = { [K in keyof T]: T[K] }
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string
@@ -23,17 +24,41 @@ export type Scalars = {
   Bytes: any
 }
 
+export type Config = {
+  __typename?: 'Config'
+  id: Scalars['ID']
+  decay: Scalars['BigInt']
+  weight: Scalars['BigInt']
+  maxRatio: Scalars['BigInt']
+  pctBase: Scalars['BigInt']
+  stakeToken: Token
+  requestToken: Token
+  appAddress: Scalars['Bytes']
+  orgAddress: Scalars['Bytes']
+}
+
 export type Proposal = {
   __typename?: 'Proposal'
   id: Scalars['ID']
-  number: Scalars['Int']
+  number: Scalars['BigInt']
   name: Scalars['String']
-  link: Scalars['String']
+  link?: Maybe<Scalars['String']>
   creator: Scalars['Bytes']
-  beneficiary: Scalars['Bytes']
-  requestedAmount: Scalars['String']
+  stakes: Array<Stake>
+  beneficiary?: Maybe<Scalars['Bytes']>
+  requestedAmount?: Maybe<Scalars['BigInt']>
   executed: Scalars['Boolean']
-  totalTokensStaked: Scalars['String']
+  totalTokensStaked: Scalars['BigInt']
+  appAddress: Scalars['Bytes']
+  orgAddress: Scalars['Bytes']
+}
+
+export type Stake = {
+  __typename?: 'Stake'
+  id: Scalars['ID']
+  entity: Scalars['Bytes']
+  proposal?: Maybe<Proposal>
+  amount: Scalars['BigInt']
 }
 
 export type StakeHistory = {
@@ -43,6 +68,24 @@ export type StakeHistory = {
   proposalId: Scalars['String']
   tokensStaked: Scalars['BigInt']
   totalTokensStaked: Scalars['BigInt']
+  time: Scalars['BigInt']
   conviction: Scalars['BigInt']
-  time: Scalars['String']
+  appAddress: Scalars['Bytes']
+  orgAddress: Scalars['Bytes']
+}
+
+export type Token = {
+  __typename?: 'Token'
+  id: Scalars['ID']
+  name: Scalars['String']
+  symbol: Scalars['String']
+  decimals: Scalars['Int']
+}
+
+export type AragonInfo = {
+  __typename?: 'AragonInfo'
+  id: Scalars['ID']
+  orgs: Array<Scalars['Bytes']>
+  apps: Array<Scalars['Bytes']>
+  tokens: Array<Scalars['Bytes']>
 }

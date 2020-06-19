@@ -5,14 +5,15 @@ export const ALL_PROPOSALS = (type: string) => gql`
     proposals(where: {
       appAddress: $appAddress
     }, first: $first, skip: $skip) {
-      number: string
-      name: string
-      link: string
-      creator: string
-      beneficiary: string
-      requestedAmount: string
-      executed: boolean
-      totalTokensStaked: string
+      id
+      number
+      name
+      link
+      creator
+      beneficiary
+      requestedAmount
+      executed
+      totalTokensStaked
       stakes {
         entity
         amount
