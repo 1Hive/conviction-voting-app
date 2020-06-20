@@ -1,6 +1,7 @@
 import { QueryResult } from '@aragon/connect-thegraph'
-import { Proposal as ProposalDataGql } from '../queries/types'
+import { Proposal as ProposalGql, Stake as StakeGql } from '../queries/types'
 import Proposal, { ProposalData } from '../entities/Proposal'
+import { StakeData } from '../entities/Stake'
 
 export function parseProposals(
   result: QueryResult,
@@ -12,9 +13,18 @@ export function parseProposals(
     throw new Error('Unable to parse proposals.')
   }
 
-  const convertedProposals =  proposals.map((data: ProposalData) => {
+  const datas = proposals.map(
+    (proposal: ProposalGql): ProposalData => {
+      const stakes = proposal.stakes.map((stake: StakeGql): StakeData => stake)
+
+      return {
+        ...proposal,
+        stakes,
+      }
+    }
+  )
+
+  return datas.map((data: ProposalData) => {
     return new Proposal(data, connector)
   })
-
-  return convertedProposals
 }

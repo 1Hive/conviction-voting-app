@@ -1,6 +1,7 @@
+import Config from './Config'
 import ConvictionVotingEntity from './ConvictionVotingEntity'
-import Proposal from './Proposal'
 import ConvictionVotingConnector from '../connector'
+import Proposal from './Proposal'
 
 export default class ConvictionVoting extends ConvictionVotingEntity {
   readonly appAddress: string
@@ -11,11 +12,15 @@ export default class ConvictionVoting extends ConvictionVotingEntity {
     this.appAddress = appAddress
   }
 
+  async config(): Promise<Config> {
+    return this._connector.config(this.appAddress)
+  }
+
   async proposals({ first = 1000, skip = 0 } = {}): Promise<Proposal[]> {
-    return this._connector.proposalsForApp(this.appAddress, first, skip)
+    return this._connector.proposals(this.appAddress, first, skip)
   }
 
   onProposals(callback: Function): { unsubscribe: Function } {
-    return this._connector.onProposalsForApp!(this.appAddress, callback)
+    return this._connector.onProposals(this.appAddress, callback)
   }
 }

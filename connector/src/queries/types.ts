@@ -33,8 +33,6 @@ export type Config = {
   pctBase: Scalars['BigInt']
   stakeToken: Token
   requestToken: Token
-  appAddress: Scalars['Bytes']
-  orgAddress: Scalars['Bytes']
 }
 
 export type Proposal = {
@@ -50,14 +48,12 @@ export type Proposal = {
   executed: Scalars['Boolean']
   totalTokensStaked: Scalars['BigInt']
   appAddress: Scalars['Bytes']
-  orgAddress: Scalars['Bytes']
 }
 
 export type Stake = {
   __typename?: 'Stake'
   id: Scalars['ID']
   entity: Scalars['Bytes']
-  proposal?: Maybe<Proposal>
   amount: Scalars['BigInt']
 }
 
@@ -70,8 +66,6 @@ export type StakeHistory = {
   totalTokensStaked: Scalars['BigInt']
   time: Scalars['BigInt']
   conviction: Scalars['BigInt']
-  appAddress: Scalars['Bytes']
-  orgAddress: Scalars['Bytes']
 }
 
 export type Token = {
