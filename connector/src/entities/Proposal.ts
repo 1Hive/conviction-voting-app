@@ -1,4 +1,5 @@
-import Stake, { StakeData } from './Stake'
+import { StakeData } from './Stake'
+import StakeHistory from './StakeHistory'
 import Entity from './ConvictionVotingEntity'
 import ConvictionVotingConnector from '../connector'
 
@@ -45,26 +46,13 @@ export default class Proposal extends Entity implements ProposalData {
     Object.assign(this, data)
   }
 
-  async stakesHistory(
-    proposalId: string,
-    { first = 1000, skip = 0 } = {}
-  ): Promise<Stake[]> {
-    return this._connector.stakesHistory(
-      this.appAddress,
-      proposalId,
-      first,
-      skip
-    )
+  async stakesHistory({ first = 1000, skip = 0 } = {}): Promise<
+    StakeHistory[]
+  > {
+    return this._connector.stakesHistory(this.appAddress, this.id, first, skip)
   }
 
-  onStakesHistory(
-    proposalId: string,
-    callback: Function
-  ): { unsubscribe: Function } {
-    return this._connector.onStakesHistory(
-      this.appAddress,
-      proposalId,
-      callback
-    )
+  onStakesHistory(callback: Function): { unsubscribe: Function } {
+    return this._connector.onStakesHistory(this.appAddress, this.id, callback)
   }
 }
