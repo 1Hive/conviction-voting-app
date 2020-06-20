@@ -2,7 +2,7 @@ import { GraphQLWrapper } from '@aragon/connect-thegraph'
 import * as queries from './queries'
 import Config from './entities/Config'
 import Proposal from './entities/Proposal'
-import Stake from './entities/Stake'
+import StakeHistory from './entities/StakeHistory'
 
 import { parseProposals, parseStakes, parseConfig } from './parsers'
 
@@ -44,7 +44,7 @@ export default class ConvictionVotingConnector extends GraphQLWrapper {
     proposalId: string,
     first: number,
     skip: number
-  ): Promise<Stake[]> {
+  ): Promise<StakeHistory[]> {
     return this.performQueryWithParser(
       queries.STAKE_HISTORY('query'),
       { appAddress, proposalId, first, skip },

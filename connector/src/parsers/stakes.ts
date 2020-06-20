@@ -1,8 +1,11 @@
 import { QueryResult } from '@aragon/connect-thegraph'
 import { StakeHistory as StakeGql } from '../queries/types'
-import Stake, { StakeData } from '../entities/Stake'
+import StakeHistory, { StakeHistoryData } from '../entities/StakeHistory'
 
-export function parseStakes(result: QueryResult, connector: any): Stake[] {
+export function parseStakes(
+  result: QueryResult,
+  connector: any
+): StakeHistory[] {
   const stakes = result.data.stakeHistories
 
   if (!stakes) {
@@ -10,7 +13,7 @@ export function parseStakes(result: QueryResult, connector: any): Stake[] {
   }
 
   const datas = stakes.map(
-    (stake: StakeGql): StakeData => {
+    (stake: StakeGql): StakeHistoryData => {
       return {
         id: stake.id,
         entity: stake.entity,
@@ -23,7 +26,7 @@ export function parseStakes(result: QueryResult, connector: any): Stake[] {
     }
   )
 
-  return datas.map((data: StakeData) => {
-    return new Stake(data, connector)
+  return datas.map((data: StakeHistoryData) => {
+    return new StakeHistory(data, connector)
   })
 }
