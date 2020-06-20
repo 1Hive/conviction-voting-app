@@ -8,7 +8,7 @@
     "dev": "yarn build --watch",
     "clean": "rm -rf ./dist ./tsconfig.tsbuildinfo",
     "compile": "tsc",
-    "start": "yarn build && node ./dist/examples/src/proposals.js"
+    "start": "yarn build && node ./dist/examples/src/index.js"
   },
   "dependencies": {
     "@aragon/connect": "*"

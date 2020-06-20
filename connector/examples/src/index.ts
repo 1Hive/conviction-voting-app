@@ -1,6 +1,9 @@
 import { connect } from '@aragon/connect'
 import { ConvictionVoting, Proposal } from '../../src'
 
+const ORG_ADDRESS = '0x4084E59500eC40AA375cE8D783f3a9E1aBf80bd7'
+const APP_ID = 'conviction-voting.open.aragonpm.eth'
+
 function proposalId(proposal: Proposal): string {
   return (
     '#' +
@@ -11,24 +14,21 @@ function proposalId(proposal: Proposal): string {
   )
 }
 
-function describeProposal(proposal: Proposal): void {
+async function describeProposal(proposal: Proposal): Promise<void> {
   console.log(`PROPOSAL ${proposalId(proposal)}`)
   console.log(`Name: ${proposal.name}`)
   console.log(`Link: ${proposal.link}`)
   console.log(`Requested amount: ${proposal.requestedAmount}`)
   console.log(`Beneficiary: ${proposal.beneficiary}`)
+  console.log(`Stake history: `)
+  const stakeHistory = await proposal.stakesHistory()
+  console.log(stakeHistory)
 }
 
 async function main(): Promise<void> {
-  const org = await connect(
-    '0x8494952a4b27ba5ceb70da756af1179e16c27604',
-    'thegraph',
-    { chainId: 4 }
-  )
+  const org = await connect(ORG_ADDRESS, 'thegraph', { chainId: 4 })
   const apps = await org.apps()
-  const convictionVotingApp = apps.find(
-    app => app.appName === 'gardens-dependency.open.aragonpm.eth'
-  )
+  const convictionVotingApp = apps.find(app => app.appName === APP_ID)
 
   console.log('\nOrganization:', org.location, `(${org.address})`)
 
@@ -41,9 +41,10 @@ async function main(): Promise<void> {
 
   const conviction = new ConvictionVoting(
     convictionVotingApp.address,
-    'https://api.thegraph.com/subgraphs/id/QmYTw3vwSqarPAoX3RisXckYBtaarteuv8e1tfSr72veEM'
+    'https://api.thegraph.com/subgraphs/name/1hive/aragon-cv-rinkeby-staging'
   )
 
+  console.log(`\nProposals:`)
   const proposals = await conviction.proposals()
 
   proposals.map(describeProposal)
