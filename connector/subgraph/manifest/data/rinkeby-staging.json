@@ -3,8 +3,8 @@
   "dataSources": {
     "Organizations": [
       {
-        "name": "Gardens",
-        "address": "0x8494952a4b27ba5ceb70da756af1179e16c27604",
+        "name": "testgarden4",
+        "address": "0x4084E59500eC40AA375cE8D783f3a9E1aBf80bd7",
         "startBlock": "6294595"
       }
     ],

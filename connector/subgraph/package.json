@@ -8,10 +8,12 @@
     "manifest-mainnet-staging": "env STAGING=true scripts/build-manifest.sh mainnet",
     "manifest-rinkeby": "scripts/build-manifest.sh rinkeby",
     "manifest-rinkeby-staging": "env STAGING=true scripts/build-manifest.sh rinkeby",
+    "manifest-xdai": "env scripts/build-manifest.sh xdai",
     "deploy-mainnet": "scripts/deploy.sh 1hive conviction-voting mainnet",
     "deploy-mainnet-staging": "env STAGING=true scripts/deploy.sh 1hive conviction-voting mainnet",
     "deploy-rinkeby": "scripts/deploy.sh 1hive conviction-voting rinkeby",
-    "deploy-rinkeby-staging": "env GRAPHKEY=63824a0da43e49049ed12a3939956f05 STAGING=true scripts/deploy.sh 1hive cv rinkeby"
+    "deploy-rinkeby-staging": "env GRAPHKEY=63824a0da43e49049ed12a3939956f05 STAGING=true scripts/deploy.sh 1hive cv rinkeby",
+    "deploy-xdai": "env GRAPHKEY=63824a0da43e49049ed12a3939956f05 scripts/deploy.sh 1hive conviction-voting xdai"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.18.0",
