@@ -21,7 +21,7 @@ export function getTemplateForApp(appId: string): string | null {
   log.debug('appid {}', [appId])
   if (
     appId ==
-    '0x589851b3734f6578a92f33bfc26877a1166b95238be1f484deeaac6383d14c38'
+    '0xbc5e8545c829b4a2dd66039e0824a32c19e8159e699402865a9e18746f99c390'
   ) {
     return 'ConvictionVoting'
   } else {
