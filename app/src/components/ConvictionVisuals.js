@@ -124,7 +124,7 @@ export function ConvictionCountdown({ proposal, shorter }) {
       return MAY_PASS
     }
     return UNABLE_TO_PASS
-  }, [currentConviction, threshold, remainingTimeToPass])
+  }, [currentConviction, executed, threshold, remainingTimeToPass])
 
   const NOW = Date.now()
 

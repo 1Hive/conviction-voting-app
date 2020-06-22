@@ -57,10 +57,6 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     api.executeProposal(id, true).toPromise()
   }, [api, id])
 
-  const handleStake = useCallback(() => {
-    api.stakeAllToProposal(id).toPromise()
-  }, [api, id])
-
   const handleWithdraw = useCallback(() => {
     api.withdrawAllFromProposal(id).toPromise()
   }, [api, id])
@@ -86,9 +82,9 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     currentConviction,
     didIStaked,
     handleExecute,
-    handleStake,
     handleWithdraw,
     panelState,
+    threshold,
   ])
 
   return (
