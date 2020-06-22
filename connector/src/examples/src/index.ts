@@ -1,5 +1,5 @@
 import { connect } from '@aragon/connect'
-import { ConvictionVoting, Proposal } from '../../src'
+import { ConvictionVoting, Proposal } from '../../index'
 
 const ORG_ADDRESS = '0x4084E59500eC40AA375cE8D783f3a9E1aBf80bd7'
 const APP_ID = 'conviction-voting.open.aragonpm.eth'
@@ -48,6 +48,10 @@ async function main(): Promise<void> {
   const proposals = await conviction.proposals()
 
   proposals.map(describeProposal)
+
+  console.log(`\Config:`)
+  const config = await conviction.config()
+  console.log(config)
 }
 
 main()

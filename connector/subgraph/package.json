@@ -12,8 +12,8 @@
     "deploy-mainnet": "scripts/deploy.sh 1hive conviction-voting mainnet",
     "deploy-mainnet-staging": "env STAGING=true scripts/deploy.sh 1hive conviction-voting mainnet",
     "deploy-rinkeby": "scripts/deploy.sh 1hive conviction-voting rinkeby",
-    "deploy-rinkeby-staging": "env GRAPHKEY=63824a0da43e49049ed12a3939956f05 STAGING=true scripts/deploy.sh 1hive cv rinkeby",
-    "deploy-xdai": "env GRAPHKEY=63824a0da43e49049ed12a3939956f05 scripts/deploy.sh 1hive conviction-voting xdai"
+    "deploy-rinkeby-staging": "STAGING=true scripts/deploy.sh 1hive cv rinkeby",
+    "deploy-xdai": "scripts/deploy.sh 1hive conviction-voting xdai"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.18.0",

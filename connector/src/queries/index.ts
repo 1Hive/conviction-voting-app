@@ -1,21 +1,21 @@
 import gql from 'graphql-tag'
 
 export const CONFIG = (type: string) => gql`
-  ${type} Config($appAddress: String!) {
-    config(where: {
-      appAddress: $appAddress
-    }) {
+  ${type} Config($id: String!) {
+    config(id: $id) {
       id
       decay
       weight
       maxRatio
       pctBase
       stakeToken {
+        id
         name
         symbol
         decimals
       }
       requestToken {
+        id
         name
         symbol
         decimals
