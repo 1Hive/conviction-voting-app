@@ -106,7 +106,16 @@ export function useProposals() {
         convictionTrend,
       }
     })
-  }, [proposals, latestBlock])
+  }, [
+    convictionStakes,
+    proposals,
+    latestBlock,
+    requestToken,
+    stakeToken,
+    alpha,
+    maxRatio,
+    weight,
+  ])
 
   return [proposalsWithData, latestBlock.number !== 0]
 }
