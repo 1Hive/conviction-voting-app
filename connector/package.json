@@ -1,6 +1,6 @@
 {
   "name": "@1hive/connect-thegraph-conviction-voting",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,6 @@
     "lint": "eslint --ext .ts ./src"
   },
   "files": [
-    "src",
     "dist"
   ],
   "devDependencies": {
