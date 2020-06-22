@@ -48,6 +48,10 @@ async function main(): Promise<void> {
   const proposals = await conviction.proposals()
 
   proposals.map(describeProposal)
+
+  console.log(`\Config:`)
+  const config = await conviction.config()
+  console.log(config)
 }
 
 main()

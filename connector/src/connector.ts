@@ -7,10 +7,10 @@ import StakeHistory from './entities/StakeHistory'
 import { parseProposals, parseStakes, parseConfig } from './parsers'
 
 export default class ConvictionVotingConnector extends GraphQLWrapper {
-  async config(appAddress: string): Promise<Config> {
+  async config(id: string): Promise<Config> {
     return this.performQueryWithParser(
       queries.CONFIG('query'),
-      { appAddress },
+      { id },
       parseConfig
     )
   }
