@@ -9,11 +9,13 @@ export const CONFIG = (type: string) => gql`
       maxRatio
       pctBase
       stakeToken {
+        id
         name
         symbol
         decimals
       }
       requestToken {
+        id
         name
         symbol
         decimals
