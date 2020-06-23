@@ -1,20 +1,23 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import {
   BackButton,
   Bar,
   Box,
   Button,
+  Field,
   GU,
   Text,
   textStyle,
   Link,
   SidePanel,
+  Slider,
   Split,
+  TextInput,
   useLayout,
   useTheme,
 } from '@aragon/ui'
 import styled from 'styled-components'
-import { useAragonApi } from '@aragon/api-react'
+import { useAragonApi, useAppState } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 import Balance from '../components/Balance'
 import {
@@ -23,11 +26,19 @@ import {
   ConvictionChart,
 } from '../components/ConvictionVisuals'
 import usePanelState from '../hooks/usePanelState'
+import useAccountTotalStaked from '../hooks/useAccountTotalStaked'
 import { useConvictionHistory } from '../hooks/useConvictionHistory'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 import SupportProposal from '../components/panels/SupportProposal'
+import { formatTokenAmount } from '../lib/token-utils'
+import { round, safeDiv, toDecimals } from '../lib/math-utils'
+import BigNumber from '../lib/bigNumber'
+
+const MAX_INPUT_DECIMAL_BASE = 6
 
 function ProposalDetail({ proposal, onBack, requestToken }) {
+  const { stakeToken } = useAppState()
+
   const theme = useTheme()
   const { layoutName } = useLayout()
   const { api, connectedAccount } = useAragonApi()
@@ -48,43 +59,112 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     threshold,
   } = proposal
 
-  const myStakes = stakes.filter(({ entity }) =>
-    addressesEqual(entity, connectedAccount)
+  const myStake = useMemo(
+    () =>
+      stakes.find(({ entity }) => addressesEqual(entity, connectedAccount)) || {
+        amount: new BigNumber('0'),
+      },
+    [stakes, connectedAccount]
   )
-  const didIStaked = myStakes.length > 0 && [...myStakes].pop().tokensStaked > 0
+
+  const myStakeAmountFormatted = formatTokenAmount(
+    myStake.amount,
+    stakeToken.tokenDecimals
+  )
+
+  const totalStaked = useAccountTotalStaked()
+
+  const nonStakedTokens = useMemo(
+    () => stakeToken.balance.minus(totalStaked).plus(myStake.amount),
+    [myStake.amount, stakeToken.balance, totalStaked]
+  )
+
+  const formattedMaxAvailableAmount = useMemo(() => {
+    if (!stakeToken) {
+      return '0'
+    }
+    return formatTokenAmount(nonStakedTokens, stakeToken.tokenDecimals)
+  }, [stakeToken, nonStakedTokens])
+
+  const rounding = Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)
+
+  const [
+    { value: inputValue, max: maxAvailable, progress },
+    setAmount,
+    setProgress,
+  ] = useAmount(
+    myStakeAmountFormatted.replace(',', ''),
+    formattedMaxAvailableAmount.replace(',', ''),
+    rounding
+  )
+
+  const didIStaked = myStake?.amount.gt(new BigNumber('0'))
+
+  const mode = useMemo(() => {
+    if (currentConviction.gte(threshold)) {
+      return 'execute'
+    }
+    if (didIStaked) {
+      return 'update'
+    }
+    return 'support'
+  }, [currentConviction, threshold, didIStaked])
+
+  // Focus input
+  const inputRef = useRef(null)
 
   const handleExecute = useCallback(() => {
     api.executeProposal(id, true).toPromise()
   }, [api, id])
 
-  const handleWithdraw = useCallback(() => {
-    api.withdrawAllFromProposal(id).toPromise()
-  }, [api, id])
+  const handleChangeSupport = useCallback(() => {
+    const newValue = new BigNumber(
+      toDecimals(inputValue, stakeToken.tokenDecimals)
+    )
+
+    if (newValue.lt(myStake.amount)) {
+      api
+        .withdrawFromProposal(id, myStake.amount.minus(newValue).toString())
+        .toPromise()
+      return
+    }
+
+    api
+      .stakeToProposal(id, newValue.minus(myStake.amount).toString())
+      .toPromise()
+  }, [api, id, inputValue, myStake.amount, stakeToken.tokenDecimals])
 
   const buttonProps = useMemo(() => {
-    if (currentConviction.gte(threshold)) {
-      return { text: 'Execute proposal', action: handleExecute, mode: 'strong' }
-    }
-    // TOD - Update mode is intended for the change support feature, the button name will be changed on next pr
-    if (didIStaked) {
+    if (mode === 'execute') {
       return {
-        text: 'Withdraw support',
-        action: handleWithdraw,
+        text: 'Execute proposal',
+        action: handleExecute,
+        mode: 'strong',
+        disabled: false,
+      }
+    }
+
+    if (mode === 'update') {
+      return {
+        text: 'Change support',
+        action: handleChangeSupport,
         mode: 'normal',
+        disabled: myStakeAmountFormatted === inputValue.toString(),
       }
     }
     return {
       text: 'Support this proposal',
       action: panelState.requestOpen,
       mode: 'strong',
+      disabled: false,
     }
   }, [
-    currentConviction,
-    didIStaked,
+    mode,
     handleExecute,
-    handleWithdraw,
+    handleChangeSupport,
     panelState,
-    threshold,
+    myStakeAmountFormatted,
+    inputValue,
   ])
 
   return (
@@ -198,10 +278,49 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                         lines={chartLines}
                       />
                     </div>
+
+                    {mode === 'update' && (
+                      <Field label="Amount of your tokens for this proposal">
+                        <div
+                          css={`
+                            display: flex;
+                            justify-content: space-between;
+                          `}
+                        >
+                          <div
+                            css={`
+                              width: 100%;
+                            `}
+                          >
+                            <Slider
+                              css={`
+                                padding-left: 0px;
+                                padding-right: ${2 * GU}px;
+                              `}
+                              value={progress}
+                              onUpdate={setProgress}
+                            />
+                          </div>
+                          <TextInput
+                            value={inputValue}
+                            onChange={setAmount}
+                            type="number"
+                            max={maxAvailable}
+                            min={'0'}
+                            required
+                            ref={inputRef}
+                            css={`
+                              width: ${18 * GU}px;
+                            `}
+                          />
+                        </div>
+                      </Field>
+                    )}
                     <Button
                       wide
                       mode={buttonProps.mode}
                       onClick={buttonProps.action}
+                      disabled={buttonProps.disabled}
                     >
                       {buttonProps.text}
                     </Button>
@@ -238,6 +357,75 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
       </SidePanel>
     </div>
   )
+}
+
+const useAmount = (balance, maxAvailable, rounding) => {
+  const [amount, setAmount] = useState({
+    value: balance,
+    max: maxAvailable,
+    progress: safeDiv(balance, maxAvailable),
+  })
+
+  useEffect(() => {
+    setAmount(prevState => {
+      if (prevState.max === maxAvailable) {
+        return prevState
+      }
+      const newValue = round(prevState.progress * maxAvailable, rounding)
+
+      return {
+        ...prevState,
+        value: String(newValue),
+        max: maxAvailable,
+      }
+    })
+  }, [maxAvailable, rounding])
+
+  useEffect(() => {
+    setAmount(prevState => {
+      if (prevState.value === balance) {
+        return prevState
+      }
+
+      return {
+        ...prevState,
+        value: balance,
+        progress: safeDiv(balance, maxAvailable),
+      }
+    })
+  }, [balance, maxAvailable])
+
+  const handleAmountChange = useCallback(
+    event => {
+      const newValue = Math.min(event.target.value, maxAvailable)
+      const newProgress = safeDiv(newValue, maxAvailable)
+
+      setAmount(prevState => ({
+        ...prevState,
+        value: String(newValue),
+        progress: newProgress,
+      }))
+    },
+    [maxAvailable]
+  )
+
+  const handleSliderChange = useCallback(
+    newProgress => {
+      const newValue =
+        newProgress === 1
+          ? round(Number(maxAvailable), rounding)
+          : round(newProgress * maxAvailable, 2)
+
+      setAmount(prevState => ({
+        ...prevState,
+        value: String(newValue),
+        progress: newProgress,
+      }))
+    },
+    [maxAvailable, rounding]
+  )
+
+  return [amount, handleAmountChange, handleSliderChange]
 }
 
 const Amount = ({
