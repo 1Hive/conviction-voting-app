@@ -437,13 +437,5 @@ const Heading = styled.h2`
   color:${props => props.color};
   margin-bottom: ${1.5 * GU}px;
 `
-const Wrapper = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #eaf6f6;
-  border-top: 1px solid #eaf6f6;
-  padding: 20px 0px;
-`
 
 export default ProposalDetail
