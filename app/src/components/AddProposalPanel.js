@@ -1,64 +1,185 @@
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useAppState } from '@aragon/api-react'
-import { Button, Field, TextInput } from '@aragon/ui'
-import styled from 'styled-components'
+import { Button, Field, GU, Info, isAddress, TextInput } from '@aragon/ui'
 import LocalIdentitiesAutoComplete from './LocalIdentitiesAutoComplete/LocalIdentitiesAutoComplete'
+
+import BigNumber from '../lib/bigNumber'
+import { toDecimals } from '../lib/math-utils'
+import { formatTokenAmount } from '../lib/token-utils'
+
+import { calculateThreshold, getMaxConviction } from '../lib/conviction'
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 const AddProposalPanel = ({ onSubmit }) => {
-  const { requestToken } = useAppState()
-  const [form, setForm] = useState({
+  const { requestToken, stakeToken, globalParams } = useAppState()
+  const { alpha, maxRatio, weight } = globalParams
+
+  const [formData, setFormData] = useState({
     title: '',
     link: '',
-    amount: '0',
+    amount: {
+      value: '0',
+      valueBN: new BigNumber(0),
+    },
     beneficiary: '',
   })
-  const [isDisabled, setDisabled] = useState(true)
 
-  useEffect(() => {
-    requestToken
-      ? setDisabled(
-          form.title === '' || form.amount === '' || form.beneficiary === ''
-        )
-      : setDisabled(form.title === '')
-  }, [requestToken, form])
+  const handleAmountEditMode = useCallback(
+    editMode => {
+      setFormData(formData => {
+        const { amount } = formData
 
-  const onFormSubmit = event => {
-    event.preventDefault()
-    if (form.beneficiary === '') form.beneficiary = ZERO_ADDR
-    onSubmit(form)
-  }
+        const newValue = amount.valueBN.gte(0)
+          ? formatTokenAmount(
+              amount.valueBN,
+              stakeToken.tokenDecimals,
+              false,
+              false,
+              {
+                commas: !editMode,
+                replaceZeroBy: editMode ? '' : '0',
+                rounding: stakeToken.tokenDecimals,
+              }
+            )
+          : ''
+
+        return {
+          ...formData,
+          amount: {
+            ...amount,
+            value: newValue,
+          },
+        }
+      })
+    },
+    [stakeToken]
+  )
+
+  const handleTitleChange = useCallback(event => {
+    const updatedTitle = event.target.value
+    setFormData(formData => ({ ...formData, title: updatedTitle }))
+  }, [])
+
+  const handleAmountChange = useCallback(
+    event => {
+      const updatedAmount = event.target.value
+
+      const newAmountBN = new BigNumber(
+        isNaN(updatedAmount)
+          ? -1
+          : toDecimals(updatedAmount, stakeToken.tokenDecimals)
+      )
+
+      setFormData(formData => ({
+        ...formData,
+        amount: {
+          value: updatedAmount,
+          valueBN: newAmountBN,
+        },
+      }))
+    },
+    [stakeToken.tokenDecimals]
+  )
+
+  const handleBeneficiaryChange = useCallback(updatedBeneficiary => {
+    setFormData(formData => ({ ...formData, beneficiary: updatedBeneficiary }))
+  }, [])
+
+  const handleLinkChange = useCallback(event => {
+    const updatedLink = event.target.value
+    setFormData(formData => ({ ...formData, link: updatedLink }))
+  }, [])
+
+  const handleFormSubmit = useCallback(
+    event => {
+      event.preventDefault()
+
+      const { amount, beneficiary = ZERO_ADDR, link, title } = formData
+      const convertedAmount = amount.valueBN.toString()
+
+      onSubmit(title, link, convertedAmount, beneficiary)
+    },
+    [formData, onSubmit]
+  )
+
+  const errors = useMemo(() => {
+    const errors = []
+
+    const { amount, beneficiary, title } = formData
+    if (requestToken) {
+      if (amount.valueBN.eq(-1)) {
+        errors.push('Invalid requested amount')
+      }
+
+      if (beneficiary && !isAddress(beneficiary)) {
+        errors.push('Beneficiary is not a valid ethereum address')
+      }
+
+      return errors
+    }
+
+    return !title
+  }, [formData, requestToken])
+
+  const neededThreshold = useMemo(() => {
+    const threshold = calculateThreshold(
+      formData.amount.valueBN,
+      requestToken.amount || 0,
+      stakeToken.totalSupply || 0,
+      alpha,
+      maxRatio,
+      weight
+    )
+
+    const max = getMaxConviction(stakeToken.totalSupply || 0, alpha)
+
+    return Math.round((threshold / max) * 100)
+  }, [alpha, formData.amount, maxRatio, requestToken, stakeToken, weight])
 
   return (
-    <Form onSubmit={onFormSubmit}>
-      <Field label="Title">
+    <form onSubmit={handleFormSubmit}>
+      <Info
+        title="Action"
+        css={`
+          margin-top: ${3 * GU}px;
+        `}
+      >
+        This action will create a proposal which can be voted on by staking
+        {stakeToken.tokenSymbol}. The action will be executable if the accrued
+        total stake reaches above the threshold.
+      </Info>
+      <Field
+        label="Title"
+        css={`
+          margin-top: ${2 * GU}px;
+        `}
+      >
         <TextInput
-          onChange={event => setForm({ ...form, title: event.target.value })}
-          value={form.title}
+          onChange={handleTitleChange}
+          value={formData.title}
           wide
           required
         />
       </Field>
       {requestToken && (
         <>
-          <Field label="Requested Amount">
+          <Field
+            label="Requested Amount"
+            onFocus={() => handleAmountEditMode(true)}
+            onBlur={() => handleAmountEditMode(false)}
+          >
             <TextInput
-              type="number"
-              value={form.amount}
-              onChange={event =>
-                setForm({ ...form, amount: event.target.value })
-              }
-              min={0}
-              step="any"
+              value={formData.amount.value}
+              onChange={handleAmountChange}
               required
               wide
             />
           </Field>
           <Field label="Beneficiary">
             <LocalIdentitiesAutoComplete
-              onChange={beneficiary => setForm({ ...form, beneficiary })}
-              value={form.beneficiary}
+              onChange={handleBeneficiaryChange}
+              value={formData.beneficiary}
               wide
               required
             />
@@ -66,26 +187,38 @@ const AddProposalPanel = ({ onSubmit }) => {
         </>
       )}
       <Field label="Link">
-        <TextInput
-          onChange={event => setForm({ ...form, link: event.target.value })}
-          value={form.link}
-          wide
-        />
+        <TextInput onChange={handleLinkChange} value={formData.link} wide />
       </Field>
-      <ButtonWrapper>
-        <Button wide mode="strong" type="submit" disabled={isDisabled}>
-          Submit
-        </Button>
-      </ButtonWrapper>
-    </Form>
+      {errors.length > 0 && (
+        <Info
+          mode="warning"
+          css={`
+            margin-bottom: ${2 * GU}px;
+          `}
+        >
+          {errors.map((err, index) => (
+            <div key={index}>{err}</div>
+          ))}
+        </Info>
+      )}
+      <Button wide mode="strong" type="submit" disabled={errors.length > 0}>
+        Submit
+      </Button>
+      {formData.amount.valueBN.gte(0) && (
+        <Info
+          mode={isFinite(neededThreshold) ? 'info' : 'warning'}
+          css={`
+            margin-top: ${2 * GU}px;
+          `}
+        >
+          {isFinite(neededThreshold)
+            ? `Required conviction for requested amount in order for the proposal to
+          pass is ~%${neededThreshold}`
+            : `Proposal might never pass with requested amount`}
+        </Info>
+      )}
+    </form>
   )
 }
-
-const ButtonWrapper = styled.div`
-  padding-top: 10px;
-`
-const Form = styled.form`
-  margin: 16px 0;
-`
 
 export default AddProposalPanel

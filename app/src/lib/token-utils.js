@@ -120,6 +120,6 @@ export function formatTokenAmount(
 
   return (
     (displaySign ? (isIncoming ? '+' : '-') : '') +
-    (commas ? formattedAmount : formattedAmount.replace(',', ''))
+    (commas ? formattedAmount : formattedAmount.replace(/,/g, ''))
   )
 }
