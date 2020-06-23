@@ -1,0 +1,44 @@
+{
+  "name": "@1hive/connect-thegraph-conviction-voting",
+  "version": "0.1.7",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepublishOnly": "yarn build",
+    "build": "yarn clean && yarn compile",
+    "dev": "yarn build --watch",
+    "clean": "rm -rf ./dist ./tsconfig.tsbuildinfo",
+    "compile": "tsc",
+    "lint": "eslint --ext .ts ./src"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/react": "^16.9.34",
+    "@typescript-eslint/eslint-plugin": "^2.29.0",
+    "@typescript-eslint/parser": "^2.29.0",
+    "eslint": "^6.8.0",
+    "prettier": "^2.0.5",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "@aragon/connect-core": "^0.2.0",
+    "@aragon/connect-thegraph": "^0.2.0",
+    "graphql-tag": "^2.10.3"
+  },
+  "description": "Access organizations and interact with Convcition Voting apps.",
+  "keywords": [
+    "ethereum",
+    "javascript",
+    "web3",
+    "dapp",
+    "aragon",
+    "1hive"
+  ],
+  "author": "1Hive",
+  "homepage": "https://github.com/1Hive/conviction-voting-app",
+  "bugs": "https://github.com/1Hive/conviction-voting-app/issues",
+  "repository": "https://github.com/1Hive/conviction-voting-app"
+}

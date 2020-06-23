@@ -60,23 +60,26 @@ const AddProposalPanel = ({ onSubmit }) => {
     setFormData(formData => ({ ...formData, title: updatedTitle }))
   }, [])
 
-  const handleAmountChange = useCallback(event => {
-    const updatedAmount = event.target.value
+  const handleAmountChange = useCallback(
+    event => {
+      const updatedAmount = event.target.value
 
-    const newAmountBN = new BN(
-      isNaN(updatedAmount)
-        ? -1
-        : toDecimals(updatedAmount, stakeToken.tokenDecimals)
-    )
+      const newAmountBN = new BN(
+        isNaN(updatedAmount)
+          ? -1
+          : toDecimals(updatedAmount, stakeToken.tokenDecimals)
+      )
 
-    setFormData(formData => ({
-      ...formData,
-      amount: {
-        value: updatedAmount,
-        valueBN: newAmountBN,
-      },
-    }))
-  }, [])
+      setFormData(formData => ({
+        ...formData,
+        amount: {
+          value: updatedAmount,
+          valueBN: newAmountBN,
+        },
+      }))
+    },
+    [stakeToken.tokenDecimals]
+  )
 
   const handleBeneficiaryChange = useCallback(updatedBeneficiary => {
     setFormData(formData => ({ ...formData, beneficiary: updatedBeneficiary }))
@@ -87,14 +90,17 @@ const AddProposalPanel = ({ onSubmit }) => {
     setFormData(formData => ({ ...formData, link: updatedLink }))
   }, [])
 
-  const handleFormSubmit = useCallback(event => {
-    event.preventDefault()
+  const handleFormSubmit = useCallback(
+    event => {
+      event.preventDefault()
 
-    const { amount, beneficiary = ZERO_ADDR, link, title } = formData
-    const convertedAmount = amount.valueBN.toString()
+      const { amount, beneficiary = ZERO_ADDR, link, title } = formData
+      const convertedAmount = amount.valueBN.toString()
 
-    onSubmit(title, link, convertedAmount, beneficiary)
-  })
+      onSubmit(title, link, convertedAmount, beneficiary)
+    },
+    [formData, onSubmit]
+  )
 
   const errors = useMemo(() => {
     const errors = []
@@ -113,7 +119,7 @@ const AddProposalPanel = ({ onSubmit }) => {
     }
 
     return !title
-  }, [formData])
+  }, [formData, requestToken])
 
   const neededThreshold = useMemo(() => {
     const threshold = calculateThreshold(
