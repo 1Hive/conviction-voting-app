@@ -136,7 +136,7 @@ export function getStakeHistoryEntity(
   )
 
   const stakeHistory = new StakeHistoryEntity(stakeHistoryId)
-  stakeHistory.proposalId = proposal.id
+  stakeHistory.proposalId = proposal.number
   stakeHistory.entity = entity
   stakeHistory.time = timestamp
 

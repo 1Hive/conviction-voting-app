@@ -41,24 +41,48 @@ export default class ConvictionVotingConnector extends GraphQLWrapper {
 
   async stakesHistory(
     appAddress: string,
-    proposalId: string,
     first: number,
     skip: number
   ): Promise<StakeHistory[]> {
     return this.performQueryWithParser(
-      queries.STAKE_HISTORY('query'),
-      { appAddress, proposalId, first, skip },
+      queries.ALL_STAKE_HISTORY('query'),
+      { appAddress, first, skip },
       parseStakes
     )
   }
 
   onStakesHistory(
     appAddress: string,
+    callback: Function
+  ): { unsubscribe: Function } {
+    return this.subscribeToQueryWithParser(
+      queries.STAKE_HISTORY_BY_PROPOSAL('subscription'),
+      { appAddress, first: 1000, skip: 0 },
+      callback,
+      parseStakes
+    )
+  }
+
+  async stakesHistoryByProposal(
+    appAddress: string,
+    proposalId: string,
+    first: number,
+    skip: number
+  ): Promise<StakeHistory[]> {
+    return this.performQueryWithParser(
+      queries.STAKE_HISTORY_BY_PROPOSAL('query'),
+      { appAddress, proposalId, first, skip },
+      parseStakes
+    )
+  }
+
+  onStakesHistoryByProposal(
+    appAddress: string,
     proposalId: string,
     callback: Function
   ): { unsubscribe: Function } {
     return this.subscribeToQueryWithParser(
-      queries.STAKE_HISTORY('subscription'),
+      queries.STAKE_HISTORY_BY_PROPOSAL('subscription'),
       { appAddress, proposalId, first: 1000, skip: 0 },
       callback,
       parseStakes

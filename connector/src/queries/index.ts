@@ -47,9 +47,23 @@ export const ALL_PROPOSALS = (type: string) => gql`
   }
 `
 
-export const STAKE_HISTORY = (type: string) => gql`
+export const STAKE_HISTORY_BY_PROPOSAL = (type: string) => gql`
   ${type} StakeHistory($appAddress: String, $proposalId: String, $first: Int!, $skip: Int!) {
     stakeHistories(where : { appAddress: $appAddress, proposalId: $proposalId }, first: $first, skip: $skip) {
+      id
+      entity
+      proposalId
+      tokensStaked
+      totalTokensStaked
+      time
+      conviction
+    }
+  }
+`
+
+export const ALL_STAKE_HISTORY = (type: string) => gql`
+  ${type} StakeHistory($appAddress: String, $first: Int!, $skip: Int!) {
+    stakeHistories(where : { appAddress: $appAddress }, first: $first, skip: $skip) {
       id
       entity
       proposalId
