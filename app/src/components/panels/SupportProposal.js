@@ -35,7 +35,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   const handleEditMode = useCallback(
     editMode => {
       setAmount(amount => {
-        const newValue = amount.valueBN.gte(new BN(0))
+        const newValue = amount.valueBN.gte(0)
           ? formatTokenAmount(
               amount.valueBN,
               stakeToken.tokenDecimals,
@@ -185,7 +185,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
           {stakeToken.tokenSymbol}
         </strong>{' '}
         ({nonStakedPct}% of your balance) available to support this proposal.{' '}
-        {totalStaked.gt(new BN('0')) && (
+        {totalStaked.gt(0) && (
           <span>
             You are supporting other proposals with{' '}
             <strong>
