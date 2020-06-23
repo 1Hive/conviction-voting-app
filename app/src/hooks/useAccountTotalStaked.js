@@ -22,6 +22,7 @@ export default function useAccountTotalStaked() {
 
           return acc.plus(myStake.amount)
         }, new BigNumber(0)),
+
     [connectedAccount, proposals]
   )
 

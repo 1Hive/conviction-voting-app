@@ -67,12 +67,10 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     [stakes, connectedAccount]
   )
 
-  const myStakeAmountFormatted = useMemo(() => {
-    if (!myStake) {
-      return '0'
-    }
-    return formatTokenAmount(myStake.amount, stakeToken.tokenDecimals)
-  }, [stakeToken.tokenDecimals, myStake])
+  const myStakeAmountFormatted = formatTokenAmount(
+    myStake.amount,
+    stakeToken.tokenDecimals
+  )
 
   const totalStaked = useAccountTotalStaked()
 
@@ -88,9 +86,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     return formatTokenAmount(nonStakedTokens, stakeToken.tokenDecimals)
   }, [stakeToken, nonStakedTokens])
 
-  const rounding = useMemo(() => {
-    return Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)
-  }, [stakeToken])
+  const rounding = Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)
 
   const [
     { value: inputValue, max: maxAvailable, progress },
@@ -313,6 +309,9 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                             min={'0'}
                             required
                             ref={inputRef}
+                            css={`
+                              width: ${18 * GU}px;
+                            `}
                           />
                         </div>
                       </Field>
