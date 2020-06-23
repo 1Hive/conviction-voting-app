@@ -1,11 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { useAppState } from '@aragon/api-react'
 import { Button, Field, GU, Info, isAddress, TextInput } from '@aragon/ui'
-import BN from 'bn.js'
 import LocalIdentitiesAutoComplete from './LocalIdentitiesAutoComplete/LocalIdentitiesAutoComplete'
 
+import BigNumber from '../lib/bigNumber'
 import { toDecimals } from '../lib/math-utils'
 import { formatTokenAmount } from '../lib/token-utils'
+
 import { calculateThreshold, getMaxConviction } from '../lib/conviction'
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
@@ -19,7 +20,7 @@ const AddProposalPanel = ({ onSubmit }) => {
     link: '',
     amount: {
       value: '0',
-      valueBN: new BN(0),
+      valueBN: new BigNumber(0),
     },
     beneficiary: '',
   })
@@ -29,7 +30,7 @@ const AddProposalPanel = ({ onSubmit }) => {
       setFormData(formData => {
         const { amount } = formData
 
-        const newValue = amount.valueBN.gte(new BN(0))
+        const newValue = amount.valueBN.gte(0)
           ? formatTokenAmount(
               amount.valueBN,
               stakeToken.tokenDecimals,
@@ -64,7 +65,7 @@ const AddProposalPanel = ({ onSubmit }) => {
     event => {
       const updatedAmount = event.target.value
 
-      const newAmountBN = new BN(
+      const newAmountBN = new BigNumber(
         isNaN(updatedAmount)
           ? -1
           : toDecimals(updatedAmount, stakeToken.tokenDecimals)
@@ -107,7 +108,7 @@ const AddProposalPanel = ({ onSubmit }) => {
 
     const { amount, beneficiary, title } = formData
     if (requestToken) {
-      if (amount.valueBN.eq(new BN(-1))) {
+      if (amount.valueBN.eq(-1)) {
         errors.push('Invalid requested amount')
       }
 
@@ -123,15 +124,15 @@ const AddProposalPanel = ({ onSubmit }) => {
 
   const neededThreshold = useMemo(() => {
     const threshold = calculateThreshold(
-      parseInt(formData.amount.valueBN),
+      formData.amount.valueBN,
       requestToken.amount || 0,
-      stakeToken.tokenSupply || 0,
+      stakeToken.totalSupply || 0,
       alpha,
       maxRatio,
       weight
     )
 
-    const max = getMaxConviction(stakeToken.tokenSupply || 0, alpha)
+    const max = getMaxConviction(stakeToken.totalSupply || 0, alpha)
 
     return Math.round((threshold / max) * 100)
   }, [alpha, formData.amount, maxRatio, requestToken, stakeToken, weight])
@@ -203,7 +204,7 @@ const AddProposalPanel = ({ onSubmit }) => {
       <Button wide mode="strong" type="submit" disabled={errors.length > 0}>
         Submit
       </Button>
-      {formData.amount.valueBN.gte(new BN('0')) && (
+      {formData.amount.valueBN.gte(0) && (
         <Info
           mode={isFinite(neededThreshold) ? 'info' : 'warning'}
           css={`
