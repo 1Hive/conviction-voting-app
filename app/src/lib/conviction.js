@@ -17,8 +17,8 @@ export function calculateConviction(timePassed, initConv, amount, alpha) {
   const a = alpha
 
   return y0
-    .times(a.pow(t))
-    .plus(x.times(oneBN.minus(a.pow(t))).div(oneBN.minus(a)))
+    .multipliedBy(a.pow(t))
+    .plus(x.multipliedBy(oneBN.minus(a.pow(t))).div(oneBN.minus(a)))
 }
 
 /**
@@ -200,12 +200,12 @@ export function getRemainingTimeToPass(threshold, conviction, amount, alpha) {
     Math.log(
       a
         .minus(oneBN)
-        .times(y)
+        .multipliedBy(y)
         .plus(x)
         .div(
           a
             .minus(oneBN)
-            .times(y0)
+            .multipliedBy(y0)
             .plus(x)
         )
         .toNumber()
@@ -253,7 +253,7 @@ export function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 
   if (share.lt(beta)) {
     return rho
-      .times(supply)
+      .multipliedBy(supply)
       .div(oneBN.minus(alpha))
       .div(beta.minus(share).pow(2))
   } else {
@@ -277,7 +277,7 @@ export function getMinNeededStake(threshold, alpha) {
 
   return a
     .negated()
-    .times(y)
+    .multipliedBy(y)
     .plus(y)
 }
 

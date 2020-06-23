@@ -123,7 +123,7 @@ export function stakesPercentages(
     .map((amount, index) => ({
       amount,
       index,
-      percentage: amount.times(pctPrecision).div(total),
+      percentage: amount.multipliedBy(pctPrecision).div(total),
     }))
     .sort((a, b) => b.percentage.comparedTo(a.percentage))
 

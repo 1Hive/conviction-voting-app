@@ -71,7 +71,7 @@ export function ConvictionBar({ proposal, withThreshold = true }) {
             >
               {isFinite(neededConviction)
                 ? `(${Math.round(
-                    neededConviction.times(new BigNumber('100'))
+                    neededConviction.multipliedBy(new BigNumber('100'))
                   )}% needed)`
                 : `(&infin; needed)`}
             </span>

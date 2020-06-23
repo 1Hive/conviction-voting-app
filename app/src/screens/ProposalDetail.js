@@ -54,7 +54,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
   const myStakes = stakes.filter(({ entity }) =>
     addressesEqual(entity, connectedAccount)
   )
-  const didIStaked = myStakes.length > 0 && [...myStakes].pop().tokensStaked > 0
+  const didIStake = myStakes.length > 0 && myStakes.slice(-1).pop().amount.gt(0)
 
   const handleExecute = useCallback(() => {
     api.executeProposal(id, true).toPromise()
@@ -69,7 +69,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
       return { text: 'Execute proposal', action: handleExecute, mode: 'strong' }
     }
     // TOD - Update mode is intended for the change support feature, the button name will be changed on next pr
-    if (didIStaked) {
+    if (didIStake) {
       return {
         text: 'Withdraw support',
         action: handleWithdraw,
@@ -83,7 +83,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
     }
   }, [
     currentConviction,
-    didIStaked,
+    didIStake,
     handleExecute,
     handleWithdraw,
     panelState,
