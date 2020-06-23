@@ -56,7 +56,7 @@ export default class ConvictionVotingConnector extends GraphQLWrapper {
     callback: Function
   ): { unsubscribe: Function } {
     return this.subscribeToQueryWithParser(
-      queries.STAKE_HISTORY_BY_PROPOSAL('subscription'),
+      queries.ALL_STAKE_HISTORY('subscription'),
       { appAddress, first: 1000, skip: 0 },
       callback,
       parseStakes
