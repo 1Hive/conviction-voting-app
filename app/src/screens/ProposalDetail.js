@@ -1,18 +1,20 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState, useEffect } from 'react'
 import {
   BackButton,
   Bar,
   Box,
   Button,
+  Field,
   GU,
   IconConnect,
   Info,
   Link,
   RADIUS,
   SidePanel,
+  Slider,
   Split,
-  Text,
   textStyle,
+  TextInput,
   useLayout,
   useTheme,
 } from '@aragon/ui'
@@ -26,9 +28,15 @@ import {
   ConvictionChart,
 } from '../components/ConvictionVisuals'
 import usePanelState from '../hooks/usePanelState'
+import useAccountTotalStaked from '../hooks/useAccountTotalStaked'
 import { useConvictionHistory } from '../hooks/useConvictionHistory'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 import SupportProposal from '../components/panels/SupportProposal'
+import { formatTokenAmount } from '../lib/token-utils'
+import { round, safeDiv, toDecimals } from '../lib/math-utils'
+import BigNumber from '../lib/bigNumber'
+
+const MAX_INPUT_DECIMAL_BASE = 6
 
 function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
   const theme = useTheme()
@@ -51,34 +59,93 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
     threshold,
   } = proposal
 
-  const myStakes = stakes.filter(({ entity }) =>
-    addressesEqual(entity, connectedAccount)
+  const myStake = useMemo(
+    () =>
+      stakes.find(({ entity }) => addressesEqual(entity, connectedAccount)) || {
+        amount: new BigNumber('0'),
+      },
+    [stakes, connectedAccount]
   )
-  const didIStake =
-    myStakes.length > 0 &&
-    myStakes
-      .slice(-1)
-      .pop()
-      .amount.gt(0)
+
+  const myStakeAmountFormatted = formatTokenAmount(
+    myStake.amount,
+    stakeToken.tokenDecimals
+  )
+
+  const totalStaked = useAccountTotalStaked()
+
+  const nonStakedTokens = useMemo(
+    () => stakeToken.balance.minus(totalStaked).plus(myStake.amount),
+    [myStake.amount, stakeToken.balance, totalStaked]
+  )
+
+  const formattedMaxAvailableAmount = useMemo(() => {
+    if (!stakeToken) {
+      return '0'
+    }
+    return formatTokenAmount(nonStakedTokens, stakeToken.tokenDecimals)
+  }, [stakeToken, nonStakedTokens])
+
+  const rounding = Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)
+
+  const [
+    { value: inputValue, max: maxAvailable, progress },
+    setAmount,
+    setProgress,
+  ] = useAmount(
+    myStakeAmountFormatted.replace(',', ''),
+    formattedMaxAvailableAmount.replace(',', ''),
+    rounding
+  )
+
+  const didIStake = myStake?.amount.gt(new BigNumber('0'))
+
+  const mode = useMemo(() => {
+    if (currentConviction.gte(threshold)) {
+      return 'execute'
+    }
+    if (didIStake) {
+      return 'update'
+    }
+    return 'support'
+  }, [currentConviction, didIStake, threshold])
 
   const handleExecute = useCallback(() => {
     api.executeProposal(id, true).toPromise()
   }, [api, id])
 
-  const handleWithdraw = useCallback(() => {
-    api.withdrawAllFromProposal(id).toPromise()
-  }, [api, id])
+  const handleChangeSupport = useCallback(() => {
+    const newValue = new BigNumber(
+      toDecimals(inputValue, stakeToken.tokenDecimals)
+    )
+
+    if (newValue.lt(myStake.amount)) {
+      api
+        .withdrawFromProposal(id, myStake.amount.minus(newValue).toString())
+        .toPromise()
+      return
+    }
+
+    api
+      .stakeToProposal(id, newValue.minus(myStake.amount).toString())
+      .toPromise()
+  }, [api, id, inputValue, myStake.amount, stakeToken.tokenDecimals])
 
   const buttonProps = useMemo(() => {
-    if (currentConviction.gte(threshold)) {
-      return { text: 'Execute proposal', action: handleExecute, mode: 'strong' }
-    }
-    // TOD - Update mode is intended for the change support feature, the button name will be changed on next pr
-    if (didIStake) {
+    if (mode === 'execute') {
       return {
-        text: 'Withdraw support',
-        action: handleWithdraw,
+        text: 'Execute proposal',
+        action: handleExecute,
+        mode: 'strong',
+        disabled: false,
+      }
+    }
+    if (mode === 'update') {
+      return {
+        text: 'Change support',
+        action: handleChangeSupport,
         mode: 'normal',
+        disabled: myStakeAmountFormatted === inputValue.toString(),
       }
     }
     return {
@@ -88,13 +155,13 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
       disabled: !stakeToken.balance.gt(0),
     }
   }, [
-    currentConviction,
-    didIStake,
     handleExecute,
-    handleWithdraw,
+    handleChangeSupport,
+    inputValue,
+    mode,
+    myStakeAmountFormatted,
     panelState,
     stakeToken.balance,
-    threshold,
   ])
 
   return (
@@ -146,13 +213,13 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
                         Read more
                       </Link>
                     ) : (
-                      <Text
+                      <span
                         css={`
                           ${textStyle('body2')};
                         `}
                       >
                         No link provided
-                      </Text>
+                      </span>
                     )}
                   </div>
                   <div>
@@ -211,6 +278,42 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
 
                     {connectedAccount ? (
                       <>
+                        {mode === 'update' && (
+                          <Field label="Amount of your tokens for this proposal">
+                            <div
+                              css={`
+                                display: flex;
+                                justify-content: space-between;
+                              `}
+                            >
+                              <div
+                                css={`
+                                  width: 100%;
+                                `}
+                              >
+                                <Slider
+                                  css={`
+                                    padding-left: 0px;
+                                    padding-right: ${2 * GU}px;
+                                  `}
+                                  value={progress}
+                                  onUpdate={setProgress}
+                                />
+                              </div>
+                              <TextInput
+                                value={inputValue}
+                                onChange={setAmount}
+                                type="number"
+                                max={maxAvailable}
+                                min={'0'}
+                                required
+                                css={`
+                                  width: ${18 * GU}px;
+                                `}
+                              />
+                            </div>
+                          </Field>
+                        )}
                         <Button
                           wide
                           mode={buttonProps.mode}
@@ -220,7 +323,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
                           {buttonProps.text}
                         </Button>
 
-                        {buttonProps.disabled && (
+                        {mode === 'support' && buttonProps.disabled && (
                           <Info mode="warning">
                             The currently connected account does not hold any{' '}
                             <strong>{stakeToken.tokenSymbol}</strong> tokens and
@@ -231,44 +334,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
                         )}
                       </>
                     ) : (
-                      <div
-                        css={`
-                          border-radius: ${RADIUS}px;
-                          background: ${theme.background};
-                          padding: ${3.5 * GU}px ${10 * GU}px;
-                          text-align: center;
-                        `}
-                      >
-                        <div
-                          css={`
-                            ${textStyle('body1')};
-                          `}
-                        >
-                          You must enable your account to interact on this
-                          proposal
-                        </div>
-                        <div
-                          css={`
-                            ${textStyle('body2')};
-                            color: ${theme.surfaceContentSecondary};
-                            margin-top: ${2 * GU}px;
-                          `}
-                        >
-                          Connect to your Ethereum provider by clicking on the{' '}
-                          <strong
-                            css={`
-                              display: inline-flex;
-                              align-items: center;
-                              position: relative;
-                              top: 7px;
-                            `}
-                          >
-                            <IconConnect /> Enable account
-                          </strong>{' '}
-                          button on the header. You may be temporarily
-                          redirected to a new screen.
-                        </div>
-                      </div>
+                      <AccountNotConnected />
                     )}
                   </React.Fragment>
                 )}
@@ -303,6 +369,118 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
       </SidePanel>
     </div>
   )
+}
+
+const AccountNotConnected = () => {
+  const theme = useTheme()
+
+  return (
+    <div
+      css={`
+        border-radius: ${RADIUS}px;
+        background: ${theme.background};
+        padding: ${3.5 * GU}px ${10 * GU}px;
+        text-align: center;
+      `}
+    >
+      <div
+        css={`
+          ${textStyle('body1')};
+        `}
+      >
+        You must enable your account to interact on this proposal
+      </div>
+      <div
+        css={`
+          ${textStyle('body2')};
+          color: ${theme.surfaceContentSecondary};
+          margin-top: ${2 * GU}px;
+        `}
+      >
+        Connect to your Ethereum provider by clicking on the{' '}
+        <strong
+          css={`
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            top: 7px;
+          `}
+        >
+          <IconConnect /> Enable account
+        </strong>{' '}
+        button on the header. You may be temporarily redirected to a new screen.
+      </div>
+    </div>
+  )
+}
+
+const useAmount = (balance, maxAvailable, rounding) => {
+  const [amount, setAmount] = useState({
+    value: balance,
+    max: maxAvailable,
+    progress: safeDiv(balance, maxAvailable),
+  })
+
+  useEffect(() => {
+    setAmount(prevState => {
+      if (prevState.max === maxAvailable) {
+        return prevState
+      }
+      const newValue = round(prevState.progress * maxAvailable, rounding)
+
+      return {
+        ...prevState,
+        value: String(newValue),
+        max: maxAvailable,
+      }
+    })
+  }, [maxAvailable, rounding])
+
+  useEffect(() => {
+    setAmount(prevState => {
+      if (prevState.value === balance) {
+        return prevState
+      }
+
+      return {
+        ...prevState,
+        value: balance,
+        progress: safeDiv(balance, maxAvailable),
+      }
+    })
+  }, [balance, maxAvailable])
+
+  const handleAmountChange = useCallback(
+    event => {
+      const newValue = Math.min(event.target.value, maxAvailable)
+      const newProgress = safeDiv(newValue, maxAvailable)
+
+      setAmount(prevState => ({
+        ...prevState,
+        value: String(newValue),
+        progress: newProgress,
+      }))
+    },
+    [maxAvailable]
+  )
+
+  const handleSliderChange = useCallback(
+    newProgress => {
+      const newValue =
+        newProgress === 1
+          ? round(Number(maxAvailable), rounding)
+          : round(newProgress * maxAvailable, 2)
+
+      setAmount(prevState => ({
+        ...prevState,
+        value: String(newValue),
+        progress: newProgress,
+      }))
+    },
+    [maxAvailable, rounding]
+  )
+
+  return [amount, handleAmountChange, handleSliderChange]
 }
 
 const Amount = ({

@@ -1,24 +1,24 @@
-import { useState, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import BigNumber from './lib/bigNumber'
 import { useAragonApi, useAppState } from '@aragon/api-react'
-import { toDecimals } from './lib/math-utils'
 import { toHex } from 'web3-utils'
 import { useProposals } from './hooks/useProposals'
 
 // Handles the main logic of the app.
 export default function useAppLogic() {
   const { api, connectedAccount } = useAragonApi()
-  const { stakeToken, requestToken, isSyncing } = useAppState()
+  const { stakeToken, isSyncing } = useAppState()
   const [proposals, blockHasLoaded] = useProposals()
 
   const [proposalPanel, setProposalPanel] = useState(false)
 
-  const onProposalSubmit = ({ title, link, amount, beneficiary }) => {
-    const decimals = parseInt(requestToken.decimals)
-    const decimalAmount = toDecimals(amount.trim(), decimals).toString()
-    api.addProposal(title, toHex(link), decimalAmount, beneficiary).toPromise()
-    setProposalPanel(false)
-  }
+  const onProposalSubmit = useCallback(
+    (title, link, amount, beneficiary) => {
+      api.addProposal(title, toHex(link), amount, beneficiary).toPromise()
+      setProposalPanel(false)
+    },
+    [api]
+  )
 
   const { myStakes, totalActiveTokens } = useMemo(() => {
     if (!connectedAccount || !stakeToken.tokenDecimals || !proposals) {

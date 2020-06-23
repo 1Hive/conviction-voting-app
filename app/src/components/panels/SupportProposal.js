@@ -35,7 +35,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   const handleEditMode = useCallback(
     editMode => {
       setAmount(amount => {
-        const newValue = amount.valueBN.gte(0)
+        const newValue = amount.valueBN.gte(new BN(0))
           ? formatTokenAmount(
               amount.valueBN,
               stakeToken.tokenDecimals,
@@ -121,6 +121,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
   return (
     <form onSubmit={handleSubmit}>
       <Info
+        title="Action"
         css={`
           margin-top: ${3 * GU}px;
         `}
@@ -131,6 +132,8 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
       </Info>
       <Field
         label="amount"
+        onFocus={() => handleEditMode(true)}
+        onBlur={() => handleEditMode(false)}
         css={`
           margin-top: ${2 * GU}px;
         `}
@@ -138,8 +141,6 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
         <TextInput
           value={amount.value}
           onChange={handleAmountChange}
-          onFocus={() => handleEditMode(true)}
-          onBlur={() => handleEditMode(false)}
           wide
           ref={inputRef}
           adornment={
@@ -184,7 +185,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
           {stakeToken.tokenSymbol}
         </strong>{' '}
         ({nonStakedPct}% of your balance) available to support this proposal.{' '}
-        {totalStaked.gt(0) && (
+        {totalStaked.gt(new BN('0')) && (
           <span>
             You are supporting other proposals with{' '}
             <strong>
