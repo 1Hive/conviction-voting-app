@@ -22,7 +22,7 @@ const AddProposalPanel = ({ onSubmit }) => {
           form.title === '' || form.amount === '' || form.beneficiary === ''
         )
       : setDisabled(form.title === '')
-  }, [form])
+  }, [requestToken, form])
 
   const onFormSubmit = event => {
     event.preventDefault()

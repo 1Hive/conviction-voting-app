@@ -1,10 +1,12 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
   BackButton,
   Bar,
   Box,
+  Button,
   GU,
   IconConnect,
+  Info,
   Link,
   RADIUS,
   SidePanel,
@@ -20,18 +22,19 @@ import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBa
 import Balance from '../components/Balance'
 import {
   ConvictionCountdown,
-  ConvictionButton,
   ConvictionBar,
   ConvictionChart,
 } from '../components/ConvictionVisuals'
 import usePanelState from '../hooks/usePanelState'
+import { useConvictionHistory } from '../hooks/useConvictionHistory'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 import SupportProposal from '../components/panels/SupportProposal'
 
-function ProposalDetail({ proposal, onBack, requestToken }) {
+function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
   const theme = useTheme()
   const { layoutName } = useLayout()
   const { api, connectedAccount } = useAragonApi()
+  const chartLines = useConvictionHistory(proposal)
 
   const panelState = usePanelState()
 
@@ -43,15 +46,51 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     link,
     requestedAmount,
     executed,
+    currentConviction,
+    stakes,
+    threshold,
   } = proposal
 
-  const handleWithdraw = useCallback(() => {
-    api.withdrawAllFromProposal(id).toPromise()
-  }, [api])
+  const myStakes = stakes.filter(({ entity }) =>
+    addressesEqual(entity, connectedAccount)
+  )
+  const didIStaked = myStakes.length > 0 && [...myStakes].pop().tokensStaked > 0
 
   const handleExecute = useCallback(() => {
     api.executeProposal(id, true).toPromise()
-  }, [api])
+  }, [api, id])
+
+  const handleWithdraw = useCallback(() => {
+    api.withdrawAllFromProposal(id).toPromise()
+  }, [api, id])
+
+  const buttonProps = useMemo(() => {
+    if (currentConviction.gte(threshold)) {
+      return { text: 'Execute proposal', action: handleExecute, mode: 'strong' }
+    }
+    // TOD - Update mode is intended for the change support feature, the button name will be changed on next pr
+    if (didIStaked) {
+      return {
+        text: 'Withdraw support',
+        action: handleWithdraw,
+        mode: 'normal',
+      }
+    }
+    return {
+      text: 'Support this proposal',
+      action: panelState.requestOpen,
+      mode: 'strong',
+    }
+  }, [
+    currentConviction,
+    didIStaked,
+    handleExecute,
+    handleWithdraw,
+    panelState,
+    threshold,
+  ])
+
+  const canStake = stakeToken.balance.gt(0)
 
   return (
     <div>
@@ -161,16 +200,30 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                       <ConvictionChart
                         proposal={proposal}
                         withThreshold={!!requestToken}
+                        lines={chartLines}
                       />
                     </div>
 
                     {connectedAccount ? (
-                      <ConvictionButton
-                        proposal={proposal}
-                        onStake={panelState.requestOpen}
-                        onWithdraw={handleWithdraw}
-                        onExecute={handleExecute}
-                      />
+                      <>
+                        <Button
+                          wide
+                          mode={buttonProps.mode}
+                          onClick={buttonProps.action}
+                        >
+                          {buttonProps.text}
+                        </Button>
+
+                        {!canStake && (
+                          <Info mode="warning">
+                            The currently connected account does not hold any{' '}
+                            <strong>{stakeToken.tokenSymbol}</strong> tokens and
+                            therefore cannot participate in this proposal. Make
+                            sure your accounts are holding{' '}
+                            <strong>{stakeToken.tokenSymbol}</strong>.
+                          </Info>
+                        )}
+                      </>
                     ) : (
                       <div
                         css={`

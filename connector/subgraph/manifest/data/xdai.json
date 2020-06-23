@@ -1,0 +1,17 @@
+{
+  "network": "xdai",
+  "dataSources": {
+    "Organizations": [
+      {
+        "name": "Xdai org",
+        "address": "0xe03f1aa34886a753d4e546c870d7f082fdd2fa9b",
+        "startBlock": "10544700"
+      }
+    ],
+    "OrganizationFactories": [],
+    "OrganizationTemplates": [],
+    "LegacyOrganizationTemplates": [],
+    "TokenFactories": [],
+    "Tokens": []
+  }
+}

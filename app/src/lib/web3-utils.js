@@ -33,5 +33,17 @@ export function addressesEqualNoSum(first, second) {
   return first === second
 }
 
+/**
+ * @param {*} api aragon api
+ * @returns {object} Latest block number and timestamp in miliseconds
+ */
+export const loadLatestBlock = async api => {
+  const { number, timestamp } = await api
+    .web3Eth('getBlock', 'latest')
+    .toPromise()
+
+  return { number, timestamp: timestamp * 1000 }
+}
+
 // Re-export some web3-utils functions
 export { isAddress, toChecksumAddress, toUtf8 } from 'web3-utils'
