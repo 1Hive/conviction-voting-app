@@ -54,7 +54,12 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
   const myStakes = stakes.filter(({ entity }) =>
     addressesEqual(entity, connectedAccount)
   )
-  const didIStake = myStakes.length > 0 && myStakes.slice(-1).pop().amount.gt(0)
+  const didIStake =
+    myStakes.length > 0 &&
+    myStakes
+      .slice(-1)
+      .pop()
+      .amount.gt(0)
 
   const handleExecute = useCallback(() => {
     api.executeProposal(id, true).toPromise()
@@ -80,6 +85,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
       text: 'Support this proposal',
       action: panelState.requestOpen,
       mode: 'strong',
+      disabled: !stakeToken.balance.gt(0),
     }
   }, [
     currentConviction,
@@ -87,10 +93,9 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
     handleExecute,
     handleWithdraw,
     panelState,
+    stakeToken.balance,
     threshold,
   ])
-
-  const canStake = stakeToken.balance.gt(0)
 
   return (
     <div>
@@ -210,16 +215,17 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
                           wide
                           mode={buttonProps.mode}
                           onClick={buttonProps.action}
+                          disabled={buttonProps.disabled}
                         >
                           {buttonProps.text}
                         </Button>
 
-                        {!canStake && (
+                        {buttonProps.disabled && (
                           <Info mode="warning">
                             The currently connected account does not hold any{' '}
                             <strong>{stakeToken.tokenSymbol}</strong> tokens and
                             therefore cannot participate in this proposal. Make
-                            sure your accounts are holding{' '}
+                            sure your account is holding{' '}
                             <strong>{stakeToken.tokenSymbol}</strong>.
                           </Info>
                         )}
