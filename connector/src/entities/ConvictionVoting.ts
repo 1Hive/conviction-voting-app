@@ -4,7 +4,6 @@ import ConvictionVotingConnector from '../connector'
 import Proposal from './Proposal'
 import StakeHistory from './StakeHistory'
 
-
 export default class ConvictionVoting extends ConvictionVotingEntity {
   readonly appAddress: string
 
@@ -26,7 +25,13 @@ export default class ConvictionVoting extends ConvictionVotingEntity {
     return this._connector.onProposals(this.appAddress, callback)
   }
 
-  async stakesHistory({ first = 1000, skip = 0 } = {}): Promise<StakeHistory[]> {
+  async stakesHistory({ first = 1000, skip = 0 } = {}): Promise<
+    StakeHistory[]
+  > {
     return this._connector.stakesHistory(this.appAddress, first, skip)
+  }
+
+  onStakesHistory(callback: Function): { unsubscribe: Function } {
+    return this._connector.onStakesHistory(this.appAddress, callback)
   }
 }
