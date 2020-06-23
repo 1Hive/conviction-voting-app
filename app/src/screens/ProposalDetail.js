@@ -60,30 +60,37 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   } = proposal
 
   const myStake = useMemo(
-    () => stakes.find(({ entity }) => addressesEqual(entity, connectedAccount)) || {amount: new BigNumber('0')},
-    [stakes]
+    () =>
+      stakes.find(({ entity }) => addressesEqual(entity, connectedAccount)) || {
+        amount: new BigNumber('0'),
+      },
+    [stakes, connectedAccount]
   )
-
 
   const myStakeAmountFormatted = useMemo(() => {
     if (!myStake) {
       return '0'
     }
     return formatTokenAmount(myStake.amount, stakeToken.tokenDecimals)
-  }, [myStake])
+  }, [stakeToken.tokenDecimals, myStake])
 
   const totalStaked = useAccountTotalStaked()
 
-  const nonStakedTokens = useMemo(() => stakeToken.balance.minus(totalStaked).plus(myStake.amount), [])
+  const nonStakedTokens = useMemo(
+    () => stakeToken.balance.minus(totalStaked).plus(myStake.amount),
+    [myStake.amount, stakeToken.balance, totalStaked]
+  )
 
   const formattedMaxAvailableAmount = useMemo(() => {
     if (!stakeToken) {
       return '0'
     }
     return formatTokenAmount(nonStakedTokens, stakeToken.tokenDecimals)
-  }, [stakeToken])
+  }, [stakeToken, nonStakedTokens])
 
-  const rounding = useMemo(() => {return Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)}, [stakeToken])
+  const rounding = useMemo(() => {
+    return Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)
+  }, [stakeToken])
 
   const [
     { value: inputValue, max: maxAvailable, progress },
@@ -115,16 +122,21 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   }, [api, id])
 
   const handleChangeSupport = useCallback(() => {
-    const newValue = new BigNumber(toDecimals(inputValue, stakeToken.tokenDecimals))
+    const newValue = new BigNumber(
+      toDecimals(inputValue, stakeToken.tokenDecimals)
+    )
 
-    if(newValue.lt(myStake.amount)){
-      api.withdrawFromProposal(id, myStake.amount.minus(newValue).toString()).toPromise()
+    if (newValue.lt(myStake.amount)) {
+      api
+        .withdrawFromProposal(id, myStake.amount.minus(newValue).toString())
+        .toPromise()
       return
     }
 
-    api.stakeToProposal(id, newValue.minus(myStake.amount).toString()).toPromise()
-
-  }, [api, id, inputValue])
+    api
+      .stakeToProposal(id, newValue.minus(myStake.amount).toString())
+      .toPromise()
+  }, [api, id, inputValue, myStake.amount, stakeToken.tokenDecimals])
 
   const buttonProps = useMemo(() => {
     if (mode === 'execute') {
@@ -370,19 +382,19 @@ const useAmount = (balance, maxAvailable, rounding) => {
     })
   }, [maxAvailable, rounding])
 
-  useEffect(()=>{
+  useEffect(() => {
     setAmount(prevState => {
       if (prevState.value === balance) {
         return prevState
       }
 
-      return{
+      return {
         ...prevState,
         value: balance,
         progress: safeDiv(balance, maxAvailable),
       }
     })
-  },[balance, maxAvailable])
+  }, [balance, maxAvailable])
 
   const handleAmountChange = useCallback(
     event => {
@@ -434,7 +446,7 @@ const Amount = ({
 
 const Heading = styled.h2`
   ${textStyle('label2')};
-  color:${props => props.color};
+  color: ${props => props.color};
   margin-bottom: ${1.5 * GU}px;
 `
 
