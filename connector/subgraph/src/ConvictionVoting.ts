@@ -33,7 +33,7 @@ export function handleStakeAdded(event: StakeAddedEvent): void {
     event.params.tokensStaked,
     event.params.totalTokensStaked,
     event.params.conviction,
-    event.block.timestamp
+    event.block.number
   )
 }
 
@@ -45,7 +45,7 @@ export function handleStakeWithdrawn(event: StakeWithdrawnEvent): void {
     event.params.tokensStaked,
     event.params.totalTokensStaked,
     event.params.conviction,
-    event.block.timestamp
+    event.block.number
   )
 }
 
@@ -63,7 +63,7 @@ function _onNewStake(
   tokensStaked: BigInt,
   totalTokensStaked: BigInt,
   conviction: BigInt,
-  timestamp: BigInt
+  blockNumber: BigInt
 ): void {
   const proposal = getProposalEntity(appAddress, proposalId)
   proposal.totalTokensStaked = totalTokensStaked
@@ -76,7 +76,7 @@ function _onNewStake(
     tokensStaked,
     totalTokensStaked,
     conviction,
-    timestamp
+    blockNumber
   )
 }
 
@@ -114,9 +114,9 @@ function _updateStakeHistory(
   tokensStaked: BigInt,
   totalTokensStaked: BigInt,
   conviction: BigInt,
-  timestamp: BigInt
+  blockNumber: BigInt
 ): void {
-  const stakeHistory = getStakeHistoryEntity(proposal, entity, timestamp)
+  const stakeHistory = getStakeHistoryEntity(proposal, entity, blockNumber)
 
   stakeHistory.tokensStaked = tokensStaked
   stakeHistory.totalTokensStaked = totalTokensStaked
