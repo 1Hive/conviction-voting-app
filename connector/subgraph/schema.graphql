@@ -35,7 +35,7 @@ type Stake @entity {
 type StakeHistory @entity {
   id: ID!
   entity: Bytes!
-  proposalId: String!
+  proposalId: BigInt!
   tokensStaked: BigInt!
   totalTokensStaked: BigInt!
   time: BigInt!

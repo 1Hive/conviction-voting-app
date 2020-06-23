@@ -1,6 +1,6 @@
 {
   "name": "@1hive/connect-thegraph-conviction-voting",
-  "version": "0.1.4",
+  "version": "0.1.7",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

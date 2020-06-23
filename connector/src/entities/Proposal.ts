@@ -49,10 +49,10 @@ export default class Proposal extends Entity implements ProposalData {
   async stakesHistory({ first = 1000, skip = 0 } = {}): Promise<
     StakeHistory[]
   > {
-    return this._connector.stakesHistory(this.appAddress, this.id, first, skip)
+    return this._connector.stakesHistoryByProposal(this.appAddress, this.id, first, skip)
   }
 
   onStakesHistory(callback: Function): { unsubscribe: Function } {
-    return this._connector.onStakesHistory(this.appAddress, this.id, callback)
+    return this._connector.onStakesHistoryByProposal(this.appAddress, this.id, callback)
   }
 }

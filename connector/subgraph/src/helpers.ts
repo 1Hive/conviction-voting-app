@@ -127,18 +127,18 @@ export function getStakeHistoryEntityId(
 export function getStakeHistoryEntity(
   proposal: ProposalEntity | null,
   entity: Bytes,
-  timestamp: BigInt
+  blockNumber: BigInt
 ): StakeHistoryEntity | null {
   const stakeHistoryId = getStakeHistoryEntityId(
     proposal.number,
     entity,
-    timestamp
+    blockNumber
   )
 
   const stakeHistory = new StakeHistoryEntity(stakeHistoryId)
-  stakeHistory.proposalId = proposal.id
+  stakeHistory.proposalId = proposal.number
   stakeHistory.entity = entity
-  stakeHistory.time = timestamp
+  stakeHistory.time = blockNumber
 
   return stakeHistory
 }

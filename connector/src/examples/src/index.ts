@@ -1,7 +1,7 @@
 import { connect } from '@aragon/connect'
 import { ConvictionVoting, Proposal } from '../../index'
 
-const ORG_ADDRESS = '0x4084E59500eC40AA375cE8D783f3a9E1aBf80bd7'
+const ORG_ADDRESS = '0xe03f1aa34886a753d4e546c870d7f082fdd2fa9b'
 const APP_ID = 'conviction-voting.open.aragonpm.eth'
 
 function proposalId(proposal: Proposal): string {
@@ -26,7 +26,7 @@ async function describeProposal(proposal: Proposal): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const org = await connect(ORG_ADDRESS, 'thegraph', { chainId: 4 })
+  const org = await connect(ORG_ADDRESS, 'thegraph', { chainId: 100 })
   const apps = await org.apps()
   const convictionVotingApp = apps.find(app => app.appName === APP_ID)
 
@@ -41,7 +41,7 @@ async function main(): Promise<void> {
 
   const conviction = new ConvictionVoting(
     convictionVotingApp.address,
-    'https://api.thegraph.com/subgraphs/name/1hive/aragon-cv-rinkeby-staging'
+    'https://api.thegraph.com/subgraphs/name/1hive/aragon-conviction-voting-xdai'
   )
 
   console.log(`\nProposals:`)
