@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react'
+import React, { useCallback, useMemo, useState, useEffect } from 'react'
 import {
   BackButton,
   Bar,
@@ -6,18 +6,20 @@ import {
   Button,
   Field,
   GU,
-  Text,
-  textStyle,
+  IconConnect,
+  Info,
   Link,
+  RADIUS,
   SidePanel,
   Slider,
   Split,
+  textStyle,
   TextInput,
   useLayout,
   useTheme,
 } from '@aragon/ui'
 import styled from 'styled-components'
-import { useAragonApi, useAppState } from '@aragon/api-react'
+import { useAragonApi } from '@aragon/api-react'
 import LocalIdentityBadge from '../components/LocalIdentityBadge/LocalIdentityBadge'
 import Balance from '../components/Balance'
 import {
@@ -36,9 +38,7 @@ import BigNumber from '../lib/bigNumber'
 
 const MAX_INPUT_DECIMAL_BASE = 6
 
-function ProposalDetail({ proposal, onBack, requestToken }) {
-  const { stakeToken } = useAppState()
-
+function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
   const theme = useTheme()
   const { layoutName } = useLayout()
   const { api, connectedAccount } = useAragonApi()
@@ -98,20 +98,17 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     rounding
   )
 
-  const didIStaked = myStake?.amount.gt(new BigNumber('0'))
+  const didIStake = myStake?.amount.gt(new BigNumber('0'))
 
   const mode = useMemo(() => {
     if (currentConviction.gte(threshold)) {
       return 'execute'
     }
-    if (didIStaked) {
+    if (didIStake) {
       return 'update'
     }
     return 'support'
-  }, [currentConviction, threshold, didIStaked])
-
-  // Focus input
-  const inputRef = useRef(null)
+  }, [currentConviction, didIStake, threshold])
 
   const handleExecute = useCallback(() => {
     api.executeProposal(id, true).toPromise()
@@ -143,7 +140,6 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
         disabled: false,
       }
     }
-
     if (mode === 'update') {
       return {
         text: 'Change support',
@@ -156,15 +152,16 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
       text: 'Support this proposal',
       action: panelState.requestOpen,
       mode: 'strong',
-      disabled: false,
+      disabled: !stakeToken.balance.gt(0),
     }
   }, [
-    mode,
     handleExecute,
     handleChangeSupport,
-    panelState,
-    myStakeAmountFormatted,
     inputValue,
+    mode,
+    myStakeAmountFormatted,
+    panelState,
+    stakeToken.balance,
   ])
 
   return (
@@ -216,13 +213,13 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                         Read more
                       </Link>
                     ) : (
-                      <Text
+                      <span
                         css={`
                           ${textStyle('body2')};
                         `}
                       >
                         No link provided
-                      </Text>
+                      </span>
                     )}
                   </div>
                   <div>
@@ -279,51 +276,66 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
                       />
                     </div>
 
-                    {mode === 'update' && (
-                      <Field label="Amount of your tokens for this proposal">
-                        <div
-                          css={`
-                            display: flex;
-                            justify-content: space-between;
-                          `}
-                        >
-                          <div
-                            css={`
-                              width: 100%;
-                            `}
-                          >
-                            <Slider
+                    {connectedAccount ? (
+                      <>
+                        {mode === 'update' && (
+                          <Field label="Amount of your tokens for this proposal">
+                            <div
                               css={`
-                                padding-left: 0px;
-                                padding-right: ${2 * GU}px;
+                                display: flex;
+                                justify-content: space-between;
                               `}
-                              value={progress}
-                              onUpdate={setProgress}
-                            />
-                          </div>
-                          <TextInput
-                            value={inputValue}
-                            onChange={setAmount}
-                            type="number"
-                            max={maxAvailable}
-                            min={'0'}
-                            required
-                            ref={inputRef}
-                            css={`
-                              width: ${18 * GU}px;
-                            `}
-                          />
-                        </div>
-                      </Field>
+                            >
+                              <div
+                                css={`
+                                  width: 100%;
+                                `}
+                              >
+                                <Slider
+                                  css={`
+                                    padding-left: 0px;
+                                    padding-right: ${2 * GU}px;
+                                  `}
+                                  value={progress}
+                                  onUpdate={setProgress}
+                                />
+                              </div>
+                              <TextInput
+                                value={inputValue}
+                                onChange={setAmount}
+                                type="number"
+                                max={maxAvailable}
+                                min={'0'}
+                                required
+                                css={`
+                                  width: ${18 * GU}px;
+                                `}
+                              />
+                            </div>
+                          </Field>
+                        )}
+                        <Button
+                          wide
+                          mode={buttonProps.mode}
+                          onClick={buttonProps.action}
+                          disabled={buttonProps.disabled}
+                        >
+                          {buttonProps.text}
+                        </Button>
+
+                        {mode === 'support' && buttonProps.disabled && (
+                          <Info mode="warning">
+                            The currently connected account does not hold any{' '}
+                            <strong>{stakeToken.tokenSymbol}</strong> tokens and
+                            therefore cannot participate in this proposal. Make
+                            sure your account is holding{' '}
+                            <strong>{stakeToken.tokenSymbol}</strong>.
+                          </Info>
+                        )}
+                      </>
+                    ) : (
+                      <AccountNotConnected />
                     )}
-                    <Button
-                      wide
-                      mode={buttonProps.mode}
-                      onClick={buttonProps.action}
-                      disabled={buttonProps.disabled}
-                    >
-                      {buttonProps.text}
-                    </Button>
                   </React.Fragment>
                 )}
               </section>
@@ -355,6 +367,49 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
       >
         <SupportProposal id={id} onDone={panelState.requestClose} />
       </SidePanel>
+    </div>
+  )
+}
+
+const AccountNotConnected = () => {
+  const theme = useTheme()
+
+  return (
+    <div
+      css={`
+        border-radius: ${RADIUS}px;
+        background: ${theme.background};
+        padding: ${3.5 * GU}px ${10 * GU}px;
+        text-align: center;
+      `}
+    >
+      <div
+        css={`
+          ${textStyle('body1')};
+        `}
+      >
+        You must enable your account to interact on this proposal
+      </div>
+      <div
+        css={`
+          ${textStyle('body2')};
+          color: ${theme.surfaceContentSecondary};
+          margin-top: ${2 * GU}px;
+        `}
+      >
+        Connect to your Ethereum provider by clicking on the{' '}
+        <strong
+          css={`
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            top: 7px;
+          `}
+        >
+          <IconConnect /> Enable account
+        </strong>{' '}
+        button on the header. You may be temporarily redirected to a new screen.
+      </div>
     </div>
   )
 }

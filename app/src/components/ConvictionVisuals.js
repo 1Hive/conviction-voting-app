@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react'
 import { useAppState } from '@aragon/api-react'
 import { Timer, Text, Tag, useTheme, useLayout, textStyle } from '@aragon/ui'
-import BigNumber from '../lib/bigNumber'
-import LineChart from './ModifiedLineChart'
 import styled from 'styled-components'
+import LineChart from './ModifiedLineChart'
 import SummaryBar from './SummaryBar'
+import BigNumber from '../lib/bigNumber'
 import { formatTokenAmount } from '../lib/token-utils'
 
 export function ConvictionChart({ proposal, withThreshold = true, lines }) {

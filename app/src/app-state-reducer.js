@@ -50,9 +50,9 @@ export default function reducer(state) {
     })),
     convictionStakes: convictionStakes.map(convictionStake => ({
       ...convictionStake,
-      tokensStaked: BigNumber(convictionStake.tokensStaked),
-      totalTokensStaked: BigNumber(convictionStake.totalTokensStaked),
-      conviction: BigNumber(convictionStake.conviction),
+      tokensStaked: new BigNumber(convictionStake.tokensStaked),
+      totalTokensStaked: new BigNumber(convictionStake.totalTokensStaked),
+      conviction: new BigNumber(convictionStake.conviction),
     })),
   }
 }

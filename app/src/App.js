@@ -76,6 +76,7 @@ const App = React.memo(function App() {
               proposal={selectedProposal}
               onBack={handleBack}
               requestToken={requestToken}
+              stakeToken={stakeToken}
             />
           ) : (
             <Proposals
