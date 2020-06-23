@@ -107,6 +107,7 @@ export function useProposals() {
       }
     })
   }, [
+    connectedAccount,
     convictionStakes,
     proposals,
     latestBlock,

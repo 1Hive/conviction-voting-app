@@ -26,11 +26,12 @@ import {
   ConvictionChart,
 } from '../components/ConvictionVisuals'
 import usePanelState from '../hooks/usePanelState'
+import useAccountTotalStaked from '../hooks/useAccountTotalStaked'
 import { useConvictionHistory } from '../hooks/useConvictionHistory'
 import { addressesEqualNoSum as addressesEqual } from '../lib/web3-utils'
 import SupportProposal from '../components/panels/SupportProposal'
 import { formatTokenAmount } from '../lib/token-utils'
-import { round, safeDiv } from '../lib/math-utils'
+import { round, safeDiv, toDecimals } from '../lib/math-utils'
 import BigNumber from '../lib/bigNumber'
 
 const MAX_INPUT_DECIMAL_BASE = 6
@@ -59,9 +60,10 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   } = proposal
 
   const myStake = useMemo(
-    () => stakes.find(({ entity }) => addressesEqual(entity, connectedAccount)),
+    () => stakes.find(({ entity }) => addressesEqual(entity, connectedAccount)) || {amount: new BigNumber('0')},
     [stakes]
   )
+
 
   const myStakeAmountFormatted = useMemo(() => {
     if (!myStake) {
@@ -70,14 +72,18 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     return formatTokenAmount(myStake.amount, stakeToken.tokenDecimals)
   }, [myStake])
 
+  const totalStaked = useAccountTotalStaked()
+
+  const nonStakedTokens = useMemo(() => stakeToken.balance.minus(totalStaked).plus(myStake.amount), [])
+
   const formattedMaxAvailableAmount = useMemo(() => {
     if (!stakeToken) {
       return '0'
     }
-    return formatTokenAmount(stakeToken.balance, stakeToken.tokenDecimals)
+    return formatTokenAmount(nonStakedTokens, stakeToken.tokenDecimals)
   }, [stakeToken])
 
-  const rounding = Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)
+  const rounding = useMemo(() => {return Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)}, [stakeToken])
 
   const [
     { value: inputValue, max: maxAvailable, progress },
@@ -108,13 +114,17 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     api.executeProposal(id, true).toPromise()
   }, [api, id])
 
-  const handleStake = useCallback(() => {
-    api.stakeAllToProposal(id).toPromise()
-  }, [api, id])
+  const handleChangeSupport = useCallback(() => {
+    const newValue = new BigNumber(toDecimals(inputValue, stakeToken.tokenDecimals))
 
-  const handleWithdraw = useCallback(() => {
-    api.withdrawAllFromProposal(id).toPromise()
-  }, [api, id])
+    if(newValue.lt(myStake.amount)){
+      api.withdrawFromProposal(id, myStake.amount.minus(newValue).toString()).toPromise()
+      return
+    }
+
+    api.stakeToProposal(id, newValue.minus(myStake.amount).toString()).toPromise()
+
+  }, [api, id, inputValue])
 
   const buttonProps = useMemo(() => {
     if (mode === 'execute') {
@@ -129,7 +139,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
     if (mode === 'update') {
       return {
         text: 'Change support',
-        action: handleWithdraw,
+        action: handleChangeSupport,
         mode: 'normal',
         disabled: myStakeAmountFormatted === inputValue.toString(),
       }
@@ -143,8 +153,7 @@ function ProposalDetail({ proposal, onBack, requestToken }) {
   }, [
     mode,
     handleExecute,
-    handleStake,
-    handleWithdraw,
+    handleChangeSupport,
     panelState,
     myStakeAmountFormatted,
     inputValue,
@@ -361,6 +370,20 @@ const useAmount = (balance, maxAvailable, rounding) => {
     })
   }, [maxAvailable, rounding])
 
+  useEffect(()=>{
+    setAmount(prevState => {
+      if (prevState.value === balance) {
+        return prevState
+      }
+
+      return{
+        ...prevState,
+        value: balance,
+        progress: safeDiv(balance, maxAvailable),
+      }
+    })
+  },[balance, maxAvailable])
+
   const handleAmountChange = useCallback(
     event => {
       const newValue = Math.min(event.target.value, maxAvailable)
@@ -411,7 +434,7 @@ const Amount = ({
 
 const Heading = styled.h2`
   ${textStyle('label2')};
-  color: ${props => props.color};
+  color:${props => props.color};
   margin-bottom: ${1.5 * GU}px;
 `
 const Wrapper = styled.div`

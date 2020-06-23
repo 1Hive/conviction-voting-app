@@ -1,0 +1,59 @@
+type Config @entity {
+  id: ID!
+  decay: BigInt!
+  weight: BigInt!
+  maxRatio: BigInt!
+  pctBase: BigInt!
+  stakeToken: Token!
+  requestToken: Token!
+  appAddress: Bytes!
+  orgAddress: Bytes!
+}
+
+type Proposal @entity {
+  id: ID!
+  number: BigInt!
+  name: String!
+  link: String
+  creator: Bytes!
+  stakes: [Stake!]! @derviedFrom(field: "proposal")
+  beneficiary: Bytes
+  requestedAmount: BigInt
+  executed: Boolean!
+  totalTokensStaked: BigInt!
+  appAddress: Bytes!
+  orgAddress: Bytes!
+}
+
+type Stake @entity {
+  id: ID!
+  entity: Bytes!
+  proposal: Proposal
+  amount: BigInt!
+}
+
+type StakeHistory @entity {
+  id: ID!
+  entity: Bytes!
+  proposalId: String!
+  tokensStaked: BigInt!
+  totalTokensStaked: BigInt!
+  time: BigInt!
+  conviction: BigInt!
+  appAddress: Bytes!
+  orgAddress: Bytes!
+}
+
+type Token @entity {
+  id:ID!
+  name: String!
+  symbol: String!
+  decimals: Int!
+}
+
+type AragonInfo @entity {
+  id: ID!
+  orgs: [Bytes!]!
+  apps: [Bytes!]!
+  tokens: [Bytes!]!
+}

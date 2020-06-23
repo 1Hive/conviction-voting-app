@@ -99,7 +99,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
 
       onDone()
     },
-    [amount, api, onDone, stakeToken]
+    [id, amount, api, onDone]
   )
 
   const errorMessage = useMemo(() => {
@@ -112,7 +112,7 @@ const SupportProposal = React.memo(function SupportProposal({ id, onDone }) {
     }
 
     return null
-  }, [amount])
+  }, [amount, nonStakedTokens])
 
   // Calculate percentages
   const nonStakedPct = round(pct(nonStakedTokens, stakeToken.balance))

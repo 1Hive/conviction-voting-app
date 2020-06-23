@@ -7,20 +7,22 @@ export default function useAccountTotalStaked() {
   const { proposals = [] } = useAppState()
   const connectedAccount = useConnectedAccount()
 
-  const totalStaked = useMemo(() =>
-    proposals
-      .filter(({ executed }) => !executed)
-      .reduce((acc, { stakes }) => {
-        const myStake = stakes.find(({ entity }) =>
-          addressesEqual(entity, connectedAccount)
-        )
+  const totalStaked = useMemo(
+    () =>
+      proposals
+        .filter(({ executed }) => !executed)
+        .reduce((acc, { stakes }) => {
+          const myStake = stakes.find(({ entity }) =>
+            addressesEqual(entity, connectedAccount)
+          )
 
-        if (!myStake) {
-          return acc
-        }
+          if (!myStake) {
+            return acc
+          }
 
-        return acc.plus(myStake.amount)
-      }, new BigNumber(0))
+          return acc.plus(myStake.amount)
+        }, new BigNumber(0)),
+    [connectedAccount, proposals]
   )
 
   return totalStaked
