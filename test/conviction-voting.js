@@ -141,15 +141,18 @@ contract('ConvictionVoting', ([appManager, user]) => {
             account === appManager ? 0 : 7458,
             'Conviction does not match expectations'
           )
+
+          console.log(receipt)
+
           const totalTokensStaked = getEventArgument(
             receipt,
-            'StakeChanged',
+            'StakeAdded',
             'totalTokensStaked'
           ).toNumber()
           assert.equal(totalTokensStaked, currentlyStaked + stakesPerAccount)
           const tokensStaked = getEventArgument(
             receipt,
-            'StakeChanged',
+            'StakeAdded',
             'tokensStaked'
           ).toNumber()
           assert.equal(tokensStaked, stakesPerAccount)
@@ -176,13 +179,13 @@ contract('ConvictionVoting', ([appManager, user]) => {
         assert.equal(
           getEventArgument(
             receipt,
-            'StakeChanged',
+            'StakeWithdrawn',
             'totalTokensStaked'
           ).toNumber(),
           currentlyStaked - withdrawAmount
         )
         assert.equal(
-          getEventArgument(receipt, 'StakeChanged', 'tokensStaked').toNumber(),
+          getEventArgument(receipt, 'StakeWithdrawn', 'tokensStaked').toNumber(),
           0
         )
       })
@@ -208,13 +211,13 @@ contract('ConvictionVoting', ([appManager, user]) => {
         assert.equal(
           getEventArgument(
             receipt,
-            'StakeChanged',
+            'StakeAdded',
             'totalTokensStaked'
           ).toNumber(),
           currentlyStaked.toNumber() + stakesPerUser
         )
         assert.equal(
-          getEventArgument(receipt, 'StakeChanged', 'tokensStaked').toNumber(),
+          getEventArgument(receipt, 'StakeAdded', 'tokensStaked').toNumber(),
           currentlyStaked.toNumber() + stakesPerUser
         )
       })

@@ -6,7 +6,8 @@
     "@1hive/apps-token-manager": "2.1.0",
     "@aragon/apps-shared-minime": "^1.0.1",
     "@aragon/apps-vault": "^4.1.0",
-    "@aragon/os": "^4.3.0"
+    "@aragon/os": "aragon/aragonOS#add_disputable_base_app",
+    "@aragon/apps-agreement": "0.1.0"
   },
   "devDependencies": {
     "@aragon/cli": "7.0.3",
@@ -51,7 +52,7 @@
     "build": "cd app && npm run build && cd ..",
     "lint": "eslint . & solium --dir ./contracts",
     "lint:fix": "eslint . --fix & solium --dir ./contracts --fix",
-    "compile": "aragon contracts compile",
+    "compile": "truffle compile",
     "test": "cross-env TRUFFLE_TEST=true npm run ganache-cli:test",
     "coverage": "cross-env SOLIDITY_COVERAGE=true npm run ganache-cli:test",
     "ganache-cli:test": "sh ./node_modules/@aragon/test-helpers/ganache-cli.sh",
