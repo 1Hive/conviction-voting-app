@@ -1,7 +1,7 @@
 /* global artifacts contract before beforeEach context it assert web3 */
 
 const { getEventArgument } = require('@aragon/test-helpers/events')
-const { assertRevert } = require('@aragon/test-helpers/assertThrow')
+const { assertRevert } = require('@aragon/apps-agreement/test/helpers/assert/assertThrow')
 const deployDAO = require('./helpers/deployDAO')
 const installApp = require('./helpers/installApp')
 const timeAdvancer = require('./helpers/timeAdvancer')
@@ -15,6 +15,7 @@ const VaultMock = artifacts.require('VaultMock')
 const BN = web3.utils.toBN
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
+const ONE_DAY = 60 * 60 * 24
 
 function calculateConviction(t, y0, x, a) {
   return y0 * a ** t + (x * (1 - a ** t)) / (1 - a)
@@ -31,7 +32,6 @@ function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 
 contract('ConvictionVoting', ([appManager, user]) => {
   let convictionVoting, stakeToken, requestToken, vault, agreement, collateralToken
-  let SET_AGREEMENT_ROLE, CHALLENGE_ROLE
   const acc = { [appManager]: 'appManager', [user]: 'user' }
 
   before(async () => {
@@ -39,9 +39,6 @@ contract('ConvictionVoting', ([appManager, user]) => {
     collateralToken = await deployer.deployCollateralToken()
     await agreement.sign(appManager)
     await agreement.sign(user, { from: user })
-
-    SET_AGREEMENT_ROLE = await delayBase.SET_AGREEMENT_ROLE()
-    CHALLENGE_ROLE = await deployer.base.CHALLENGE_ROLE()
   })
 
   const deploy = (
@@ -69,15 +66,18 @@ contract('ConvictionVoting', ([appManager, user]) => {
 
     convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting,[[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
     await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, alpha * 10 ** 7, beta * 10 ** 7, rho * 10 ** 7) // alpha = 0.9, beta = 0.2, rho = 0.002
-    await agreement.activate({ disputable: delay, collateralToken, actionCollateral: 0, challengeCollateral: 0, challengeDuration: DELAY_LENGTH, from: rootAccount })
     await tokenManager.registerHook(convictionVoting.address)
 
-    await deployer.acl.createPermission(agreement.address, convictionVoting.address, SET_AGREEMENT_ROLE, appManager)
-    await deployer.acl.createPermission(ANY_ADDRESS, convictionVoting.address, CHALLENGE_ROLE, appManager)
+    const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
+    await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
+    const ChallengeRole = await deployer.base.CHALLENGE_ROLE()
+    await deployer.acl.createPermission(ANY_ADDRESS, convictionVoting.address, ChallengeRole, appManager)
+    await agreement.activate({ disputable: convictionVoting, collateralToken, actionCollateral: 0, challengeCollateral: 0, challengeDuration: ONE_DAY, from: appManager })
   }
 
-  context('typical usage', () => {
+  context('Typical usage', () => {
 
+    // Note these tests use a before for deployment, they must be executed in order.
     before('deploy dao and convictionVoting', deploy())
 
     for (let i = 1; i <= 2; i++) {
@@ -101,29 +101,15 @@ contract('ConvictionVoting', ([appManager, user]) => {
             const currentlyStaked = currentProposal[2].toNumber()
 
             // wrong amount
-            await assertRevert(convictionVoting.stakeToProposal(i, 0, {from: account})) // CONVICTION_VOTING_ERROR_AMOUNT_CAN_NOT_BE_ZERO
-            await assertRevert(convictionVoting.stakeToProposal(i, 1000000, {from: account})) // CONVICTION_VOTING_WITHDRAWED_MORE_THAN_STAKED
+            await assertRevert(convictionVoting.stakeToProposal(i, 0, {from: account}), "CV_AMOUNT_CAN_NOT_BE_ZERO")
+            await assertRevert(convictionVoting.stakeToProposal(i, 1000000, {from: account}), "CV_STAKED_MORE_THAN_OWNED")
 
-            const receipt = await convictionVoting.stakeToProposal(i, stakesPerAccount, {
-              from: account,
-            })
-            assert.equal(
-              (await convictionVoting.getProposal(i))[3].toNumber(),
-              account === appManager ? 0 : 7458,
-              'Conviction does not match expectations'
-            )
+            const receipt = await convictionVoting.stakeToProposal(i, stakesPerAccount, {from: account,})
+            assert.equal((await convictionVoting.getProposal(i))[3].toNumber(), account === appManager ? 0 : 7458, 'Conviction does not match expectations')
 
-            const totalTokensStaked = getEventArgument(
-              receipt,
-              'StakeAdded',
-              'totalTokensStaked'
-            ).toNumber()
+            const totalTokensStaked = getEventArgument(receipt, 'StakeAdded', 'totalTokensStaked').toNumber()
             assert.equal(totalTokensStaked, currentlyStaked + stakesPerAccount)
-            const tokensStaked = getEventArgument(
-              receipt,
-              'StakeAdded',
-              'tokensStaked'
-            ).toNumber()
+            const tokensStaked = getEventArgument(receipt, 'StakeAdded', 'tokensStaked').toNumber()
             assert.equal(tokensStaked, stakesPerAccount)
           })
         }
@@ -137,26 +123,10 @@ contract('ConvictionVoting', ([appManager, user]) => {
           const currentlyStaked = currentlProposal[2]
           const withdrawAmount = 1000
 
-          const receipt = await convictionVoting.withdrawFromProposal(i, withdrawAmount, {
-            from: appManager,
-          })
-          assert.equal(
-            (await convictionVoting.getProposal(i))[3].toNumber(),
-            18628,
-            'Conviction does not match expectations'
-          )
-          assert.equal(
-            getEventArgument(
-              receipt,
-              'StakeWithdrawn',
-              'totalTokensStaked'
-            ).toNumber(),
-            currentlyStaked - withdrawAmount
-          )
-          assert.equal(
-            getEventArgument(receipt, 'StakeWithdrawn', 'tokensStaked').toNumber(),
-            0
-          )
+          const receipt = await convictionVoting.withdrawFromProposal(i, withdrawAmount, {from: appManager,})
+          assert.equal((await convictionVoting.getProposal(i))[3].toNumber(), 18628, 'Conviction does not match expectations')
+          assert.equal(getEventArgument(receipt, 'StakeWithdrawn', 'totalTokensStaked').toNumber(), currentlyStaked - withdrawAmount)
+          assert.equal(getEventArgument(receipt, 'StakeWithdrawn', 'tokensStaked').toNumber(), 0)
         })
 
         it(`should stake more tokens - by ${acc[user]}`, async () => {
@@ -168,27 +138,11 @@ contract('ConvictionVoting', ([appManager, user]) => {
           const currentlyStaked = currentProposal[2]
           const stakesPerUser = 6000
 
-          const receipt = await convictionVoting.stakeToProposal(i, stakesPerUser, {
-            from: user,
-          })
-          assert.equal(
-            (await convictionVoting.getProposal(i))[3].toNumber(),
-            12708,
-            'Conviction does not match expectations'
-          )
+          const receipt = await convictionVoting.stakeToProposal(i, stakesPerUser, {from: user,})
+          assert.equal((await convictionVoting.getProposal(i))[3].toNumber(), 12708, 'Conviction does not match expectations')
 
-          assert.equal(
-            getEventArgument(
-              receipt,
-              'StakeAdded',
-              'totalTokensStaked'
-            ).toNumber(),
-            currentlyStaked.toNumber() + stakesPerUser
-          )
-          assert.equal(
-            getEventArgument(receipt, 'StakeAdded', 'tokensStaked').toNumber(),
-            currentlyStaked.toNumber() + stakesPerUser
-          )
+          assert.equal(getEventArgument(receipt, 'StakeAdded', 'totalTokensStaked').toNumber(), currentlyStaked.toNumber() + stakesPerUser)
+          assert.equal(getEventArgument(receipt, 'StakeAdded', 'tokensStaked').toNumber(), currentlyStaked.toNumber() + stakesPerUser)
         })
 
         if (i === 1) {
@@ -198,28 +152,20 @@ contract('ConvictionVoting', ([appManager, user]) => {
             await timeAdvancer.advanceTimeAndBlocksBy(15 * 40, 40)
             await convictionVoting.executeProposal(i, false, {from: user})
             const proposal = await convictionVoting.getProposal(i)
-            assert.equal(
-              proposal[3].toNumber(),
-              69238,
-              'Conviction does not match expectations'
-            )
+            assert.equal(proposal[3].toNumber(), 69238, 'Conviction does not match expectations')
             assert.isTrue(proposal[5], 'Proposal not marked as executed')
-            assert.equal(
-              (await requestToken.balanceOf(vault.address)).toNumber(),
-              14000,
-              'Incorrect amount of money sent'
-            )
+            assert.equal((await requestToken.balanceOf(vault.address)).toNumber(), 14000, 'Incorrect amount of money sent')
           })
 
           it('should not enact same proposal second time', async () => {
-            await assertRevert(convictionVoting.executeProposal(i, false, {from: user})) // CONVICTION_VOTING_PROPOSAL_ALREADY_EXECUTED
+            await assertRevert(convictionVoting.executeProposal(i, false, {from: user}), "CV_PROPOSAL_NOT_ACTIVE")
           })
         } else {
           it(`should fail enacting proposal`, async () => {
             // assume that 1 block ~ 15 seconds
             // +40 blocks
             await timeAdvancer.advanceTimeAndBlocksBy(15 * 40, 40)
-            await assertRevert(convictionVoting.executeProposal(i, false, {from: user})) // CONVICTION_VOTING_ERROR_INSUFFICIENT_CONVICION_TO_EXECUTE
+            await assertRevert(convictionVoting.executeProposal(i, false, {from: user}), "CV_INSUFFICIENT_CONVICION")
           })
         }
       })
