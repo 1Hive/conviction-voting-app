@@ -14,6 +14,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     using SafeMath64 for uint64;
 
     bytes32 constant public CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
+    bytes32 constant public CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
 
     uint256 public constant D = 10000000;
     uint256 constant TWO_128 = 0x100000000000000000000000000000000; // 2^128
@@ -22,11 +23,12 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
     string private constant ERROR_STAKED_MORE_THAN_OWNED = "CV_STAKED_MORE_THAN_OWNED";
     string private constant ERROR_STAKING_ALREADY_STAKED = "CV_STAKING_ALREADY_STAKED"; // TODO: Not tested
-    string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED"; // TODO: Not tested
+    string private constant ERROR_SENDER_CANNOT_CANCEL = "CV_SENDER_CANNOT_CANCEL";
     string private constant ERROR_PROPOSAL_NOT_ACTIVE = "CV_PROPOSAL_NOT_ACTIVE";
     string private constant ERROR_INSUFFICIENT_CONVICION = "CV_INSUFFICIENT_CONVICION";
-    string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CV_AMOUNT_CAN_NOT_BE_ZERO";
     string private constant ERROR_AMOUNT_OVER_MAX_RATIO = "CV_AMOUNT_OVER_MAX_RATIO"; // TODO: Not tested
+    string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CV_AMOUNT_CAN_NOT_BE_ZERO";
+    string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED"; // TODO: Not tested
     string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CV_INCORRECT_TOKEN_MANAGER_HOOK"; // TODO: Not tested
 
     enum ProposalStatus {
@@ -45,6 +47,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         uint256 agreementActionId;
         ProposalStatus proposalStatus;
         mapping(address => uint256) stakesPerVoter;
+        address submitter;
     }
 
     uint256 public decay;
@@ -110,7 +113,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             0,
             0,
             agreementActionId,
-            ProposalStatus.Active
+            ProposalStatus.Active,
+            msg.sender
         );
         emit ProposalAdded(msg.sender, proposalCounter, agreementActionId, _title, _link, _requestedAmount, _beneficiary);
         proposalCounter++;
@@ -166,10 +170,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
         proposal.proposalStatus = ProposalStatus.Executed;
 
-        (,,,,,bool closed,,) = _ensureAgreement().getAction(proposal.agreementActionId);
-        if (!closed) {
-            _closeAgreementAction(proposal.agreementActionId);
-        }
+        _closeAgreementAction(proposal.agreementActionId);
 
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
         if (_withdrawIfPossible && proposal.stakesPerVoter[msg.sender] > 0) {
@@ -179,7 +180,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
     }
 
-    // TODO: This function vvv
+    // TODO: Test this VVV
     /**
      * @notice Cancel proposal #`_proposalId`
      * @param _proposalId Proposal id
@@ -187,7 +188,10 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     function cancelProposal(uint256 _proposalId) external {
         Proposal storage proposal = proposals[_proposalId];
 
+        bool senderHasPermission = canPerform(msg.sender, CANCEL_PROPOSAL_ROLE, new uint256[](0));
+        require(proposal.submitter == msg.sender || senderHasPermission, ERROR_SENDER_CANNOT_CANCEL);
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
+
         proposal.proposalStatus = ProposalStatus.Cancelled;
 
         _closeAgreementAction(proposal.agreementActionId);
@@ -448,15 +452,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             _withdrawUnstakedTokens(stakesPerVoter[_from].sub(newBalance), _from, false);
         }
         return true;
-    }
-
-    function getDisputableAction(uint256 _proposalId) external view returns (uint64 endDate, bool challenged, bool finished) {
-        Proposal storage proposal = proposals[_proposalId];
-
-        endDate = 0;
-        challenged = proposal.proposalStatus == ProposalStatus.Paused;
-        finished = proposal.proposalStatus == ProposalStatus.Cancelled
-            || proposal.proposalStatus == ProposalStatus.Executed;
     }
 
     function canChallenge(uint256 _proposalId) external view returns (bool) {

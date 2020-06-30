@@ -1,6 +1,6 @@
 /* global artifacts contract before beforeEach context it assert web3 */
 
-const { getEventArgument } = require('@aragon/test-helpers/events')
+const { getEventArgument } = require('@aragon/contract-helpers-test/events')
 const { assertRevert } = require('@aragon/apps-agreement/test/helpers/assert/assertThrow')
 const { RULINGS } = require('@aragon/apps-agreement/test/helpers/utils/enums')
 const deployDAO = require('./helpers/deployDAO')
@@ -188,15 +188,13 @@ contract('ConvictionVoting', ([appManager, user]) => {
       })
 
       it('conviction function', async () => {
-        assert.equal(
-          (await convictionVoting.calculateConviction(10, 0, 15000)).toNumber(),
+        assert.equal((await convictionVoting.calculateConviction(10, 0, 15000)).toNumber(),
           Math.round(calculateConviction(10, 0, 15000, 0.9))
         )
       })
 
       it('threshold function', async () => {
-        assert.equal(
-          (await convictionVoting.calculateThreshold(1000)).toNumber(),
+        assert.equal((await convictionVoting.calculateThreshold(1000)).toNumber(),
           Math.round(calculateThreshold(1000, 15000, 45000, 0.9, 0.2, 0.002))
         )
       })
@@ -222,18 +220,9 @@ contract('ConvictionVoting', ([appManager, user]) => {
 
       it('threshold function', async () => {
         assert.equal(
-          parseInt(
-            await convictionVoting.calculateThreshold(BN('1000000000000000000'))
-          ).toPrecision(10),
-          calculateThreshold(
-            1,
-            745,
-            1164000000000000000000,
-            0.9999599,
-            0.2,
-            0.002
-          ).toPrecision(10)
-        )
+          parseInt(await convictionVoting.calculateThreshold(BN('1000000000000000000')))
+            .toPrecision(10), calculateThreshold(1, 745, 1164000000000000000000, 0.9999599, 0.2, 0.002)
+              .toPrecision(10))
       })
     })
   })
@@ -288,7 +277,7 @@ contract('ConvictionVoting', ([appManager, user]) => {
     })
   })
 
-  context('Disputable functions', () => {
+  context.only('Disputable functions', () => {
 
     let proposalId, actionId
 
@@ -297,50 +286,6 @@ contract('ConvictionVoting', ([appManager, user]) => {
       const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', 1000, appManager, {from: appManager})
       proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
       actionId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'actionId')
-    })
-
-    describe('getDisputableAction(uint256 _proposalId)', () => {
-      it('returns expected values for active vote', async () => {
-        const { endDate, challenged, finished } = await convictionVoting.getDisputableAction(proposalId)
-
-        assert.equal(endDate.toNumber(), 0)
-        assert.isFalse(challenged)
-        assert.isFalse(finished)
-      })
-
-      it('returns expected values for challenged vote', async () => {
-        await agreement.challenge({ actionId })
-
-        const { endDate, challenged, finished } = await convictionVoting.getDisputableAction(proposalId)
-
-        assert.equal(endDate.toNumber(), 0)
-        assert.isTrue(challenged)
-        assert.isFalse(finished)
-      })
-
-      it('returns expected values for cancelled vote', async () => {
-        await agreement.challenge({ actionId })
-        await agreement.dispute({ actionId })
-        await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
-
-        const { endDate, challenged, finished } = await convictionVoting.getDisputableAction(proposalId)
-
-        assert.equal(endDate.toNumber(), 0)
-        assert.isFalse(challenged)
-        assert.isTrue(finished)
-      })
-
-      it('returns expected values for executed vote', async () => {
-        await convictionVoting.stakeToProposal(proposalId, 15000, {from: appManager})
-        await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
-        await convictionVoting.executeProposal(proposalId, false, { from: user })
-
-        const { endDate, challenged, finished } = await convictionVoting.getDisputableAction(proposalId)
-
-        assert.equal(endDate.toNumber(), 0)
-        assert.isFalse(challenged)
-        assert.isTrue(finished)
-      })
     })
 
     describe('canChallenge(uint256 _proposalId)', () => {
@@ -378,19 +323,42 @@ contract('ConvictionVoting', ([appManager, user]) => {
       })
     })
 
-    //
-    // describe('canClose(uint256 _proposalId)', () => {
-    //   it('returns false when script is not executable', async () => {
-    //     const canClose = await delay.canClose(delayedScriptId)
-    //     assert.isFalse(canClose)
-    //   })
-    //
-    //   it('returns true when script is executable', async () => {
-    //     await delay.mockIncreaseTime(DELAY_LENGTH)
-    //     const canClose = await delay.canClose(delayedScriptId)
-    //     assert.isTrue(canClose)
-    //   })
-    // })
+    describe('canClose(uint256 _proposalId)', () => {
+      it('returns false when vote not executed or cancelled', async () => {
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isFalse(canClose)
+      })
+
+      it('returns false when vote has been challenged', async () => {
+        await agreement.challenge({ actionId })
+
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isFalse(canClose)
+      })
+
+      it('returns true when vote has been cancelled', async () => {
+        await agreement.challenge({ actionId })
+        await agreement.dispute({ actionId })
+        await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
+
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isTrue(canClose)
+      })
+
+      it('returns true when vote has been executed', async () => {
+        await convictionVoting.stakeToProposal(proposalId, 15000, {from: appManager})
+        await timeAdvancer.advanceTimeAndBlocksBy(15 * 10, 10)
+        await convictionVoting.executeProposal(proposalId, false, { from: user })
+
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isTrue(canClose)
+      })
+    })
+
     //
     // describe('_onDisputableActionChallenged(uint256 _proposalId)', () => {
     //   it('pauses execution script', async () => {
