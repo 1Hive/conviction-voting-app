@@ -8,7 +8,7 @@ import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 
-
+// TODO: Rearranage disputable functions
 contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
@@ -22,13 +22,13 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     uint256 constant TWO_64 = 0x10000000000000000; // 2^64
 
     string private constant ERROR_STAKED_MORE_THAN_OWNED = "CV_STAKED_MORE_THAN_OWNED";
-    string private constant ERROR_STAKING_ALREADY_STAKED = "CV_STAKING_ALREADY_STAKED"; // TODO: Not tested
+    string private constant ERROR_STAKING_ALREADY_STAKED = "CV_STAKING_ALREADY_STAKED";
     string private constant ERROR_SENDER_CANNOT_CANCEL = "CV_SENDER_CANNOT_CANCEL";
     string private constant ERROR_PROPOSAL_NOT_ACTIVE = "CV_PROPOSAL_NOT_ACTIVE";
     string private constant ERROR_INSUFFICIENT_CONVICION = "CV_INSUFFICIENT_CONVICION";
     string private constant ERROR_AMOUNT_OVER_MAX_RATIO = "CV_AMOUNT_OVER_MAX_RATIO"; // TODO: Not tested
     string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CV_AMOUNT_CAN_NOT_BE_ZERO";
-    string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED"; // TODO: Not tested
+    string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
     string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CV_INCORRECT_TOKEN_MANAGER_HOOK"; // TODO: Not tested
 
     enum ProposalStatus {
@@ -82,8 +82,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     {
         proposalCounter = 1; // First proposal should be #1, not #0
         stakeToken = _stakeToken;
-        requestToken = _requestToken;
         vault = _vault;
+        requestToken = _requestToken;
         decay = _decay;
         maxRatio = _maxRatio;
         weight = _weight;
@@ -210,13 +210,14 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @return ProposalStatus defining the state of the proposal
      */
     function getProposal(uint256 _proposalId) public view returns (
-        uint256,
-        address,
-        uint256,
-        uint256,
-        uint64,
-        uint256,
-        ProposalStatus
+        uint256 requestedAmount,
+        address beneficiary,
+        uint256 stakedTokens,
+        uint256 convictionLast,
+        uint64 blockLast,
+        uint256 agreementActionId,
+        ProposalStatus proposalStatus,
+        address submitter
     )
     {
         Proposal storage proposal = proposals[_proposalId];
@@ -227,7 +228,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             proposal.convictionLast,
             proposal.blockLast,
             proposal.agreementActionId,
-            proposal.proposalStatus
+            proposal.proposalStatus,
+            proposal.submitter
         );
     }
 
@@ -242,11 +244,11 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Get total stake of voter `_voter` on proposals
+     * @notice Get the total stake of voter `_voter` on all proposals
      * @param _voter Entity address that previously might voted on that proposal
      * @return Current amount of staked tokens by voter on proposal
      */
-    function getProposalVoterStake(address _voter) public view returns (uint256) {
+    function getTotalVoterStake(address _voter) public view returns (uint256) {
         return stakesPerVoter[_voter];
     }
 
@@ -359,9 +361,9 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      */
     function _stake(uint256 _proposalId, uint256 _amount, address _from) internal {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.proposalStatus == ProposalStatus.Active);
-
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
+        require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
+
         uint256 unstaked = stakeToken.balanceOf(_from).sub(stakesPerVoter[_from]);
         if (_amount > unstaked) {
             _withdrawUnstakedTokens(_amount.sub(unstaked), _from, true);
@@ -372,10 +374,13 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         proposal.stakedTokens = proposal.stakedTokens.add(_amount);
         proposal.stakesPerVoter[_from] = proposal.stakesPerVoter[_from].add(_amount);
         stakesPerVoter[_from] = stakesPerVoter[_from].add(_amount);
+
         if (proposal.blockLast == 0) {
             proposal.blockLast = getBlockNumber64();
+        } else {
+            _calculateAndSetConviction(proposal, oldStaked);
         }
-        _calculateAndSetConviction(proposal, oldStaked);
+
         emit StakeAdded(_from, _proposalId, _amount, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
