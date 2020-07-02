@@ -21,7 +21,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     uint256 constant TWO_127 = 0x80000000000000000000000000000000; // 2^127
     uint256 constant TWO_64 = 0x10000000000000000; // 2^64
 
-    string private constant ERROR_STAKED_MORE_THAN_OWNED = "CV_STAKED_MORE_THAN_OWNED";
+    string private constant ERROR_STAKING_MORE_THAN_AVAILABLE = "CV_STAKING_MORE_THAN_AVAILABLE";
     string private constant ERROR_STAKING_ALREADY_STAKED = "CV_STAKING_ALREADY_STAKED";
     string private constant ERROR_SENDER_CANNOT_CANCEL = "CV_SENDER_CANNOT_CANCEL";
     string private constant ERROR_PROPOSAL_NOT_ACTIVE = "CV_PROPOSAL_NOT_ACTIVE";
@@ -46,7 +46,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         uint64 blockLast;
         uint256 agreementActionId;
         ProposalStatus proposalStatus;
-        mapping(address => uint256) stakesPerVoter;
+        mapping(address => uint256) voterStake;
         address submitter;
     }
 
@@ -59,7 +59,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     Vault public vault;
 
     mapping(uint256 => Proposal) internal proposals;
-    mapping(address => uint256) internal stakesPerVoter;
+    mapping(address => uint256) internal totalVoterStake;
 
     event ProposalAdded(address entity, uint256 id, uint256 actionId, string title, bytes link, uint256 amount, address beneficiary);
     event StakeAdded(address entity, uint256 id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
@@ -134,7 +134,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _proposalId Proposal id
      */
     function stakeAllToProposal(uint256 _proposalId) external isInitialized() {
-        require(stakesPerVoter[msg.sender] == 0, ERROR_STAKING_ALREADY_STAKED);
+        require(totalVoterStake[msg.sender] == 0, ERROR_STAKING_ALREADY_STAKED);
         _stake(_proposalId, stakeToken.balanceOf(msg.sender), msg.sender);
     }
 
@@ -152,7 +152,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _proposalId Proposal id
      */
     function withdrawAllFromProposal(uint256 _proposalId) external isInitialized() {
-        _withdraw(_proposalId, proposals[_proposalId].stakesPerVoter[msg.sender], msg.sender);
+        _withdraw(_proposalId, proposals[_proposalId].voterStake[msg.sender], msg.sender);
     }
 
     /**
@@ -173,8 +173,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         _closeAgreementAction(proposal.agreementActionId);
 
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
-        if (_withdrawIfPossible && proposal.stakesPerVoter[msg.sender] > 0) {
-            _withdraw(_proposalId, proposal.stakesPerVoter[msg.sender], msg.sender);
+        if (_withdrawIfPossible && proposal.voterStake[msg.sender] > 0) {
+            _withdraw(_proposalId, proposal.voterStake[msg.sender], msg.sender);
         }
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
@@ -240,7 +240,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @return Current amount of staked tokens by voter on proposal
      */
     function getProposalVoterStake(uint256 _proposalId, address _voter) public view returns (uint256) {
-        return proposals[_proposalId].stakesPerVoter[_voter];
+        return proposals[_proposalId].voterStake[_voter];
     }
 
     /**
@@ -249,7 +249,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @return Current amount of staked tokens by voter on proposal
      */
     function getTotalVoterStake(address _voter) public view returns (uint256) {
-        return stakesPerVoter[_voter];
+        return totalVoterStake[_voter];
     }
 
     /**
@@ -364,16 +364,17 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
 
-        uint256 unstaked = stakeToken.balanceOf(_from).sub(stakesPerVoter[_from]);
+        uint256 unstaked = stakeToken.balanceOf(_from).sub(totalVoterStake[_from]);
         if (_amount > unstaked) {
             _withdrawUnstakedTokens(_amount.sub(unstaked), _from, true);
         }
+
         // make sure user does not stake more than she has
-        require(stakesPerVoter[_from].add(_amount) <= stakeToken.balanceOf(_from), ERROR_STAKED_MORE_THAN_OWNED);
+        require(totalVoterStake[_from].add(_amount) <= stakeToken.balanceOf(_from), ERROR_STAKING_MORE_THAN_AVAILABLE);
         uint256 oldStaked = proposal.stakedTokens;
         proposal.stakedTokens = proposal.stakedTokens.add(_amount);
-        proposal.stakesPerVoter[_from] = proposal.stakesPerVoter[_from].add(_amount);
-        stakesPerVoter[_from] = stakesPerVoter[_from].add(_amount);
+        proposal.voterStake[_from] = proposal.voterStake[_from].add(_amount);
+        totalVoterStake[_from] = totalVoterStake[_from].add(_amount);
 
         if (proposal.blockLast == 0) {
             proposal.blockLast = getBlockNumber64();
@@ -381,38 +382,44 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             _calculateAndSetConviction(proposal, oldStaked);
         }
 
-        emit StakeAdded(_from, _proposalId, _amount, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
+        emit StakeAdded(_from, _proposalId, _amount, proposal.voterStake[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
      * @dev Withdraw staked tokens from proposals until a target amount is reached.
-     * @param _targetAmount Amount of withdrawn tokens
+     * @param _targetAmount Target at which to stop withdrawing tokens
      * @param _from Account to withdraw from
      * @param _onlyExecuted Withdraw only from executed proposals
      */
     function _withdrawUnstakedTokens(uint256 _targetAmount, address _from, bool _onlyExecuted) internal {
-        uint i = 0;
-        uint256 amount = 0;
-        uint256 toSubstract;
-        while (i < proposalCounter && amount < _targetAmount) {
-            if (proposals[i].proposalStatus == ProposalStatus.Executed) {
-                toSubstract = proposals[i].stakesPerVoter[_from];
-                if (toSubstract > 0) {
-                    _withdraw(i, toSubstract, _from);
-                    amount = amount.add(toSubstract);
+        uint256 proposalId = 0;
+        uint256 toWithdraw;
+        uint256 withdrawnAmount = 0;
+
+        while (proposalId < proposalCounter && withdrawnAmount < _targetAmount) {
+            Proposal storage proposal = proposals[proposalId];
+
+            if (proposal.proposalStatus == ProposalStatus.Executed) {
+                toWithdraw = proposal.voterStake[_from];
+                if (toWithdraw > 0) {
+                    _withdraw(proposalId, toWithdraw, _from);
+                    withdrawnAmount = withdrawnAmount.add(toWithdraw);
                 }
             }
-            i++;
+            proposalId++;
         }
-        i = 0;
-        while (!_onlyExecuted && i < proposalCounter && amount < _targetAmount) {
-            // In open proposals, we only substract the needed amount to reach the target
-            toSubstract = Math.min256(_targetAmount.sub(amount), proposals[i].stakesPerVoter[_from]);
-            if (toSubstract > 0) {
-                _withdraw(i, toSubstract, _from);
-                amount = amount.add(toSubstract);
+
+        if (!_onlyExecuted) {
+            proposalId = 0;
+            while (proposalId < proposalCounter && withdrawnAmount < _targetAmount) {
+                // In open proposals, we only substract the needed amount to reach the target
+                toWithdraw = Math.min256(_targetAmount.sub(withdrawnAmount), proposals[proposalId].voterStake[_from]);
+                if (toWithdraw > 0) {
+                    _withdraw(proposalId, toWithdraw, _from);
+                    withdrawnAmount = withdrawnAmount.add(toWithdraw);
+                }
+                proposalId++;
             }
-            i++;
         }
     }
 
@@ -423,19 +430,19 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _from Account to withdraw from
      */
     function _withdraw(uint256 _proposalId, uint256 _amount, address _from) internal {
-        // make sure voter does not withdraw more than staked on proposal
-        require(proposals[_proposalId].stakesPerVoter[_from] >= _amount, ERROR_WITHDRAW_MORE_THAN_STAKED);
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.voterStake[_from] >= _amount, ERROR_WITHDRAW_MORE_THAN_STAKED);
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
 
-        Proposal storage proposal = proposals[_proposalId];
         uint256 oldStaked = proposal.stakedTokens;
         proposal.stakedTokens = proposal.stakedTokens.sub(_amount);
-        proposal.stakesPerVoter[_from] = proposal.stakesPerVoter[_from].sub(_amount);
-        stakesPerVoter[_from] = stakesPerVoter[_from].sub(_amount);
+        proposal.voterStake[_from] = proposal.voterStake[_from].sub(_amount);
+        totalVoterStake[_from] = totalVoterStake[_from].sub(_amount);
         if (proposal.proposalStatus != ProposalStatus.Executed) {
             _calculateAndSetConviction(proposal, oldStaked);
         }
-        emit StakeWithdrawn(_from, _proposalId, _amount, proposal.stakesPerVoter[_from], proposal.stakedTokens, proposal.convictionLast);
+
+        emit StakeWithdrawn(_from, _proposalId, _amount, proposal.voterStake[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     /**
@@ -453,8 +460,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             return true; // Do nothing on token mintings
         }
         uint256 newBalance = stakeToken.balanceOf(_from).sub(_amount);
-        if (newBalance < stakesPerVoter[_from]) {
-            _withdrawUnstakedTokens(stakesPerVoter[_from].sub(newBalance), _from, false);
+        if (newBalance < totalVoterStake[_from]) {
+            _withdrawUnstakedTokens(totalVoterStake[_from].sub(newBalance), _from, false);
         }
         return true;
     }
