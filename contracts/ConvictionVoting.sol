@@ -413,11 +413,13 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _onlyExecuted Withdraw only from executed proposals
      */
     function _withdrawUnstakedTokens(uint256 _targetAmount, address _from, bool _onlyExecuted) internal {
-        uint256 proposalId = 0;
+        uint256 i = 0;
         uint256 toWithdraw;
         uint256 withdrawnAmount = 0;
+        uint256[] memory voterStakedProposalsCopy = voterStakedProposals[_from];
 
-        while (proposalId < proposalCounter && withdrawnAmount < _targetAmount) {
+        while (i < voterStakedProposalsCopy.length && withdrawnAmount < _targetAmount) {
+            uint256 proposalId = voterStakedProposalsCopy[i];
             Proposal storage proposal = proposals[proposalId];
 
             if (proposal.proposalStatus == ProposalStatus.Executed) {
@@ -427,19 +429,22 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
                     withdrawnAmount = withdrawnAmount.add(toWithdraw);
                 }
             }
-            proposalId++;
+            i++;
         }
 
         if (!_onlyExecuted) {
-            proposalId = 0;
-            while (proposalId < proposalCounter && withdrawnAmount < _targetAmount) {
-                // In open proposals, we only substract the needed amount to reach the target
-                toWithdraw = Math.min256(_targetAmount.sub(withdrawnAmount), proposals[proposalId].voterStake[_from]);
+            i = 0;
+            while (i < voterStakedProposalsCopy.length && withdrawnAmount < _targetAmount) {
+                proposalId = voterStakedProposalsCopy[i];
+                proposal = proposals[proposalId];
+
+                // In open proposals, we only subtract the needed amount to reach the target
+                toWithdraw = Math.min256(_targetAmount.sub(withdrawnAmount), proposal.voterStake[_from]);
                 if (toWithdraw > 0) {
                     _withdraw(proposalId, toWithdraw, _from);
                     withdrawnAmount = withdrawnAmount.add(toWithdraw);
                 }
-                proposalId++;
+                i++;
             }
         }
     }
