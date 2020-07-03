@@ -385,6 +385,60 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
               currentBlock.toNumber() + 1, 0, 0, [])
           })
         })
+
+        context('_onTransfer(address _from, address _to, uint256 _amount)', () => {
+          it('unstakes staked tokens when transferring more than currently unstaked', async () => {
+            const transferAmount = 5000
+            await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS)
+            const currentBlock = await convictionVoting.getBlockNumberPublic()
+
+            await stakeToken.transfer(user, transferAmount)
+
+            await assertProposalAndStakesCorrect(
+              proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount,
+              currentBlock.toNumber() + 1, DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount,
+              DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount, [proposalId])
+          })
+
+          const createAndStakeToProposals = async (numberOfProposals, stakeForProposals) => {
+            let newProposalIds = []
+            for (let i = 0; i < numberOfProposals; i++) {
+              const addNewProposalReceipt = await convictionVoting.addProposal('Proposal', '0x', 100, beneficiary)
+              const newProposalId = getEventArgument(addNewProposalReceipt, 'ProposalAdded', 'id')
+              await convictionVoting.stakeToProposal(newProposalId, stakeForProposals)
+              newProposalIds.push(newProposalId)
+            }
+            return newProposalIds
+          }
+
+          it.only('unstakes staked tokens when transferring more than currently unstaked from 2 proposals', async () => {
+            const transferAmount = DEFAULT_APP_MANAGER_STAKE_TOKENS / 2 + 1000
+            const totalAppManagerStake = DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount
+            const newProposalIds = await createAndStakeToProposals(2, DEFAULT_APP_MANAGER_STAKE_TOKENS / 2)
+            const currentBlock = await convictionVoting.getBlockNumberPublic()
+
+            await stakeToken.transfer(user, transferAmount)
+
+            await assertProposalAndStakesCorrect(
+              newProposalIds[0], 40650, 0, currentBlock.toNumber() + 1,
+              0, totalAppManagerStake, [newProposalIds[1]])
+
+            const actualProposalAppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[1], appManager)
+            assert.equal(actualProposalAppManagerStake.toString(), DEFAULT_APP_MANAGER_STAKE_TOKENS / 2 - 1000, 'Incorrect proposal voter stake')
+          })
+
+          it('unstakes staked tokens when transferring more than currently unstaked from many proposals', async () => {
+
+          })
+
+          it('does not unstake tokens when transferring less than currently staked', async () => {
+
+          })
+
+          it('allows minting new tokens', async () => {
+
+          })
+        })
       })
 
       context('stakeAllToProposal(uint256 _proposalId)', () => {
