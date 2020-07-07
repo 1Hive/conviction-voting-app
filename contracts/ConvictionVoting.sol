@@ -362,6 +362,27 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
+     * @dev Overrides TokenManagerHook's `_onRegisterAsHook`
+     */
+    function _onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
+        require(_token == address(stakeToken), ERROR_INCORRECT_TOKEN_MANAGER_HOOK);
+    }
+
+    /**
+     * @dev Overrides TokenManagerHook's `_onTransfer`
+     */
+    function _onTransfer(address _from, address _to, uint256 _amount) internal returns (bool) {
+        if (_from == 0x0) {
+            return true; // Do nothing on token mintings
+        }
+        uint256 newBalance = stakeToken.balanceOf(_from).sub(_amount);
+        if (newBalance < totalVoterStake[_from]) {
+            _withdrawUnstakedTokens(totalVoterStake[_from].sub(newBalance), _from, false);
+        }
+        return true;
+    }
+
+    /**
      * Multiply _a by _b / 2^128.  Parameter _a should be less than or equal to
      * 2^128 and parameter _b should be less than 2^128.
      * @param _a left argument
@@ -524,26 +545,5 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         }
 
         emit StakeWithdrawn(_from, _proposalId, _amount, proposal.voterStake[_from], proposal.stakedTokens, proposal.convictionLast);
-    }
-
-    /**
-     * @dev Overrides TokenManagerHook's `_onRegisterAsHook`
-     */
-    function _onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token) internal {
-        require(_token == address(stakeToken), ERROR_INCORRECT_TOKEN_MANAGER_HOOK);
-    }
-
-    /**
-     * @dev Overrides TokenManagerHook's `_onTransfer`
-     */
-    function _onTransfer(address _from, address _to, uint256 _amount) internal returns (bool) {
-        if (_from == 0x0) {
-            return true; // Do nothing on token mintings
-        }
-        uint256 newBalance = stakeToken.balanceOf(_from).sub(_amount);
-        if (newBalance < totalVoterStake[_from]) {
-            _withdrawUnstakedTokens(totalVoterStake[_from].sub(newBalance), _from, false);
-        }
-        return true;
     }
 }

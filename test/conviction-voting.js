@@ -96,6 +96,25 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     })
   }
 
+  context('_onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token)', () => {
+    it('should revert when using token other than stake token', async () => {
+      const notStakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'notStakeToken', 1, 'TKN', true)
+      const stakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'stakeToken', 1, 'TKN', true)
+
+      stakeTokenManager = await installApp(deployer.dao, deployer.acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
+      await notStakeToken.changeController(stakeTokenManager.address)
+      await stakeTokenManager.initialize(notStakeToken.address, true, 0)
+
+      vault = await VaultMock.new({ from: appManager })
+      requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
+      await requestToken.generateTokens(vault.address, 15000)
+      convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
+      await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO)
+
+      await assertRevert(stakeTokenManager.registerHook(convictionVoting.address), 'CV_INCORRECT_TOKEN_MANAGER_HOOK')
+    })
+  })
+
   context('initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken, uint256 _decay, uint256 _maxRatio, ' +
     'uint256 _weight)', () => {
 
@@ -296,7 +315,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await assertRevert(convictionVoting.stakeToProposal(proposalId, 100), 'CV_MAX_PROPOSALS_REACHED')
         })
 
-        it('should revert when staked amount is 0', async () => {
+        it('should revert when stake amount is 0', async () => {
           await assertRevert(convictionVoting.stakeToProposal(proposalId, 0), 'CV_AMOUNT_CAN_NOT_BE_ZERO')
         })
 
