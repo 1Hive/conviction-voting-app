@@ -24,6 +24,7 @@ const DEFAULT_RHO = 0.002 * D
 const DEFAULT_APP_MANAGER_STAKE_TOKENS = 30000
 const DEFAULT_USER_STAKE_TOKENS = 15000
 
+const ABSTAIN_PROPOSAL_ID = 1
 const PROPOSAL_STATUS = {
   ACTIVE: 0,
   PAUSED: 1,
@@ -47,6 +48,7 @@ function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
   let convictionVoting, stakeTokenManager, stakeToken, requestToken, vault, agreement, collateralToken
   const acc = { [appManager]: 'appManager', [user]: 'user' } // TODO: Can remove?
+  const requestedAmount = 1000
 
   before(async () => {
     agreement = await deployer.deployAndInitializeWrapper({ appManager })
@@ -122,21 +124,38 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       await deploy()
     })
 
-    it('sets fields correctly', async () => {
+    it('sets fields correctly and creates abstain proposal', async () => {
       assert.isTrue(await convictionVoting.hasInitialized(), 'Not initialised')
-      assert.equal(await convictionVoting.proposalCounter(), 1, 'Incorrect proposal counter')
+      assert.equal(await convictionVoting.proposalCounter(), 2, 'Incorrect proposal counter')
       assert.equal(await convictionVoting.stakeToken(), stakeToken.address, 'Incorrect stake token')
       assert.equal(await convictionVoting.requestToken(), requestToken.address, 'Incorrect request token')
       assert.equal(await convictionVoting.vault(), vault.address, 'Incorrect vault token')
       assert.equal(await convictionVoting.decay(), DEFAULT_ALPHA, 'Incorrect decay')
       assert.equal(await convictionVoting.maxRatio(), DEFAULT_BETA, 'Incorrect max ratio')
       assert.equal(await convictionVoting.weight(), DEFAULT_RHO, 'Incorrect weight')
+      const {
+        requestedAmount,
+        beneficiary,
+        stakedTokens,
+        convictionLast,
+        blockLast,
+        agreementActionId,
+        proposalStatus,
+        submitter
+      } = await convictionVoting.getProposal(ABSTAIN_PROPOSAL_ID)
+      assert.equal(requestedAmount, 0, 'Incorrect requested amount')
+      assert.equal(beneficiary, 0x0, 'Incorrect beneficiary')
+      assert.equal(stakedTokens, 0, 'Incorrect staked tokens')
+      assert.equal(convictionLast, 0, 'Incorrect conviction last')
+      assert.equal(blockLast, 0, 'Incorrect block last')
+      assert.equal(agreementActionId, 0, 'Incorrect action ID')
+      assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
+      assert.equal(submitter, 0x0, 'Incorrect submitter')
     })
 
     context('addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary)', () => {
 
       let proposalId, actionId
-      const requestedAmount = 1000
 
       beforeEach(async () => {
         const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
@@ -168,32 +187,34 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       })
 
       const assertProposalAndStakesCorrect =
-        async (proposalId, convictionLast, proposalStake, blockLast, proposalAppManagerStake, totalAppManagerStake, appManagerStakedProposals) => {
+        async (proposalId, convictionLast, proposalStake, blockLast, proposalAppManagerStake, totalAppManagerStake,
+               appManagerStakedProposals, totalStaked) => {
           const { stakedTokens: actualProposalStake, convictionLast: actualConvictionLast, blockLast: actualBlockLast } =
             await convictionVoting.getProposal(proposalId)
           const actualProposalAppManagerStake = await convictionVoting.getProposalVoterStake(proposalId, appManager)
           const actualTotalAppManagerStake = await convictionVoting.getTotalVoterStake(appManager)
           const actualAppManagerStakedProposals = await convictionVoting.getVoterStakedProposals(appManager)
+          const actualTotalStaked = await convictionVoting.totalStaked()
           assert.equal(actualConvictionLast.toNumber(), convictionLast, 'Incorrect conviction last')
           assert.equal(actualProposalStake.toNumber(), proposalStake, 'Incorrect proposal stake amount')
           assert.equal(actualBlockLast.toNumber(), blockLast, 'Incorrect block last')
           assert.equal(actualProposalAppManagerStake.toString(), proposalAppManagerStake, 'Incorrect proposal voter stake')
           assert.equal(actualTotalAppManagerStake.toString(), totalAppManagerStake, 'Incorrect total voter stake')
           assert.sameDeepMembers(actualAppManagerStakedProposals, appManagerStakedProposals, 'Incorrect voter proposals')
+          assert.equal(actualTotalStaked.toString(), totalStaked, 'Incorrect total staked')
         }
 
       context('stakeToProposal(uint256 _proposalId, uint256 _amount)', () => {
 
         it('should stake to proposal', async () => {
           const stakeAmount = 1000
-          const { stakedTokens: stakedBefore } = await convictionVoting.getProposal(proposalId)
           const currentBlock = await convictionVoting.getBlockNumberPublic()
 
           await convictionVoting.stakeToProposal(proposalId, stakeAmount)
 
           await assertProposalAndStakesCorrect(
-            proposalId, 0, stakedBefore.toNumber() + stakeAmount,
-            currentBlock.toNumber() + 1, stakeAmount, stakeAmount, [proposalId])
+            proposalId, 0, stakeAmount, currentBlock.toNumber() + 1,
+            stakeAmount, stakeAmount, [proposalId], stakeAmount)
         })
 
         it('should allow staking from multiple accounts', async () => {
@@ -206,7 +227,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           await assertProposalAndStakesCorrect(
             proposalId, 6862, stakeAmount * 2,
-            currentBlock.toNumber(), stakeAmount, stakeAmount, [proposalId])
+            currentBlock.toNumber(), stakeAmount, stakeAmount, [proposalId], stakeAmount * 2)
         })
 
         it('should allow staking multiple times', async () => {
@@ -218,7 +239,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           await assertProposalAndStakesCorrect(
             proposalId, 1000, stakeAmount * 2, currentBlock.toNumber() + 1,
-            stakeAmount * 2, stakeAmount * 2, [proposalId])
+            stakeAmount * 2, stakeAmount * 2, [proposalId], stakeAmount * 2)
         })
 
         it('should allow staking to multiple proposals', async () => {
@@ -235,7 +256,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           await assertProposalAndStakesCorrect(
             proposalIds[0], 0, stakeAmount, currentBlock.toNumber() + 2,
-            stakeAmount, stakeAmount * numberOfProposals, proposalIds)
+            stakeAmount, stakeAmount * numberOfProposals, proposalIds, stakeAmount * numberOfProposals)
         })
 
         it('should reassign previously staked tokens after previous vote execution', async () => {
@@ -250,7 +271,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           await assertProposalAndStakesCorrect(
             proposal2Id, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock,
-            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposal2Id])
+            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposal2Id], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
 
         const createAndExecuteProposals = async (numberOfProposals, stakeForProposals) => {
@@ -279,7 +300,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           await assertProposalAndStakesCorrect(
             proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock,
-            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId])
+            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
 
         it('should reassign previously staked tokens after many previous votes executions', async () => {
@@ -292,7 +313,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           await assertProposalAndStakesCorrect(
             proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock,
-            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId])
+            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
 
         it('should not reassign previously staked tokens before previous vote execution', async () => {
@@ -363,7 +384,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
             await assertProposalAndStakesCorrect(
               proposalId, 9867, stakedBefore - withdrawAmount, currentBlock.toNumber(),
-              stakeAmount - withdrawAmount, stakeAmount - withdrawAmount, [proposalId])
+              stakeAmount - withdrawAmount, stakeAmount - withdrawAmount, [proposalId], stakeAmount - withdrawAmount)
           })
 
           it('does not update block last or conviction last when executed', async () => {
@@ -400,7 +421,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
             await assertProposalAndStakesCorrect(
               proposalId, 1000, stakedBefore.toNumber() - stakeAmount,
-              currentBlock.toNumber() + 1, 0, 0, [])
+              currentBlock.toNumber() + 1, 0, 0, [], 0)
           })
         })
 
@@ -412,10 +433,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
             await stakeToken.transfer(user, transferAmount)
 
+            const stakedMinusTransferred = DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount
             await assertProposalAndStakesCorrect(
-              proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount,
-              currentBlock.toNumber() + 1, DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount,
-              DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount, [proposalId])
+              proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS, stakedMinusTransferred,
+              currentBlock.toNumber() + 1, stakedMinusTransferred,
+              stakedMinusTransferred, [proposalId], stakedMinusTransferred)
           })
 
           const createAndStakeToProposals = async (numberOfProposals, stakeForProposals) => {
@@ -441,7 +463,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
             await assertProposalAndStakesCorrect(
               newProposalIds[0], 40650, 0, currentBlock.toNumber() + 1,
-              0, totalAppManagerStake, [newProposalIds[1]])
+              0, totalAppManagerStake, [newProposalIds[1]], DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount)
             const actualProposalAppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[1], appManager)
             assert.equal(actualProposalAppManagerStake.toString(), DEFAULT_APP_MANAGER_STAKE_TOKENS / numberOfProposals - 1000, 'Incorrect proposal voter stake')
           })
@@ -457,7 +479,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
             await assertProposalAndStakesCorrect(
               newProposalIds[0], 39128, 0, currentBlock.toNumber() + 1,
-              0, totalAppManagerStake, [newProposalIds[2], newProposalIds[3]])
+              0, totalAppManagerStake, [newProposalIds[2], newProposalIds[3]], totalAppManagerStake)
             const proposal1AppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[1], appManager)
             assert.equal(proposal1AppManagerStake.toString(), 0, 'Incorrect proposal 1 voter stake')
             const proposal2AppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[2], appManager)
@@ -468,7 +490,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           it('unstakes staked tokens when transferring more than currently unstaked from many open and closed proposals', async () => {
             const numberOfProposals = 4
-            const transferAmount = DEFAULT_APP_MANAGER_STAKE_TOKENS / 2 + 1000
+            const transferAmount = (DEFAULT_APP_MANAGER_STAKE_TOKENS / 2) + 1000
             const totalAppManagerStake = DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount
             const newProposalIds = await createAndStakeToProposals(numberOfProposals, DEFAULT_APP_MANAGER_STAKE_TOKENS / numberOfProposals)
             await convictionVoting.mockAdvanceBlocks(40)
@@ -479,7 +501,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
             await assertProposalAndStakesCorrect(
               newProposalIds[0], 74470, 0, currentBlock.toNumber(),
-              0, totalAppManagerStake, [newProposalIds[1], newProposalIds[2]])
+              0, totalAppManagerStake, [newProposalIds[1], newProposalIds[2]], totalAppManagerStake)
             const proposal1AppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[1], appManager)
             assert.equal(proposal1AppManagerStake.toString(), DEFAULT_APP_MANAGER_STAKE_TOKENS / numberOfProposals - 1000, 'Incorrect proposal 1 voter stake')
             const proposal2AppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[2], appManager)
@@ -498,7 +520,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
             await assertProposalAndStakesCorrect(
               proposalId, 0, stakedTokens, currentBlock.toNumber(),
-              stakedTokens, stakedTokens, [proposalId])
+              stakedTokens, stakedTokens, [proposalId], stakedTokens)
           })
 
           it('allows minting new tokens', async () => {
@@ -527,9 +549,19 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             assert.isTrue(closed, 'Incorrect closed status')
           })
 
+          it('should revert when executing abstain proposal', async () => {
+            await assertRevert(convictionVoting.executeProposal(ABSTAIN_PROPOSAL_ID), 'CV_CANNOT_EXECUTE_ABSTAIN_PROPOSAL')
+          })
+
           it('should revert when too little conviction', async () => {
-            await convictionVoting.stakeToProposal(proposalId, 5000)
+            const propoasalStake = 1000
+            const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
+            const newProposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+            await convictionVoting.stakeToProposal(newProposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS - propoasalStake, { from: appManager })
+            await convictionVoting.stakeToProposal(newProposalId, DEFAULT_USER_STAKE_TOKENS, { from: user })
+            await convictionVoting.stakeToProposal(proposalId, propoasalStake)
             await convictionVoting.mockAdvanceBlocks(40)
+
             await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_INSUFFICIENT_CONVICION')
           })
 
@@ -564,14 +596,13 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       context('stakeAllToProposal(uint256 _proposalId)', () => {
         it('should stake entire balance to proposal', async () => {
           const stakeAmount = await stakeToken.balanceOf(appManager)
-          const { stakedTokens: stakedBefore } = await convictionVoting.getProposal(proposalId)
           const currentBlock = await convictionVoting.getBlockNumberPublic()
 
           await convictionVoting.stakeAllToProposal(proposalId)
 
           await assertProposalAndStakesCorrect(
-            proposalId, 0, stakedBefore.toNumber() + stakeAmount,
-            currentBlock.toNumber() + 1, stakeAmount, stakeAmount, [proposalId])
+            proposalId, 0, stakeAmount, currentBlock.toNumber() + 1,
+            stakeAmount, stakeAmount, [proposalId], stakeAmount)
         })
 
         it('should revert when already staked', async () => {
@@ -607,6 +638,12 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await assertRevert(convictionVoting.cancelProposal(proposalId, { from: user }), 'CV_SENDER_CANNOT_CANCEL')
         })
 
+        it('should revert when cancelling abstain proposal', async () => {
+          const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
+          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          await assertRevert(convictionVoting.cancelProposal(ABSTAIN_PROPOSAL_ID, { from: user }), 'CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL')
+        })
+
         it('should revert when challenged', async () => {
           await agreement.challenge({ actionId })
 
@@ -637,6 +674,10 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
       beforeEach('deploy DAO and convictionVoting', async () => {
         await deploy()
+        const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
+        const proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+        await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS, { from: appManager })
+        await convictionVoting.stakeToProposal(proposalId, DEFAULT_USER_STAKE_TOKENS, { from: user })
       })
 
       it('conviction function', async () => {
@@ -656,14 +697,20 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       beforeEach(
         'deploy DAO and convictionVoting',
         async () => {
+          const appManagerTokens = BN('1000000000000000000000')
+          const userTokens = BN('164000000000000000000')
           await deploy(
             18,
-            [BN('1000000000000000000000'), BN('164000000000000000000')],
+            [appManagerTokens, userTokens],
             BN('745000000000000000000'),
             0.9999599 * D,
             0.2 * D,
             0.002 * D
           )
+          const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
+          const proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+          await convictionVoting.stakeToProposal(proposalId, appManagerTokens, { from: appManager })
+          await convictionVoting.stakeToProposal(proposalId, userTokens, { from: user })
         }
       )
 
