@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "@aragon/os/contracts/apps/disputable/DisputableAragonApp.sol";
+import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 import "@aragon/apps-vault/contracts/Vault.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
@@ -9,7 +9,7 @@ import "@aragon/os/contracts/lib/math/Math.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 import "./lib/ArrayUtils.sol";
 
-contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
+contract ConvictionVoting is AragonApp, TokenManagerHook {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
     using ArrayUtils for uint256[];
@@ -40,7 +40,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
     enum ProposalStatus {
         Active,              // A vote that has been reported to Agreements
-        Paused,              // A vote that is being challenged by Agreements
         Cancelled,           // A vote that has been cancelled
         Executed             // A vote that has been executed
     }
@@ -51,7 +50,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         uint256 stakedTokens;
         uint256 convictionLast;
         uint64 blockLast;
-        uint256 agreementActionId;
         ProposalStatus proposalStatus;
         mapping(address => uint256) voterStake;
         address submitter;
@@ -71,14 +69,10 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     mapping(address => uint256) internal totalVoterStake;
     mapping(address => uint256[]) internal voterStakedProposals;
 
-    event ProposalAdded(address entity, uint256 id, uint256 actionId, string title, bytes link, uint256 amount, address beneficiary);
+    event ProposalAdded(address entity, uint256 id, string title, bytes link, uint256 amount, address beneficiary);
     event StakeAdded(address entity, uint256 id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event StakeWithdrawn(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 id, uint256 conviction);
-    event ProposalPaused(uint256 indexed proposalId, uint256 indexed actionId);
-    event ProposalResumed(uint256 indexed proposalId, uint256 indexed actionId);
-    event ProposalCancelled(uint256 indexed proposalId, uint256 indexed actionId);
-    event AgreementActionClosed(uint256 indexed proposalId, uint256 indexed actionId);
 
     function initialize(
         MiniMeToken _stakeToken,
@@ -106,10 +100,10 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             0,
             0,
             0,
-            0,
             ProposalStatus.Active,
             0x0
         );
+        emit ProposalAdded(0x0, ABSTAIN_PROPOSAL_ID, "Abstain proposal", "", 0, 0x0);
 
         initialized();
     }
@@ -127,21 +121,19 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         uint256 _requestedAmount,
         address _beneficiary
     )
-        external isInitialized()
+        external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
-        uint256 agreementActionId = _newAgreementAction(proposalCounter, _link, msg.sender);
         proposals[proposalCounter] = Proposal(
             _requestedAmount,
             _beneficiary,
             0,
             0,
             0,
-            agreementActionId,
             ProposalStatus.Active,
             msg.sender
         );
 
-        emit ProposalAdded(msg.sender, proposalCounter, agreementActionId, _title, _link, _requestedAmount, _beneficiary);
+        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary);
         proposalCounter++;
     }
 
@@ -194,7 +186,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION);
 
         proposal.proposalStatus = ProposalStatus.Executed;
-        _closeAgreementAction(proposal.agreementActionId);
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
@@ -213,8 +204,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
 
         proposal.proposalStatus = ProposalStatus.Cancelled;
-
-        _closeAgreementAction(proposal.agreementActionId);
     }
 
     /**
@@ -226,7 +215,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @return Conviction this proposal had last time calculateAndSetConviction was called
      * @return Block when calculateAndSetConviction was called
      * @return True if proposal has already been executed
-     * @return AgreementActionId assigned by the Agreements app
      * @return ProposalStatus defining the state of the proposal
      */
     function getProposal(uint256 _proposalId) public view returns (
@@ -235,7 +223,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         uint256 stakedTokens,
         uint256 convictionLast,
         uint64 blockLast,
-        uint256 agreementActionId,
         ProposalStatus proposalStatus,
         address submitter
     )
@@ -247,7 +234,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             proposal.stakedTokens,
             proposal.convictionLast,
             proposal.blockLast,
-            proposal.agreementActionId,
             proposal.proposalStatus,
             proposal.submitter
         );
@@ -282,23 +268,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
-    * @dev IDisputable interface conformance
-    */
-    function canChallenge(uint256 _proposalId) external view returns (bool) {
-        return proposals[_proposalId].proposalStatus == ProposalStatus.Active;
-    }
-
-    /**
-    * @dev IDisputable interface conformance
-    */
-    function canClose(uint256 _proposalId) external view returns (bool) {
-        Proposal storage proposal = proposals[_proposalId];
-
-        return proposal.proposalStatus == ProposalStatus.Executed
-        || proposal.proposalStatus == ProposalStatus.Cancelled;
-    }
-
-    /**
      * @dev Conviction formula: a^t * y(0) + x * (1 - a^t) / (1 - a)
      * Solidity implementation: y = (2^128 * a^t * y0 + x * D * (2^128 - 2^128 * a^t) / (D - aD) + 2^127) / 2^128
      * @param _timePassed Number of blocks since last conviction record
@@ -320,7 +289,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         // conviction = (atTWO_128 * _lastConv + _oldAmount * D * (2^128 - atTWO_128) / (D - aD) + 2^127) / 2^128
         return (atTWO_128.mul(_lastConv).add(_oldAmount.mul(D).mul(TWO_128.sub(atTWO_128)).div(D - decay))).add(TWO_127) >> 128;
     }
-
 
     /**
      * @dev Formula: ρ * totalStaked / (1 - a) / (β - requestedAmount / total)**2
@@ -345,47 +313,6 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     function _totalStaked() internal returns (uint256) {
         uint256 minTotalStake = (stakeToken.totalSupply().mul(minThresholdStakePercentage)).div(ONE_HUNDRED_PERCENT);
         return totalStaked < minTotalStake ? minTotalStake : totalStaked;
-    }
-
-    /**
-    * @dev Internal implementation of the `onDisputableActionChallenged` hook
-    * @param _proposalId Identification number of the disputable action to be challenged
-    */
-    function _onDisputableActionChallenged(uint256 _proposalId, uint256 /* _challengeId */, address /* _challenger */) internal {
-        Proposal storage proposal = proposals[_proposalId];
-        proposal.proposalStatus = ProposalStatus.Paused;
-
-        emit ProposalPaused(_proposalId, proposal.agreementActionId);
-    }
-
-    /**
-    * @dev Internal implementation of the `onDisputableActionRejected` hook
-    * @param _proposalId Identification number of the disputable action to be rejected
-    */
-    function _onDisputableActionRejected(uint256 _proposalId) internal {
-        Proposal storage proposal = proposals[_proposalId];
-        proposal.proposalStatus = ProposalStatus.Cancelled;
-
-        emit ProposalCancelled(_proposalId, proposal.agreementActionId);
-    }
-
-    /**
-    * @dev Internal implementation of the `onDisputableActionAllowed` hook
-    * @param _proposalId Identification number of the disputable action to be allowed
-    */
-    function _onDisputableActionAllowed(uint256 _proposalId) internal {
-        Proposal storage proposal = proposals[_proposalId];
-        proposal.proposalStatus = ProposalStatus.Active;
-
-        emit ProposalResumed(_proposalId, proposal.agreementActionId);
-    }
-
-    /**
-    * @dev Internal implementation of the `onDisputableActionVoided` hook
-    * @param _proposalId Identification number of the disputable action to be voided
-    */
-    function _onDisputableActionVoided(uint256 _proposalId) internal {
-        _onDisputableActionAllowed(_proposalId);
     }
 
     /**
