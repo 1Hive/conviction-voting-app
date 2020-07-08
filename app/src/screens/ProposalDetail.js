@@ -86,7 +86,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
     return formatTokenAmount(nonStakedTokens, stakeToken.tokenDecimals)
   }, [stakeToken, nonStakedTokens])
 
-  const rounding = Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.decimals)
+  const rounding = Math.min(MAX_INPUT_DECIMAL_BASE, stakeToken.tokenDecimals)
 
   const [
     { value: inputValue, max: maxAvailable, progress },
@@ -145,7 +145,8 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
         text: 'Change support',
         action: handleChangeSupport,
         mode: 'normal',
-        disabled: myStakeAmountFormatted === inputValue.toString(),
+        disabled:
+          myStakeAmountFormatted.replace(',', '') === inputValue.toString(),
       }
     }
     return {
