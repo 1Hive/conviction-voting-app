@@ -18,6 +18,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     bytes32 constant public CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
 
     uint256 constant public D = 10000000;
+    uint256 constant public ONE_HUNDRED_PERCENT = 1e18;
     uint256 constant private TWO_128 = 0x100000000000000000000000000000000; // 2^128
     uint256 constant private TWO_127 = 0x80000000000000000000000000000000; // 2^127
     uint256 constant private TWO_64 = 0x10000000000000000; // 2^64
@@ -56,13 +57,14 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         address submitter;
     }
 
-    uint256 public decay;
-    uint256 public weight;
-    uint256 public maxRatio;
-    uint256 public proposalCounter;
     MiniMeToken public stakeToken;
-    address public requestToken;
     Vault public vault;
+    address public requestToken;
+    uint256 public decay;
+    uint256 public maxRatio;
+    uint256 public weight;
+    uint256 public minThresholdStakePercentage;
+    uint256 public proposalCounter;
     uint256 public totalStaked;
 
     mapping(uint256 => Proposal) internal proposals;
@@ -84,7 +86,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         address _requestToken,
         uint256 _decay,
         uint256 _maxRatio,
-        uint256 _weight
+        uint256 _weight,
+        uint256 _minThresholdStakePercentage
     )
         public onlyInit
     {
@@ -95,6 +98,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         decay = _decay;
         maxRatio = _maxRatio;
         weight = _weight;
+        minThresholdStakePercentage = _minThresholdStakePercentage;
 
         proposals[ABSTAIN_PROPOSAL_ID] = Proposal(
             0,
@@ -317,6 +321,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         return (atTWO_128.mul(_lastConv).add(_oldAmount.mul(D).mul(TWO_128.sub(atTWO_128)).div(D - decay))).add(TWO_127) >> 128;
     }
 
+
     /**
      * @dev Formula: ρ * totalStaked / (1 - a) / (β - requestedAmount / total)**2
      * For the Solidity implementation we amplify ρ and β and simplify the formula:
@@ -334,7 +339,12 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         // denom = maxRatio * 2 ** 64 / D  - requestedAmount * 2 ** 64 / funds
         uint256 denom = (maxRatio << 64).div(D).sub((_requestedAmount << 64).div(funds));
         // _threshold = (weight * 2 ** 128 / D) / (denom ** 2 / 2 ** 64) * totalStaked * D / 2 ** 128
-        _threshold = ((weight << 128).div(D).div(denom.mul(denom) >> 64)).mul(D).div(D.sub(decay)).mul(totalStaked) >> 64;
+        _threshold = ((weight << 128).div(D).div(denom.mul(denom) >> 64)).mul(D).div(D.sub(decay)).mul(_totalStaked()) >> 64;
+    }
+
+    function _totalStaked() internal returns (uint256) {
+        uint256 minTotalStake = (stakeToken.totalSupply().mul(minThresholdStakePercentage)).div(ONE_HUNDRED_PERCENT);
+        return totalStaked < minTotalStake ? minTotalStake : totalStaked;
     }
 
     /**

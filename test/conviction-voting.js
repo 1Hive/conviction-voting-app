@@ -14,6 +14,7 @@ const MiniMeToken = artifacts.require('MiniMeToken')
 const VaultMock = artifacts.require('VaultMock')
 
 const BN = web3.utils.toBN
+const ONE_HUNDRED_PERCENT = 1e18
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
 const ONE_DAY = 60 * 60 * 24
@@ -23,6 +24,7 @@ const DEFAULT_BETA = 0.2 * D
 const DEFAULT_RHO = 0.002 * D
 const DEFAULT_APP_MANAGER_STAKE_TOKENS = 30000
 const DEFAULT_USER_STAKE_TOKENS = 15000
+const MIN_THRESHOLD_STAKE_PERCENTAGE = BN((0.2 * 1e18).toString()) // 20%
 
 const ABSTAIN_PROPOSAL_ID = 1
 const PROPOSAL_STATUS = {
@@ -81,7 +83,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     await requestToken.generateTokens(vault.address, vaultFunds)
 
     convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
-    await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, alpha, beta, rho) // alpha = 0.9, beta = 0.2, rho = 0.002
+    await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
 
     const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
@@ -111,7 +113,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
       await requestToken.generateTokens(vault.address, 15000)
       convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
-      await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO)
+      await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE)
 
       await assertRevert(stakeTokenManager.registerHook(convictionVoting.address), 'CV_INCORRECT_TOKEN_MANAGER_HOOK')
     })
@@ -559,10 +561,29 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             const newProposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
             await convictionVoting.stakeToProposal(newProposalId, DEFAULT_USER_STAKE_TOKENS, { from: user })
             await convictionVoting.stakeToProposal(proposalId, propoasalStake)
-            await convictionVoting.mockAdvanceBlocks(10)
+            await convictionVoting.mockAdvanceBlocks(50)
 
             await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_INSUFFICIENT_CONVICION')
           })
+
+          it('should revert when too little conviction and threshold minimum stake used', async () => {
+            const propoasalStake = 1000
+            const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
+            const newProposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+            await convictionVoting.stakeToProposal(proposalId, propoasalStake)
+            await convictionVoting.mockAdvanceBlocks(20)
+
+            await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_INSUFFICIENT_CONVICION')
+          })
+
+          // const advanceBlocksAndPrintConviction = async (blocks, numberOfTimes) => {
+          //   console.log("Conviction required ", (await convictionVoting.calculateThreshold(requestedAmount)).toString())
+          //   for (let i = 0; i < numberOfTimes; i++) {
+          //     await convictionVoting.mockAdvanceBlocks(blocks)
+          //     await convictionVoting.stakeToProposal(proposalId, 1)
+          //     console.log("Conviction last ", ((await convictionVoting.getProposal(proposalId)).convictionLast).toString())
+          //   }
+          // }
 
           it('should revert when challenged', async () => {
             await convictionVoting.stakeToProposal(proposalId, 10000)
