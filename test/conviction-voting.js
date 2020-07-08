@@ -557,10 +557,9 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             const propoasalStake = 1000
             const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
             const newProposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
-            await convictionVoting.stakeToProposal(newProposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS - propoasalStake, { from: appManager })
             await convictionVoting.stakeToProposal(newProposalId, DEFAULT_USER_STAKE_TOKENS, { from: user })
             await convictionVoting.stakeToProposal(proposalId, propoasalStake)
-            await convictionVoting.mockAdvanceBlocks(40)
+            await convictionVoting.mockAdvanceBlocks(10)
 
             await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_INSUFFICIENT_CONVICION')
           })
