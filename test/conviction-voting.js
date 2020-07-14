@@ -46,7 +46,7 @@ function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 }
 
 contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
-  let convictionVoting, stakeTokenManager, stakeToken, requestToken, vault, agreement
+  let convictionVoting, stakeTokenManager, stakeToken, requestToken, vault
   const requestedAmount = 1000
 
   before(async () => {
