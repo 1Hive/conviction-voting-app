@@ -4,8 +4,6 @@ const { getEventArgument } = require('@aragon/contract-helpers-test/events')
 const { assertRevert } = require('@aragon/apps-agreement/test/helpers/assert/assertThrow')
 const deployDAO = require('./helpers/deployDAO')
 const installApp = require('./helpers/installApp')
-const timeAdvancer = require('./helpers/timeAdvancer')
-const deployer = require('@aragon/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
 
 const ConvictionVoting = artifacts.require('ConvictionVotingMock')
 const HookedTokenManager = artifacts.require('HookedTokenManager')
@@ -46,12 +44,8 @@ function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 }
 
 contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
-  let convictionVoting, stakeTokenManager, stakeToken, requestToken, vault
+  let convictionVoting, stakeTokenManager, stakeToken, requestToken, vault, dao, acl
   const requestedAmount = 1000
-
-  before(async () => {
-    await deployer.deployAndInitializeWrapper({ appManager })
-  })
 
   const deploy = async (
     decimals = 1,
@@ -61,12 +55,13 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     beta = DEFAULT_BETA,
     rho = DEFAULT_RHO
   ) => {
+    ({ dao, acl } = await deployDAO(appManager))
 
     // ERC20 accepts `decimals`. In order to create token with 45000 total supply
     // we provide `1` as `decimals` and `initialSupply` as 4500. So we get 4500*(10**1) total supply.
     stakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'stakeToken', decimals, 'TKN', true)
 
-    stakeTokenManager = await installApp(deployer.dao, deployer.acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
+    stakeTokenManager = await installApp(dao, acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
     await stakeToken.changeController(stakeTokenManager.address)
     await stakeTokenManager.initialize(stakeToken.address, true, 0)
     await stakeTokenManager.mint(appManager, appManagerTokens)
@@ -76,28 +71,25 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
     await requestToken.generateTokens(vault.address, vaultFunds)
 
-    convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
+    convictionVoting = await installApp(dao, acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
     await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
-
-    const ChallengeRole = await deployer.base.CHALLENGE_ROLE()
-    await deployer.acl.createPermission(ANY_ADDRESS, convictionVoting.address, ChallengeRole, appManager)
-
   }
 
   context('_onRegisterAsHook(address _tokenManager, uint256 _hookId, address _token)', () => {
     it('should revert when using token other than stake token', async () => {
+      ({ dao, acl } = await deployDAO(appManager))
       const notStakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'notStakeToken', 1, 'TKN', true)
       const stakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'stakeToken', 1, 'TKN', true)
 
-      stakeTokenManager = await installApp(deployer.dao, deployer.acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
+      stakeTokenManager = await installApp(dao, acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
       await notStakeToken.changeController(stakeTokenManager.address)
       await stakeTokenManager.initialize(notStakeToken.address, true, 0)
 
       vault = await VaultMock.new({ from: appManager })
       requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
       await requestToken.generateTokens(vault.address, 15000)
-      convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
+      convictionVoting = await installApp(dao, acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
       await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE)
 
       await assertRevert(stakeTokenManager.registerHook(convictionVoting.address), 'CV_INCORRECT_TOKEN_MANAGER_HOOK')
@@ -602,7 +594,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
         it('cancels proposal when sender has permission', async () => {
           const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          await acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
 
           await convictionVoting.cancelProposal(proposalId, { from: user })
 
@@ -617,7 +609,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
         it('should revert when cancelling abstain proposal', async () => {
           const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          await acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
           await assertRevert(convictionVoting.cancelProposal(ABSTAIN_PROPOSAL_ID, { from: user }), 'CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL')
         })
 
