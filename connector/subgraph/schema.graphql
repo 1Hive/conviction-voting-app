@@ -13,7 +13,7 @@ type Config @entity {
 type Proposal @entity {
   id: ID!
   number: BigInt!
-  name: String!
+  name: String
   link: String
   creator: Bytes!
   stakes: [Stake!]! @derviedFrom(field: "proposal")
