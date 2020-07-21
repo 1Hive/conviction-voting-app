@@ -1,21 +1,25 @@
 {
   "network": "xdai",
   "dataSources": {
-    "Organizations": [],
-    "OrganizationFactories": [
+    "Organizations": [
       {
-        "name": "DAOFactory@0.8.1",
-        "address": "0x4037f97fcc94287257e50bd14c7da9cb4df18250",
+        "name": "Aaron",
+        "address": "0xf2707AC1d35e9B1B5e42C1C6F85BE7dbc962a28d",
         "startBlock": "10076184"
-      } 
-    ],
-    "OrganizationTemplates": [
+      },
       {
-        "name": "karma-template.aragonpm.eth@1.0.0",
-        "address": "0x5c1ed258ad3716c5ec4c6818dc786a6f6b05a7f0",
-        "startBlock": "10543855"
-      } 
+        "name": "Honey-pot",
+        "address": "0xe9869a0bbc8fb8c61b7d81c33fa2ba84871b3b0e",
+        "startBlock": "10076184"
+      },
+      {
+        "name": "Abridged",
+        "address": "0xf97cbab6c46035463720a6ac323c3b8ec5da4d66",
+        "startBlock": "10076184"
+      }
     ],
+    "OrganizationFactories": [],
+    "OrganizationTemplates": [],
     "LegacyOrganizationTemplates": [],
     "TokenFactories": [],
     "Tokens": []
