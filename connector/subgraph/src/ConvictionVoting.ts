@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { Address, BigInt } from '@graphprotocol/graph-ts'
+import { Address, BigInt, log } from '@graphprotocol/graph-ts'
 import {
   ProposalAdded as ProposalAddedEvent,
   StakeAdded as StakeAddedEvent,
@@ -66,6 +66,12 @@ function _onNewStake(
   blockNumber: BigInt
 ): void {
   const proposal = getProposalEntity(appAddress, proposalId)
+
+  // Hotfix: Orgs managed to stake to non existing proposals 
+  if (proposal.creator.toHexString() == '0x') {
+    return 
+  }
+
   proposal.totalTokensStaked = totalTokensStaked
 
   _updateProposalStakes(proposal, entity, tokensStaked)
