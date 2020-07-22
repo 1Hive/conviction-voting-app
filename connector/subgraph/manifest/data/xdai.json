@@ -1,7 +1,6 @@
 {
   "network": "xdai",
   "dataSources": {
-    "Organizations": [],
     "OrganizationFactories": [
       {
         "name": "DAOFactory@0.8.1",
