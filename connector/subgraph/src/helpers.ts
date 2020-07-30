@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes } from '@graphprotocol/graph-ts'
+import { Address, BigInt, Bytes, ByteArray } from '@graphprotocol/graph-ts'
 import {
   Config as ConfigEntity,
   Proposal as ProposalEntity,
@@ -86,6 +86,7 @@ export function getProposalEntity(
     proposal.stakes = []
     proposal.executed = false
     proposal.totalTokensStaked = BigInt.fromI32(0)
+    proposal.creator = Bytes.fromHexString('0x') as Bytes
   }
 
   return proposal
