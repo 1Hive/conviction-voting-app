@@ -1,7 +1,7 @@
 /* global artifacts contract before beforeEach context it assert web3 */
 
 const { getEventArgument } = require('@aragon/contract-helpers-test/events')
-const { assertRevert } = require('@aragon/apps-agreement/test/helpers/assert/assertThrow')
+const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
 const deployDAO = require('./helpers/deployDAO')
 const installApp = require('./helpers/installApp')
 
@@ -21,7 +21,7 @@ const DEFAULT_BETA = 0.2 * D
 const DEFAULT_RHO = 0.002 * D
 const DEFAULT_APP_MANAGER_STAKE_TOKENS = 30000
 const DEFAULT_USER_STAKE_TOKENS = 15000
-const MIN_THRESHOLD_STAKE_PERCENTAGE = BN((0.2 * 1e18).toString()) // 20%
+const MIN_THRESHOLD_STAKE_PERCENTAGE = BN((0.2 * ONE_HUNDRED_PERCENT).toString()) // 20%
 
 const ABSTAIN_PROPOSAL_ID = 1
 const PROPOSAL_STATUS = {
@@ -97,7 +97,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
   })
 
   context('initialize(MiniMeToken _stakeToken, Vault _vault, address _requestToken, uint256 _decay, uint256 _maxRatio, ' +
-    'uint256 _weight)', () => {
+    'uint256 _weight, uint256 _minThresholdStakePercentage)', () => {
 
     beforeEach('deploy dao and convictionVoting', async () => {
       await deploy()
@@ -112,6 +112,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       assert.equal(await convictionVoting.decay(), DEFAULT_ALPHA, 'Incorrect decay')
       assert.equal(await convictionVoting.maxRatio(), DEFAULT_BETA, 'Incorrect max ratio')
       assert.equal(await convictionVoting.weight(), DEFAULT_RHO, 'Incorrect weight')
+      assert.equal(await convictionVoting.minThresholdStakePercentage(), MIN_THRESHOLD_STAKE_PERCENTAGE.toString(), 'Incorrect min threshold stake percentage')
       const {
         requestedAmount,
         beneficiary,
@@ -222,7 +223,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           const numberOfProposals = 4
           const currentBlock = await convictionVoting.getBlockNumberPublic()
           let proposalIds = []
-          for (let i = 0; i < 4; i++) {
+          for (let i = 0; i < numberOfProposals; i++) {
             const addProposalReceipt = await convictionVoting.addProposal('Proposal 2', '0x', requestedAmount, beneficiary)
             const proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
             await convictionVoting.stakeToProposal(proposalId, stakeAmount)

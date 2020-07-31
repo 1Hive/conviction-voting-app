@@ -69,10 +69,11 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     mapping(address => uint256) internal totalVoterStake;
     mapping(address => uint256[]) internal voterStakedProposals;
 
-    event ProposalAdded(address entity, uint256 id, string title, bytes link, uint256 amount, address beneficiary);
-    event StakeAdded(address entity, uint256 id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
-    event StakeWithdrawn(address entity, uint256 id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
-    event ProposalExecuted(uint256 id, uint256 conviction);
+    event ProposalAdded(address indexed entity, uint256 indexed id, string title, bytes link, uint256 amount, address beneficiary);
+    event StakeAdded(address indexed entity, uint256 indexed id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event StakeWithdrawn(address entity, uint256 indexed id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
+    event ProposalExecuted(uint256 indexed id, uint256 conviction);
+    event ProposalCancelled(uint256 indexed id);
 
     function initialize(
         MiniMeToken _stakeToken,
@@ -204,6 +205,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
 
         proposal.proposalStatus = ProposalStatus.Cancelled;
+
+        emit ProposalCancelled(_proposalId);
     }
 
     /**
@@ -216,6 +219,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @return Block when calculateAndSetConviction was called
      * @return True if proposal has already been executed
      * @return ProposalStatus defining the state of the proposal
+     * @return Submitter of the proposal
      */
     function getProposal(uint256 _proposalId) public view returns (
         uint256 requestedAmount,
@@ -259,7 +263,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Get all proposal ID's voter `_voter` has currently staked too
+     * @notice Get all proposal ID's voter `_voter` has currently staked to
      * @param _voter Voter address
      * @return Voter proposals
      */
@@ -310,7 +314,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         _threshold = ((weight << 128).div(D).div(denom.mul(denom) >> 64)).mul(D).div(D.sub(decay)).mul(_totalStaked()) >> 64;
     }
 
-    function _totalStaked() internal returns (uint256) {
+    function _totalStaked() internal view returns (uint256) {
         uint256 minTotalStake = (stakeToken.totalSupply().mul(minThresholdStakePercentage)).div(ONE_HUNDRED_PERCENT);
         return totalStaked < minTotalStake ? minTotalStake : totalStaked;
     }
@@ -429,16 +433,16 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             _calculateAndSetConviction(proposal, previousStake);
         }
 
-        _updateVoterStakedProposals(_proposalId, msg.sender);
+        _updateVoterStakedProposals(_proposalId, _from);
 
         emit StakeAdded(_from, _proposalId, _amount, proposal.voterStake[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
     function _updateVoterStakedProposals(uint256 _proposalId, address _submitter) internal {
         uint256[] storage voterStakedProposalsArray = voterStakedProposals[_submitter];
-        require(voterStakedProposalsArray.length < MAX_STAKED_PROPOSALS, ERROR_MAX_PROPOSALS_REACHED);
 
         if (!voterStakedProposalsArray.contains(_proposalId)) {
+            require(voterStakedProposalsArray.length < MAX_STAKED_PROPOSALS, ERROR_MAX_PROPOSALS_REACHED);
             voterStakedProposalsArray.push(_proposalId);
         }
     }
