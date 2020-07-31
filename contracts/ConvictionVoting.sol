@@ -37,6 +37,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CV_INCORRECT_TOKEN_MANAGER_HOOK";
     string private constant ERROR_CANNOT_CANCEL_ABSTAIN_PROPOSAL = "CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL";
     string private constant ERROR_CANNOT_EXECUTE_ABSTAIN_PROPOSAL = "CV_CANNOT_EXECUTE_ABSTAIN_PROPOSAL";
+    string private constant ERROR_CANNOT_EXECUTE_ZERO_VALUE_PROPOSAL = "CV_CANNOT_EXECUTE_ZERO_VALUE_PROPOSAL";
 
     enum ProposalStatus {
         Active,              // A vote that has been reported to Agreements
@@ -182,6 +183,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         Proposal storage proposal = proposals[_proposalId];
 
         require(_proposalId != ABSTAIN_PROPOSAL_ID, ERROR_CANNOT_EXECUTE_ABSTAIN_PROPOSAL);
+        require(proposal.requestedAmount > 0, ERROR_CANNOT_EXECUTE_ZERO_VALUE_PROPOSAL);
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
         _calculateAndSetConviction(proposal, proposal.stakedTokens);
         require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION);
