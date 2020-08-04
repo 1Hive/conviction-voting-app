@@ -25,19 +25,20 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     uint256 constant public ABSTAIN_PROPOSAL_ID = 1;
     uint64 constant public MAX_STAKED_PROPOSALS = 10;
 
-    string private constant ERROR_MAX_PROPOSALS_REACHED = "CV_MAX_PROPOSALS_REACHED";
-    string private constant ERROR_STAKING_MORE_THAN_AVAILABLE = "CV_STAKING_MORE_THAN_AVAILABLE";
+    string private constant ERROR_PROPOSAL_DOES_NOT_EXIST = "CV_PROPOSAL_DOES_NOT_EXIST";
     string private constant ERROR_STAKING_ALREADY_STAKED = "CV_STAKING_ALREADY_STAKED";
-    string private constant ERROR_SENDER_CANNOT_CANCEL = "CV_SENDER_CANNOT_CANCEL";
     string private constant ERROR_PROPOSAL_NOT_ACTIVE = "CV_PROPOSAL_NOT_ACTIVE";
-    string private constant ERROR_INSUFFICIENT_CONVICION = "CV_INSUFFICIENT_CONVICION";
-    string private constant ERROR_AMOUNT_OVER_MAX_RATIO = "CV_AMOUNT_OVER_MAX_RATIO";
-    string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CV_AMOUNT_CAN_NOT_BE_ZERO";
-    string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
-    string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CV_INCORRECT_TOKEN_MANAGER_HOOK";
-    string private constant ERROR_CANNOT_CANCEL_ABSTAIN_PROPOSAL = "CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL";
     string private constant ERROR_CANNOT_EXECUTE_ABSTAIN_PROPOSAL = "CV_CANNOT_EXECUTE_ABSTAIN_PROPOSAL";
     string private constant ERROR_CANNOT_EXECUTE_ZERO_VALUE_PROPOSAL = "CV_CANNOT_EXECUTE_ZERO_VALUE_PROPOSAL";
+    string private constant ERROR_INSUFFICIENT_CONVICION = "CV_INSUFFICIENT_CONVICION";
+    string private constant ERROR_SENDER_CANNOT_CANCEL = "CV_SENDER_CANNOT_CANCEL";
+    string private constant ERROR_CANNOT_CANCEL_ABSTAIN_PROPOSAL = "CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL";
+    string private constant ERROR_AMOUNT_OVER_MAX_RATIO = "CV_AMOUNT_OVER_MAX_RATIO";
+    string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CV_INCORRECT_TOKEN_MANAGER_HOOK";
+    string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CV_AMOUNT_CAN_NOT_BE_ZERO";
+    string private constant ERROR_STAKING_MORE_THAN_AVAILABLE = "CV_STAKING_MORE_THAN_AVAILABLE";
+    string private constant ERROR_MAX_PROPOSALS_REACHED = "CV_MAX_PROPOSALS_REACHED";
+    string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
 
     enum ProposalStatus {
         Active,              // A vote that has been reported to Agreements
@@ -75,6 +76,11 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     event StakeWithdrawn(address entity, uint256 indexed id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 indexed id, uint256 conviction);
     event ProposalCancelled(uint256 indexed id);
+
+    modifier proposalExists(uint256 _proposalId) {
+        require(_proposalId == 1 || proposals[_proposalId].submitter != address(0), ERROR_PROPOSAL_DOES_NOT_EXIST);
+        _;
+    }
 
     function initialize(
         MiniMeToken _stakeToken,
@@ -162,7 +168,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _proposalId Proposal id
      * @param _amount Amount of tokens withdrawn
      */
-    function withdrawFromProposal(uint256 _proposalId, uint256 _amount) external isInitialized() {
+    function withdrawFromProposal(uint256 _proposalId, uint256 _amount) external isInitialized() proposalExists(_proposalId) {
         _withdrawFromProposal(_proposalId, _amount, msg.sender);
     }
 
@@ -170,7 +176,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @notice Withdraw all `(self.stakeToken(): address).symbol(): string` tokens previously staked on proposal #`_proposalId`
      * @param _proposalId Proposal id
      */
-    function withdrawAllFromProposal(uint256 _proposalId) external isInitialized() {
+    function withdrawAllFromProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) {
         _withdrawFromProposal(_proposalId, proposals[_proposalId].voterStake[msg.sender], msg.sender);
     }
 
@@ -179,7 +185,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(_proposalId): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(_proposalId): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param _proposalId Proposal id
      */
-    function executeProposal(uint256 _proposalId) external isInitialized() {
+    function executeProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
 
         require(_proposalId != ABSTAIN_PROPOSAL_ID, ERROR_CANNOT_EXECUTE_ABSTAIN_PROPOSAL);
@@ -198,7 +204,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @notice Cancel proposal #`_proposalId`
      * @param _proposalId Proposal id
      */
-    function cancelProposal(uint256 _proposalId) external {
+    function cancelProposal(uint256 _proposalId) external proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
 
         bool senderHasPermission = canPerform(msg.sender, CANCEL_PROPOSAL_ROLE, new uint256[](0));
@@ -411,7 +417,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _amount Amount of staked tokens
      * @param _from Account from which we stake
      */
-    function _stake(uint256 _proposalId, uint256 _amount, address _from) internal {
+    function _stake(uint256 _proposalId, uint256 _amount, address _from) internal proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
@@ -489,11 +495,12 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         if (voterStakedProposals[_from].contains(ABSTAIN_PROPOSAL_ID)) {
             toWithdraw = Math.min256(_targetAmount, proposals[ABSTAIN_PROPOSAL_ID].voterStake[_from]);
             if (toWithdraw > 0) {
-                _withdrawFromProposal(proposalId, toWithdraw, _from);
+                _withdrawFromProposal(ABSTAIN_PROPOSAL_ID, toWithdraw, _from);
                 withdrawnAmount = withdrawnAmount.add(toWithdraw);
             }
         }
 
+        // We reset this variable as _withdrawFromProposal can update voterStakedProposals
         voterStakedProposalsCopy = voterStakedProposals[_from];
 
         while (i < voterStakedProposalsCopy.length && withdrawnAmount < _targetAmount) {
