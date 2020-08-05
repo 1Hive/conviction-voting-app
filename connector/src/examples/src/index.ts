@@ -1,5 +1,5 @@
 import { connect } from '@aragon/connect'
-import { ConvictionVoting, Proposal } from '../../index'
+import connectConviction, { Proposal } from '../../index'
 
 const ORG_ADDRESS = '0xe03f1aa34886a753d4e546c870d7f082fdd2fa9b'
 const APP_ID = 'conviction-voting.open.aragonpm.eth'
@@ -27,22 +27,17 @@ async function describeProposal(proposal: Proposal): Promise<void> {
 
 async function main(): Promise<void> {
   const org = await connect(ORG_ADDRESS, 'thegraph', { chainId: 100 })
-  const apps = await org.apps()
-  const convictionVotingApp = apps.find(app => app.appName === APP_ID)
+
+  const conviction = await connectConviction(org.app('conviction-voting'))
 
   console.log('\nOrganization:', org.location, `(${org.address})`)
 
-  if (!convictionVotingApp?.address) {
+  if (!conviction?.address) {
     console.log('\nNo conviction voting app found in this organization')
     return
   }
 
-  console.log(`\nConviction voting app: ${convictionVotingApp.address}`)
-
-  const conviction = new ConvictionVoting(
-    convictionVotingApp.address,
-    'https://api.thegraph.com/subgraphs/name/1hive/aragon-conviction-voting-xdai'
-  )
+  console.log(`\nConviction voting app: ${conviction.address}`)
 
   console.log(`\nProposals:`)
   const proposals = await conviction.proposals()

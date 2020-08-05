@@ -1,5 +1,5 @@
 {
-  "name": "@1hive/connect-thegraph-conviction-voting",
+  "name": "@1hive/connect-conviction-voting",
   "version": "0.1.7",
   "license": "AGPL-3.0",
   "main": "dist/cjs/index.js",
