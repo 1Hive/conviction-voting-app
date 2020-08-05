@@ -111,7 +111,7 @@ function ProposalDetail({ proposal, onBack, requestToken, stakeToken }) {
   }, [currentConviction, didIStake, threshold])
 
   const handleExecute = useCallback(() => {
-    api.executeProposal(id, true).toPromise()
+    api.executeProposal(id).toPromise()
   }, [api, id])
 
   const handleChangeSupport = useCallback(() => {
