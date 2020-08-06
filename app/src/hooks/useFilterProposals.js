@@ -1,12 +1,15 @@
 import { useState, useMemo, useCallback } from 'react'
 
 import {
+  getProposalExecutionStatus,
   getProposalSupportStatus,
+  getProposalType,
   PROPOSAL_STATUS_SUPPORTED,
   PROPOSAL_STATUS_NOT_SUPPORTED,
   PROPOSAL_STATUS_OPEN,
   PROPOSAL_STATUS_ACCEPTED,
-  getProposalExecutionStatus,
+  PROPOSAL_TYPE_FUNDING,
+  PROPOSAL_TYPE_SIGNALING,
 } from '../proposal-types'
 import { checkInitialLetters } from '../lib/search-utils'
 
@@ -15,6 +18,8 @@ const STAKE_STATUS_FILTER_SUPPORTED = 1
 const STAKE_STATUS_FILTER_NOT_SUPPORTED = 2
 const EXECUTION_STATUS_FILTER_OPEN = 0
 const EXECUTION_STATUS_FILTER_ACCEPTED = 1
+const TYPE_FILTER_FUNDING = 0
+const TYPE_FILTER_SIGNALING = 1
 
 function testSupportFilter(filter, proposalStatus) {
   return (
@@ -41,12 +46,23 @@ function testSearchFilter(proposalName, textSearch) {
   )
 }
 
+function testTypeFilter(filter, proposalStatus) {
+  return (
+    filter === NULL_FILTER_STATE ||
+    (filter === TYPE_FILTER_FUNDING &&
+      proposalStatus === PROPOSAL_TYPE_FUNDING) ||
+    (filter === TYPE_FILTER_SIGNALING &&
+      proposalStatus === PROPOSAL_TYPE_SIGNALING)
+  )
+}
+
 const useFilterProposals = (proposals, myStakes) => {
   const [supportFilter, setSupportFilter] = useState(NULL_FILTER_STATE)
   const [executionFilter, setExecutionFilter] = useState(
     EXECUTION_STATUS_FILTER_OPEN
   )
   const [textSearch, setTextSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState(NULL_FILTER_STATE)
 
   const filteredProposals = useMemo(
     () =>
@@ -56,14 +72,23 @@ const useFilterProposals = (proposals, myStakes) => {
           myStakes,
           proposal
         )
+        const proposalTypeStatus = getProposalType(proposal)
 
         return (
           testExecutionFilter(executionFilter, proposalExecutionStatus) &&
+          testTypeFilter(typeFilter, proposalTypeStatus) &&
           testSupportFilter(supportFilter, proposalSupportStatus) &&
           testSearchFilter(proposal.name, textSearch)
         )
       }),
-    [executionFilter, myStakes, proposals, supportFilter, textSearch]
+    [
+      executionFilter,
+      myStakes,
+      proposals,
+      supportFilter,
+      textSearch,
+      typeFilter,
+    ]
   )
 
   return {
@@ -71,6 +96,7 @@ const useFilterProposals = (proposals, myStakes) => {
     proposalExecutionStatusFilter: executionFilter,
     proposalSupportStatusFilter: supportFilter,
     proposalTextFilter: textSearch,
+    proposalTypeFilter: typeFilter,
     handleProposalExecutionFilterChange: useCallback(
       index => setExecutionFilter(index),
       [setExecutionFilter]
@@ -85,6 +111,9 @@ const useFilterProposals = (proposals, myStakes) => {
       },
       [setTextSearch]
     ),
+    handleProposalTypeFilterChange: useCallback(index => setTypeFilter(index), [
+      setTypeFilter,
+    ]),
   }
 }
 
