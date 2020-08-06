@@ -23,29 +23,37 @@ const TextFilter = React.memo(
     const { layoutName } = useLayout()
     const compactMode = layoutName === 'small'
 
-    return !compactMode ? (
-      <SearchInput
-        value={textFilter}
-        onChange={updateTextFilter}
-        placeholder={placeholder}
-      />
-    ) : (
-      <React.Fragment>
-        <Button
-          display="icon"
-          icon={<IconSearch />}
-          ref={openerRef}
-          label="Search Proposal"
-          onClick={onClick}
-        />
-        <TextFilterPopover
-          textFilter={textFilter}
-          updateTextFilter={updateTextFilter}
-          visible={visible}
-          setVisible={setVisible}
-          opener={openerRef.current}
-        />
-      </React.Fragment>
+    return (
+      <div
+        css={`
+          margin-left: ${1.5 * GU}px;
+        `}
+      >
+        {!compactMode ? (
+          <SearchInput
+            value={textFilter}
+            onChange={updateTextFilter}
+            placeholder={placeholder}
+          />
+        ) : (
+          <React.Fragment>
+            <Button
+              display="icon"
+              icon={<IconSearch />}
+              ref={openerRef}
+              label="Search Proposal"
+              onClick={onClick}
+            />
+            <TextFilterPopover
+              textFilter={textFilter}
+              updateTextFilter={updateTextFilter}
+              visible={visible}
+              setVisible={setVisible}
+              opener={openerRef.current}
+            />
+          </React.Fragment>
+        )}
+      </div>
     )
   }
 )

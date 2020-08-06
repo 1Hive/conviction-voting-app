@@ -42,9 +42,11 @@ const App = React.memo(function App() {
     proposalExecutionStatusFilter,
     proposalSupportStatusFilter,
     proposalTextFilter,
+    proposalTypeFilter,
     handleProposalSupportFilterChange,
     handleProposalExecutionFilterChange,
     handleSearchTextFilterChange,
+    handleProposalTypeFilterChange,
   } = useFilterProposals(proposals, myStakes)
 
   const handleTabChange = tabIndex => {
@@ -85,11 +87,13 @@ const App = React.memo(function App() {
               proposalExecutionStatusFilter={proposalExecutionStatusFilter}
               proposalSupportStatusFilter={proposalSupportStatusFilter}
               proposalTextFilter={proposalTextFilter}
+              proposalTypeFilter={proposalTypeFilter}
               handleProposalSupportFilterChange={
                 handleProposalSupportFilterChange
               }
               handleExecutionStatusFilterChange={handleTabChange}
               handleSearchTextFilterChange={handleSearchTextFilterChange}
+              handleProposalTypeFilterChange={handleProposalTypeFilterChange}
               requestToken={requestToken}
               stakeToken={stakeToken}
               myStakes={myStakes}

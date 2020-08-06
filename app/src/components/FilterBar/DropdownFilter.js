@@ -12,36 +12,30 @@ const DropwdownFilter = React.memo(
   }) => {
     const theme = useTheme()
     return (
-      <DropdownFilterWrapper>
-        <DropDown
-          header="Support"
-          placeholder="All"
-          selected={proposalStatusFilter}
-          onChange={handleProposalStatusFilterChange}
-          items={[
-            <div>
-              All
-              {proposalsSize !== -1 && (
-                <SizeTagWrapper theme={theme.info}>
-                  <Tag limitDigits={4} label={proposalsSize} size="small" />
-                </SizeTagWrapper>
-              )}
-            </div>,
-            'Supported',
-            'Not Supported',
-          ]}
-        />
-      </DropdownFilterWrapper>
+      <DropDown
+        header="Support"
+        placeholder="All"
+        selected={proposalStatusFilter}
+        onChange={handleProposalStatusFilterChange}
+        items={[
+          <div>
+            All
+            {proposalsSize !== -1 && (
+              <SizeTagWrapper theme={theme.info}>
+                <Tag limitDigits={4} label={proposalsSize} size="small" />
+              </SizeTagWrapper>
+            )}
+          </div>,
+          'Supported',
+          'Not Supported',
+        ]}
+        css={`
+          margin-left: ${1.5 * GU}px;
+        `}
+      />
     )
   }
 )
-
-const DropdownFilterWrapper = styled.div`
-  display: grid;
-  grid-template-columns: auto auto auto 1fr;
-  align-items: center;
-  grid-column-gap: ${2 * GU}px;
-`
 
 const SizeTagWrapper = styled.span`
   margin-left: ${1.5 * GU}px;
