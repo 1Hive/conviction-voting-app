@@ -35,9 +35,11 @@ const Proposals = React.memo(
     proposalExecutionStatusFilter,
     proposalSupportStatusFilter,
     proposalTextFilter,
+    proposalTypeFilter,
     handleProposalSupportFilterChange,
     handleExecutionStatusFilterChange,
     handleSearchTextFilterChange,
+    handleProposalTypeFilterChange,
     requestToken,
     stakeToken,
     myStakes,
@@ -176,10 +178,14 @@ const Proposals = React.memo(
                   proposalsSize={filteredProposals.length}
                   proposalStatusFilter={proposalSupportStatusFilter}
                   proposalTextFilter={proposalTextFilter}
+                  proposalTypeFilter={proposalTypeFilter}
                   handleProposalStatusFilterChange={
                     handleProposalSupportFilterChange
                   }
                   handleTextFilterChange={updateTextFilter}
+                  handleProposalTypeFilterChange={
+                    handleProposalTypeFilterChange
+                  }
                   disableDropDownFilter={proposalExecutionStatusFilter === 1}
                 />
               }
