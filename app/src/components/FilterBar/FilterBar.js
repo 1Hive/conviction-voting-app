@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
+import { DropDown } from '@aragon/ui'
 import styled from 'styled-components'
 import PropTypes from 'prop-types'
 
@@ -10,9 +11,11 @@ const FilterBar = React.memo(
     proposalsSize = 0,
     proposalStatusFilter,
     proposalTextFilter,
+    proposalTypeFilter,
     disableDropDownFilter = false,
     handleProposalStatusFilterChange,
     handleTextFilterChange,
+    handleProposalTypeFilterChange,
   }) => {
     const [textFieldVisible, setTextFieldVisible] = useState(false)
     const textFilterOpener = useRef(null)
@@ -22,7 +25,19 @@ const FilterBar = React.memo(
     }, [setTextFieldVisible])
 
     return (
-      <FilterBarWrapper disableDropDown={disableDropDownFilter}>
+      <div
+        css={`
+          display: flex;
+          justify-content: flex-end;
+        `}
+      >
+        <DropDown
+          header="Type"
+          placeholder="Type"
+          selected={proposalTypeFilter}
+          onChange={handleProposalTypeFilterChange}
+          items={['Funding', 'Signaling']}
+        />
         {!disableDropDownFilter && (
           <DropdownFilter
             proposalsSize={proposalsSize}
@@ -39,16 +54,10 @@ const FilterBar = React.memo(
           openerRef={textFilterOpener}
           onClick={handlerTextFilterClick}
         />
-      </FilterBarWrapper>
+      </div>
     )
   }
 )
-
-const FilterBarWrapper = styled.div`
-  display: flex;
-  justify-content: ${({ disableDropDown }) =>
-    disableDropDown ? 'flex-end' : 'space-between'};
-`
 
 FilterBar.propTypes = {
   proposalsSize: PropTypes.number,
