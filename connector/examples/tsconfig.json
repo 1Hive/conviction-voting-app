@@ -14,9 +14,12 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2019",
+    "outDir": "./dist",
     "rootDir": "src",
-    "outDir": "dist"
   },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["dist", "node_modules", "subgraph", "**/__test__/**", "examples"]
+  "include": ["src"],
+  "exclude": ["node_modules"],
+  "references": [
+    { "path": ".." },
+  ]
 }

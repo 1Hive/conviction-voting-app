@@ -1,8 +1,7 @@
 import { connect } from '@aragon/connect'
-import connectConviction, { Proposal } from '../../index'
+import connectConviction, { Proposal } from '../../src/index'
 
 const ORG_ADDRESS = '0xe03f1aa34886a753d4e546c870d7f082fdd2fa9b'
-const APP_ID = 'conviction-voting.open.aragonpm.eth'
 
 function proposalId(proposal: Proposal): string {
   return (
@@ -28,7 +27,9 @@ async function describeProposal(proposal: Proposal): Promise<void> {
 async function main(): Promise<void> {
   const org = await connect(ORG_ADDRESS, 'thegraph', { network: 100 })
 
-  const conviction = await connectConviction(org.app('conviction-voting'))
+  const convictionapp = await org.app('conviction-voting')
+
+  const conviction = await connectConviction(convictionapp)
 
   console.log('\nOrganization:', org.location, `(${org.address})`)
 

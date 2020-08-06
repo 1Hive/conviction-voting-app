@@ -2,27 +2,27 @@
 # yarn lockfile v1
 
 
-"@aragon/connect-core@*":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@aragon/connect-core/-/connect-core-0.2.0.tgz#ea31e3175aea5a9c3c93c604bf103dc01e5b00b1"
-  integrity sha512-YB+yatoHXO+KdYlJP3y6qa1bvqe8VE6H9s7BqwS0f8RtWCADt81iMM617f+NYkmCn/stzupo8N0eHA197DMe6g==
+"@aragon/connect-core@^0.5.2":
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/@aragon/connect-core/-/connect-core-0.5.2.tgz#d4e60e5857fdf72141747d74ffcdd24704f744c3"
+  integrity sha512-McEwQ8v/BsTdUPMza+GARRJ6/ghYPLPANzudCGwP9V6H+4EB3N+zSNOmVH+gfsODgSC1yZ52Fh8s8H0Xumlpyw==
   dependencies:
-    ethers "^5.0.0-beta.188"
+    ethers "^5.0.7"
     radspec "^2.0.0-rc.1"
 
-"@aragon/connect-ethereum@*":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@aragon/connect-ethereum/-/connect-ethereum-0.2.0.tgz#7aca6ba023088de89b9a3529b3a83f559472af43"
-  integrity sha512-k+j7EFG0BgV9/8XFDAAlDs9b6mY3Gz15Ubrd/IbX/uw4dv2FtWnrvI4ngDOWbXraV+QJeakGsjbgCUbcHoSIwg==
+"@aragon/connect-ethereum@^0.5.2":
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/@aragon/connect-ethereum/-/connect-ethereum-0.5.2.tgz#2933ce50197fe3c05b999d7fe6e29fd816e73c41"
+  integrity sha512-5/vNPv7ihO/CKnqHeM0/568gycNU4WbTI1Ln4JrXSbqkffgO8MLaKd6E7GTMZR6jzv3m5LYPEKomi3XQGlfx+g==
   dependencies:
-    "@aragon/connect-core" "*"
+    "@aragon/connect-core" "^0.5.2"
 
-"@aragon/connect-thegraph@*":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@aragon/connect-thegraph/-/connect-thegraph-0.2.0.tgz#51f6853528cb1cd00514a360222f330c42f029b7"
-  integrity sha512-sQsrt7rnynizrVT5P9gETcTLfsCcHcrZm4ILTZc0LKtmMFzyC88A5XGBG1E4fekeqUX1z3IW9YTm3JoDQ81LkA==
+"@aragon/connect-thegraph@^0.5.2":
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/@aragon/connect-thegraph/-/connect-thegraph-0.5.2.tgz#6790f716768f27d88a7a717121b7b5507ae3b65b"
+  integrity sha512-MLxSa9KvlccTBdYKD+TIEokZRHMhoACMj7gLq1r2zsLRTBTxdjQZQfRzfch1TgA0yqGknjjxjRnPPHxgswVl0A==
   dependencies:
-    "@aragon/connect-core" "*"
+    "@aragon/connect-core" "^0.5.2"
     "@urql/core" "^1.11.7"
     graphql "^15.0.0"
     graphql-tag "^2.10.3"
@@ -30,14 +30,14 @@
     isomorphic-ws "^4.0.1"
     subscriptions-transport-ws "^0.9.16"
 
-"@aragon/connect@*":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@aragon/connect/-/connect-0.2.0.tgz#8ed57ae6961d5a8612c87c080c56f0c0e19a9144"
-  integrity sha512-aEuZ9Y1HkeVgRKqHFDzd+BvqkheuEKJ2HqyetjDDgAeSBep6NTNsOcBw+FQWkSUsUNq9+3VeeWE3CC+2sxEZ5w==
+"@aragon/connect@^0.5.2":
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/@aragon/connect/-/connect-0.5.2.tgz#2f9532363696ad19c739b2b44605c6041c2ed302"
+  integrity sha512-+MV/FRmOMialg4THdUNg7JtsobkNDOvNjc/HC5WM3qUjBMbWP5HyPFm+dExt4gUB+ObGnb51qtYjYgN0JoF/8A==
   dependencies:
-    "@aragon/connect-core" "*"
-    "@aragon/connect-ethereum" "*"
-    "@aragon/connect-thegraph" "*"
+    "@aragon/connect-core" "^0.5.2"
+    "@aragon/connect-ethereum" "^0.5.2"
+    "@aragon/connect-thegraph" "^0.5.2"
 
 "@babel/runtime@^7.1.2":
   version "7.10.2"
@@ -432,7 +432,7 @@ elliptic@6.5.2:
     minimalistic-assert "^1.0.0"
     minimalistic-crypto-utils "^1.0.0"
 
-ethers@^5.0.0-beta.188, ethers@^5.0.0-beta.190:
+ethers@^5.0.0-beta.190:
   version "5.0.2"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.0.2.tgz#b7ccca12592c8f5f45e172c3c32fd13d77225048"
   integrity sha512-hAWTPQXvjFlrtnPLCnOOJJuqiqmJv820egPHpOwcWTIQxXRrcfZyse2692eaqsXMeYLNM2CRfYgEomBiBGvgjw==
@@ -442,6 +442,42 @@ ethers@^5.0.0-beta.188, ethers@^5.0.0-beta.190:
     "@ethersproject/abstract-signer" "^5.0.0"
     "@ethersproject/address" "^5.0.0"
     "@ethersproject/base64" "^5.0.0"
+    "@ethersproject/bignumber" "^5.0.0"
+    "@ethersproject/bytes" "^5.0.0"
+    "@ethersproject/constants" "^5.0.0"
+    "@ethersproject/contracts" "^5.0.0"
+    "@ethersproject/hash" "^5.0.0"
+    "@ethersproject/hdnode" "^5.0.0"
+    "@ethersproject/json-wallets" "^5.0.0"
+    "@ethersproject/keccak256" "^5.0.0"
+    "@ethersproject/logger" "^5.0.0"
+    "@ethersproject/networks" "^5.0.0"
+    "@ethersproject/pbkdf2" "^5.0.0"
+    "@ethersproject/properties" "^5.0.0"
+    "@ethersproject/providers" "^5.0.0"
+    "@ethersproject/random" "^5.0.0"
+    "@ethersproject/rlp" "^5.0.0"
+    "@ethersproject/sha2" "^5.0.0"
+    "@ethersproject/signing-key" "^5.0.0"
+    "@ethersproject/solidity" "^5.0.0"
+    "@ethersproject/strings" "^5.0.0"
+    "@ethersproject/transactions" "^5.0.0"
+    "@ethersproject/units" "^5.0.0"
+    "@ethersproject/wallet" "^5.0.0"
+    "@ethersproject/web" "^5.0.0"
+    "@ethersproject/wordlists" "^5.0.0"
+
+ethers@^5.0.7:
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.0.8.tgz#c13d0fdf5e66db8085e2036d3309ed2f8a17ed89"
+  integrity sha512-of/rPgJ7E3yyBADUv5A7Gtkd7EB8ta/T9NS5CCG9tj9cifnXcI3KIdYQ7d8AS+9vm38pR1g6S5I+Q/mRnlQZlg==
+  dependencies:
+    "@ethersproject/abi" "^5.0.0"
+    "@ethersproject/abstract-provider" "^5.0.0"
+    "@ethersproject/abstract-signer" "^5.0.0"
+    "@ethersproject/address" "^5.0.0"
+    "@ethersproject/base64" "^5.0.0"
+    "@ethersproject/basex" "^5.0.0"
     "@ethersproject/bignumber" "^5.0.0"
     "@ethersproject/bytes" "^5.0.0"
     "@ethersproject/constants" "^5.0.0"
