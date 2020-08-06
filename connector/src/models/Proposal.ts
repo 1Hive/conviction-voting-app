@@ -42,7 +42,7 @@ export default class Proposal {
   > {
     return this.#connector.stakesHistoryByProposal(
       this.appAddress,
-      this.id,
+      this.number,
       first,
       skip
     )
@@ -54,7 +54,7 @@ export default class Proposal {
   ): SubscriptionHandler {
     return this.#connector.onStakesHistoryByProposal(
       this.appAddress,
-      this.id,
+      this.number,
       first,
       skip,
       callback

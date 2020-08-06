@@ -26,7 +26,7 @@ async function describeProposal(proposal: Proposal): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const org = await connect(ORG_ADDRESS, 'thegraph', { chainId: 100 })
+  const org = await connect(ORG_ADDRESS, 'thegraph', { network: 100 })
 
   const conviction = await connectConviction(org.app('conviction-voting'))
 
