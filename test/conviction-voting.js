@@ -827,7 +827,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     })
   })
 
-  context.only('Disputable functions', () => {
+  context('Disputable functions', () => {
 
     let proposalId, actionId
 
