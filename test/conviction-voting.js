@@ -2,8 +2,9 @@
 
 const { getEventArgument } = require('@aragon/contract-helpers-test/events')
 const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
-const deployDAO = require('./helpers/deployDAO')
+const { RULINGS } = require('@aragon/apps-agreement/test/helpers/utils/enums')
 const installApp = require('./helpers/installApp')
+const deployer = require('@aragon/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
 
 const ConvictionVoting = artifacts.require('ConvictionVotingMock')
 const HookedTokenManager = artifacts.require('HookedTokenManager')
@@ -26,8 +27,9 @@ const MIN_THRESHOLD_STAKE_PERCENTAGE = BN((0.2 * ONE_HUNDRED_PERCENT).toString()
 const ABSTAIN_PROPOSAL_ID = new BN(1)
 const PROPOSAL_STATUS = {
   ACTIVE: 0,
-  CANCELLED: 1,
-  EXECUTED: 2
+  PAUSED: 1,
+  CANCELLED: 2,
+  EXECUTED: 3
 }
 
 function calculateConviction(t, y0, x, a) {
@@ -44,8 +46,15 @@ function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
 }
 
 contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
-  let convictionVoting, stakeTokenManager, stakeToken, requestToken, vault, dao, acl
+  let convictionVoting, stakeTokenManager, stakeToken, requestToken, vault, agreement, collateralToken
   const requestedAmount = 1000
+
+  before(async () => {
+    agreement = await deployer.deployAndInitializeWrapper({ appManager })
+    collateralToken = await deployer.deployCollateralToken()
+    await agreement.sign(appManager)
+    await agreement.sign(user, { from: user })
+  })
 
   const deploy = async (
     decimals = 1,
@@ -55,13 +64,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     beta = DEFAULT_BETA,
     rho = DEFAULT_RHO
   ) => {
-    ({ dao, acl } = await deployDAO(appManager))
-
     // ERC20 accepts `decimals`. In order to create token with 45000 total supply
     // we provide `1` as `decimals` and `initialSupply` as 4500. So we get 4500*(10**1) total supply.
     stakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'stakeToken', decimals, 'TKN', true)
 
-    stakeTokenManager = await installApp(dao, acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
+    stakeTokenManager = await installApp(deployer.dao, deployer.acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
     await stakeToken.changeController(stakeTokenManager.address)
     await stakeTokenManager.initialize(stakeToken.address, true, 0)
     await stakeTokenManager.mint(appManager, appManagerTokens)
@@ -71,25 +78,39 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
     await requestToken.generateTokens(vault.address, vaultFunds)
 
-    convictionVoting = await installApp(dao, acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
+    convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
     await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
+
+
+    const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
+    await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
+    const ChallengeRole = await deployer.base.CHALLENGE_ROLE()
+    await deployer.acl.createPermission(ANY_ADDRESS, convictionVoting.address, ChallengeRole, appManager)
+
+    await agreement.activate({
+      disputable: convictionVoting,
+      collateralToken,
+      actionCollateral: 0,
+      challengeCollateral: 0,
+      challengeDuration: ONE_DAY,
+      from: appManager
+    })
   }
 
   context('_onRegisterAsHook(tokenManager, hookId, token)', () => {
     it('should revert when using token other than stake token', async () => {
-      ({ dao, acl } = await deployDAO(appManager))
       const notStakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'notStakeToken', 1, 'TKN', true)
       const stakeToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'stakeToken', 1, 'TKN', true)
 
-      stakeTokenManager = await installApp(dao, acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
+      stakeTokenManager = await installApp(deployer.dao, deployer.acl, HookedTokenManager, [[ANY_ADDRESS, 'MINT_ROLE'], [ANY_ADDRESS, 'SET_HOOK_ROLE']], appManager)
       await notStakeToken.changeController(stakeTokenManager.address)
       await stakeTokenManager.initialize(notStakeToken.address, true, 0)
 
       vault = await VaultMock.new({ from: appManager })
       requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
       await requestToken.generateTokens(vault.address, 15000)
-      convictionVoting = await installApp(dao, acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
+      convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
       await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE)
 
       await assertRevert(stakeTokenManager.registerHook(convictionVoting.address), 'CV_INCORRECT_TOKEN_MANAGER_HOOK')
@@ -118,6 +139,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         stakedTokens,
         convictionLast,
         blockLast,
+        agreementActionId,
         proposalStatus,
         submitter
       } = await convictionVoting.getProposal(ABSTAIN_PROPOSAL_ID)
@@ -126,6 +148,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       assert.equal(stakedTokens, 0, 'Incorrect staked tokens')
       assert.equal(convictionLast, 0, 'Incorrect conviction last')
       assert.equal(blockLast, 0, 'Incorrect block last')
+      assert.equal(agreementActionId, 0, 'Incorrect action ID')
       assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
       assert.equal(submitter, 0x0, 'Incorrect submitter')
     })
@@ -147,6 +170,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           stakedTokens,
           convictionLast,
           blockLast,
+          agreementActionId,
           proposalStatus,
           submitter
         } = await convictionVoting.getProposal(proposalId)
@@ -156,6 +180,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         assert.equal(stakedTokens, 0, 'Incorrect staked tokens')
         assert.equal(convictionLast, 0, 'Incorrect conviction last')
         assert.equal(blockLast, 0, 'Incorrect block last')
+        assert.equal(agreementActionId, 1, 'Incorrect action ID')
         assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
         assert.equal(submitter, appManager, 'Incorrect submitter')
         assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
@@ -324,8 +349,22 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000000), 'CV_STAKING_MORE_THAN_AVAILABLE')
         })
 
+        it('should revert when challenged', async () => {
+          await agreement.challenge({ actionId })
+
+          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_PROPOSAL_NOT_ACTIVE')
+        })
+
         it('should revert when cancelled', async () => {
           await convictionVoting.cancelProposal(proposalId)
+
+          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_PROPOSAL_NOT_ACTIVE')
+        })
+
+        it('should revert when cancelled by Agreements', async () => {
+          await agreement.challenge({ actionId })
+          await agreement.dispute({ actionId })
+          await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
 
           await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_PROPOSAL_NOT_ACTIVE')
         })
@@ -559,6 +598,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             assert.equal(vaultBalanceAfter, vaultBalanceBefore - requestedAmount, 'Incorrect vault balance')
             const beneficiaryBalanceAfter = await requestToken.balanceOf(beneficiary)
             assert.equal(beneficiaryBalanceAfter.toNumber(), beneficiaryBalanceBefore.toNumber() + requestedAmount, 'Incorrect beneficiary balance')
+            const { closed } = await agreement.getAction(actionId)
+            assert.isTrue(closed, 'Incorrect closed status')
           })
 
           it('should revert when executing non existing proposal', async () => {
@@ -600,10 +641,28 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           //   }
           // }
 
+          it('should revert when challenged', async () => {
+            await convictionVoting.stakeToProposal(proposalId, 10000)
+            await convictionVoting.mockAdvanceBlocks(40)
+            await agreement.challenge({ actionId })
+
+            await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_PROPOSAL_NOT_ACTIVE')
+          })
+
           it('should revert when cancelled', async () => {
             await convictionVoting.stakeToProposal(proposalId, 10000)
             await convictionVoting.mockAdvanceBlocks(40)
             await convictionVoting.cancelProposal(proposalId)
+
+            await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_PROPOSAL_NOT_ACTIVE')
+          })
+
+          it('should revert when cancelled by Agreements', async () => {
+            await convictionVoting.stakeToProposal(proposalId, 10000)
+            await convictionVoting.mockAdvanceBlocks(40)
+            await agreement.challenge({ actionId })
+            await agreement.dispute({ actionId })
+            await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
 
             await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_PROPOSAL_NOT_ACTIVE')
           })
@@ -647,16 +706,20 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
           const { proposalStatus } = await convictionVoting.getProposal(proposalId)
           assert.equal(proposalStatus, PROPOSAL_STATUS.CANCELLED, 'Incorrect proposal status')
+          const { closed } = await agreement.getAction(actionId)
+          assert.isTrue(closed, 'Incorrect closed status')
         })
 
         it('cancels proposal when sender has permission', async () => {
           const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
 
           await convictionVoting.cancelProposal(proposalId, { from: user })
 
           const { proposalStatus } = await convictionVoting.getProposal(proposalId)
           assert.equal(proposalStatus, PROPOSAL_STATUS.CANCELLED, 'Incorrect proposal status')
+          const { closed } = await agreement.getAction(actionId)
+          assert.isTrue(closed, 'Incorrect closed status')
         })
 
         it('should revert when proposal does not exist', async () => {
@@ -671,12 +734,26 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
         it('should revert when cancelling abstain proposal', async () => {
           const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
           await assertRevert(convictionVoting.cancelProposal(ABSTAIN_PROPOSAL_ID, { from: user }), 'CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL')
+        })
+
+        it('should revert when challenged', async () => {
+          await agreement.challenge({ actionId })
+
+          await assertRevert(convictionVoting.cancelProposal(proposalId), 'CV_PROPOSAL_NOT_ACTIVE')
         })
 
         it('should revert when cancelled', async () => {
           await convictionVoting.cancelProposal(proposalId)
+
+          await assertRevert(convictionVoting.cancelProposal(proposalId), 'CV_PROPOSAL_NOT_ACTIVE')
+        })
+
+        it('should revert when cancelled by Agreements', async () => {
+          await agreement.challenge({ actionId })
+          await agreement.dispute({ actionId })
+          await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
 
           await assertRevert(convictionVoting.cancelProposal(proposalId), 'CV_PROPOSAL_NOT_ACTIVE')
         })
@@ -749,4 +826,140 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       })
     })
   })
+
+  context.only('Disputable functions', () => {
+
+    let proposalId, actionId
+
+    beforeEach(async () => {
+      await deploy()
+      const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', 1000, appManager, { from: appManager })
+      proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+      actionId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'actionId')
+    })
+
+    describe('canChallenge(uint256 _proposalId)', () => {
+      it('returns true when vote not challenged', async () => {
+        const canChallenge = await convictionVoting.canChallenge(proposalId)
+
+        assert.isTrue(canChallenge)
+      })
+
+      it('returns true when vote challenged and allowed (ensures we can challenge multiple times)', async () => {
+        await agreement.challenge({ actionId })
+        await agreement.dispute({ actionId })
+        await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_SUBMITTER })
+
+        const canChallenge = await convictionVoting.canChallenge(proposalId)
+
+        assert.isTrue(canChallenge)
+      })
+
+      it('returns false when vote has been challenged', async () => {
+        await agreement.challenge({ actionId })
+
+        const canChallenge = await convictionVoting.canChallenge(proposalId)
+
+        assert.isFalse(canChallenge)
+      })
+
+      it('returns true when vote has reached threshold but not been executed', async () => {
+        await convictionVoting.stakeToProposal(proposalId, 15000, { from: appManager })
+        await convictionVoting.mockAdvanceBlocks(10)
+
+        const canChallenge = await convictionVoting.canChallenge(proposalId)
+
+        assert.isTrue(canChallenge)
+      })
+
+      it('returns false when vote has been executed', async () => {
+        await convictionVoting.stakeToProposal(proposalId, 15000, { from: appManager })
+        await convictionVoting.mockAdvanceBlocks(10)
+        await convictionVoting.executeProposal(proposalId, { from: user })
+
+        const canChallenge = await convictionVoting.canChallenge(proposalId)
+
+        assert.isFalse(canChallenge)
+      })
+    })
+
+    describe('canClose(uint256 _proposalId)', () => {
+      it('returns false when vote not executed or cancelled', async () => {
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isFalse(canClose)
+      })
+
+      it('returns false when vote has been challenged', async () => {
+        await agreement.challenge({ actionId })
+
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isFalse(canClose)
+      })
+
+      it('returns true when vote has been cancelled', async () => {
+        await agreement.challenge({ actionId })
+        await agreement.dispute({ actionId })
+        await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
+
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isTrue(canClose)
+      })
+
+      it('returns true when vote has been executed', async () => {
+        await convictionVoting.stakeToProposal(proposalId, 15000, { from: appManager })
+        await convictionVoting.mockAdvanceBlocks(10)
+        await convictionVoting.executeProposal(proposalId, { from: user })
+
+        const canClose = await convictionVoting.canClose(proposalId)
+
+        assert.isTrue(canClose)
+      })
+    })
+
+    describe('_onDisputableActionChallenged(uint256 _proposalId)', () => {
+      it('pauses vote', async () => {
+        await agreement.challenge({ actionId })
+
+        const { proposalStatus } = await convictionVoting.getProposal(proposalId)
+        assert.equal(proposalStatus, PROPOSAL_STATUS.PAUSED)
+      })
+    })
+
+    describe('_onDisputableActionRejected(uint256 _proposalId)', () => {
+      it('cancels the proposal', async () => {
+        await agreement.challenge({ actionId })
+        await agreement.dispute({ actionId })
+        await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
+
+        const { proposalStatus } = await convictionVoting.getProposal(proposalId)
+        assert.equal(proposalStatus, PROPOSAL_STATUS.CANCELLED)
+      })
+    })
+
+    describe('_onDisputableActionAllowed(uint256 _proposalId)', () => {
+      it('resumes execution script', async () => {
+        await agreement.challenge({ actionId })
+        await agreement.dispute({ actionId })
+        await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_SUBMITTER })
+
+        const { proposalStatus } = await convictionVoting.getProposal(proposalId)
+        assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE)
+      })
+    })
+
+    describe('_onDisputableActionVoided(uint256 _proposalId)', async () => {
+      it('resumes execution script', async () => {
+        await agreement.challenge({ actionId })
+        await agreement.dispute({ actionId })
+        await agreement.executeRuling({ actionId, ruling: RULINGS.REFUSED })
+
+        const { proposalStatus } = await convictionVoting.getProposal(proposalId)
+        assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE)
+      })
+    })
+  })
+
 })
