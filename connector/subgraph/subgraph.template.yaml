@@ -35,12 +35,14 @@ templates:
         - name: MinieMeToken
           file: ./abis/MiniMeToken.json
       eventHandlers:
-        - event: ProposalAdded(address,uint256,string,bytes,uint256,address)
+        - event: ProposalAdded(indexed address,indexed uint256,string,bytes,uint256,address)
           handler: handleProposalAdded
-        - event: StakeAdded(address,uint256,uint256,uint256,uint256,uint256)
+        - event: StakeAdded(indexed address,indexed uint256,uint256,uint256,uint256,uint256)
           handler: handleStakeAdded
-        - event: StakeWithdrawn(address,uint256,uint256,uint256,uint256,uint256)
+        - event: StakeWithdrawn(address,indexed uint256,uint256,uint256,uint256,uint256)
           handler: handleStakeWithdrawn
-        - event: ProposalExecuted(uint256,uint256)
+        - event: ProposalExecuted(indexed uint256,uint256)
           handler: handleProposalExecuted
+        - event: ProposalCancelled(indexed uint256)
+          handler: handleProposalCancelled
       file: ./src/ConvictionVoting.ts
