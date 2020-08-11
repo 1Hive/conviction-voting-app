@@ -14,16 +14,16 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     using SafeMath64 for uint64;
     using ArrayUtils for uint256[];
 
-    bytes32 constant public CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
-    bytes32 constant public CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
+    bytes32 public constant CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
+    bytes32 public constant CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
 
-    uint256 constant public D = 10000000;
-    uint256 constant public ONE_HUNDRED_PERCENT = 1e18;
-    uint256 constant private TWO_128 = 0x100000000000000000000000000000000; // 2^128
-    uint256 constant private TWO_127 = 0x80000000000000000000000000000000; // 2^127
-    uint256 constant private TWO_64 = 0x10000000000000000; // 2^64
-    uint256 constant public ABSTAIN_PROPOSAL_ID = 1;
-    uint64 constant public MAX_STAKED_PROPOSALS = 10;
+    uint256 public constant D = 10000000;
+    uint256 public constant ONE_HUNDRED_PERCENT = 1e18;
+    uint256 private constant TWO_128 = 0x100000000000000000000000000000000; // 2^128
+    uint256 private constant TWO_127 = 0x80000000000000000000000000000000; // 2^127
+    uint256 private constant TWO_64 = 0x10000000000000000; // 2^64
+    uint256 public constant ABSTAIN_PROPOSAL_ID = 1;
+    uint64 public constant MAX_STAKED_PROPOSALS = 10;
 
     string private constant ERROR_PROPOSAL_DOES_NOT_EXIST = "CV_PROPOSAL_DOES_NOT_EXIST";
     string private constant ERROR_STAKING_ALREADY_STAKED = "CV_STAKING_ALREADY_STAKED";

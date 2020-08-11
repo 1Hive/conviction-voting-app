@@ -13,7 +13,7 @@
     },
     "rinkeby": {
       "registry": "0x98df287b6c145399aaa709692c8d308357bc085d",
-      "appName": "conviction-voting.open.aragonpm.eth",
+      "appName": "disputable-conviction-voting.open.aragonpm.eth",
       "wsRPC": "wss://rinkeby.eth.aragon.network/ws",
       "network": "rinkeby"
     },

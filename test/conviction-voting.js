@@ -1,7 +1,7 @@
 /* global artifacts contract before beforeEach context it assert web3 */
 
-const { getEventArgument } = require('@aragon/contract-helpers-test/events')
-const { assertRevert } = require('@aragon/contract-helpers-test/assertThrow')
+const { getEventArgument } = require('@aragon/contract-helpers-test/src/events')
+const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts/assertThrow')
 const { RULINGS } = require('@aragon/apps-agreement/test/helpers/utils/enums')
 const installApp = require('./helpers/installApp')
 const deployer = require('@aragon/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
@@ -50,7 +50,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
   const requestedAmount = 1000
 
   before(async () => {
-    agreement = await deployer.deployAndInitializeWrapper({ appManager })
+    agreement = await deployer.deployAndInitializeAgreementWrapper({ appManager })
     collateralToken = await deployer.deployCollateralToken()
     await agreement.sign(appManager)
     await agreement.sign(user, { from: user })
@@ -81,7 +81,6 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
     await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
-
 
     const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
     await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
@@ -839,13 +838,13 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
     })
 
     describe('canChallenge(uint256 _proposalId)', () => {
-      it('returns true when vote not challenged', async () => {
+      it('returns true when vote not challenged/paused', async () => {
         const canChallenge = await convictionVoting.canChallenge(proposalId)
 
         assert.isTrue(canChallenge)
       })
 
-      it('returns true when vote challenged and allowed (ensures we can challenge multiple times)', async () => {
+      it('returns true when vote challenged/paused and allowed (ensures we can challenge multiple times)', async () => {
         await agreement.challenge({ actionId })
         await agreement.dispute({ actionId })
         await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_SUBMITTER })
@@ -855,7 +854,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         assert.isTrue(canChallenge)
       })
 
-      it('returns false when vote has been challenged', async () => {
+      it('returns false when vote has been challenged/paused', async () => {
         await agreement.challenge({ actionId })
 
         const canChallenge = await convictionVoting.canChallenge(proposalId)
@@ -890,7 +889,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         assert.isFalse(canClose)
       })
 
-      it('returns false when vote has been challenged', async () => {
+      it('returns false when vote has been challenged/paused', async () => {
         await agreement.challenge({ actionId })
 
         const canClose = await convictionVoting.canClose(proposalId)
