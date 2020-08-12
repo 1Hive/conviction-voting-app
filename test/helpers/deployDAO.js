@@ -1,13 +1,9 @@
 /* global artifacts */
 
-const Kernel = artifacts.require('@aragon/core/contracts/kernel/Kernel')
-const ACL = artifacts.require('@aragon/core/contracts/acl/ACL')
-const EVMScriptRegistryFactory = artifacts.require(
-  '@aragon/core/contracts/factory/EVMScriptRegistryFactory'
-)
-const DAOFactory = artifacts.require(
-  '@aragon/core/contracts/factory/DAOFactory'
-)
+const Kernel = artifacts.require('Kernel')
+const ACL = artifacts.require('ACL')
+const EVMScriptRegistryFactory = artifacts.require('EVMScriptRegistryFactory')
+const DAOFactory = artifacts.require('DAOFactory')
 
 const { getEventArgument } = require('@aragon/test-helpers/events')
 
