@@ -8,6 +8,7 @@ import {
 } from '../generated/schema'
 import { MiniMeToken as MiniMeTokenContract } from '../generated/templates/MiniMeToken/MiniMeToken'
 import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
+import { STATUS_ACTIVE } from './proposal-statuses'
 
 function loadTokenData(address: Address): void {
   const tokenContract = MiniMeTokenContract.bind(address)
@@ -51,9 +52,11 @@ export function loadAppConfig(appAddress: Address): void {
 
   // Load conviction params
   config.decay = convictionVoting.decay()
-  config.pctBase = convictionVoting.D()
   config.weight = convictionVoting.weight()
   config.maxRatio = convictionVoting.maxRatio()
+  config.pctBase = convictionVoting.D()
+  config.maxStakedProposals = convictionVoting.MAX_STAKED_PROPOSALS().toI32()
+  config.minThresholdStakePercentage = convictionVoting.minThresholdStakePercentage()
 
   config.appAddress = appAddress
   config.orgAddress = convictionVoting.kernel()
@@ -84,9 +87,10 @@ export function getProposalEntity(
     proposal = new ProposalEntity(proposalEntityId)
     proposal.number = proposalId
     proposal.stakes = []
-    proposal.executed = false
+    proposal.status = STATUS_ACTIVE
     proposal.totalTokensStaked = BigInt.fromI32(0)
     proposal.creator = Bytes.fromHexString('0x') as Bytes
+
   }
 
   return proposal

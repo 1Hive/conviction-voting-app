@@ -31,6 +31,8 @@ export interface ConfigData {
   pctBase: string
   stakeToken: TokenData
   requestToken: TokenData
+  maxStakedProposals: number
+  minThresholdStakePercentage: String
 }
 
 export interface StakeData {
@@ -47,7 +49,7 @@ export interface ProposalData {
   creator: string
   beneficiary?: string
   requestedAmount?: string
-  executed: boolean
+  status: string
   totalTokensStaked: string
   stakes: StakeData[]
   appAddress: string

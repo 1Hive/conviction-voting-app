@@ -5,6 +5,8 @@ type Config @entity {
   maxRatio: BigInt!
   pctBase: BigInt!
   stakeToken: Token!
+  maxStakedProposals: Int!
+  minThresholdStakePercentage: BigInt!
   requestToken: Token!
   appAddress: Bytes!
   orgAddress: Bytes!
@@ -19,7 +21,7 @@ type Proposal @entity {
   stakes: [Stake!]! @derviedFrom(field: "proposal")
   beneficiary: Bytes
   requestedAmount: BigInt
-  executed: Boolean!
+  status: ProposalStatus!
   totalTokensStaked: BigInt!
   appAddress: Bytes!
   orgAddress: Bytes!
@@ -56,4 +58,10 @@ type AragonInfo @entity {
   orgs: [Bytes!]!
   apps: [Bytes!]!
   tokens: [Bytes!]!
+}
+
+enum ProposalStatus {
+  Active
+  Cancelled
+  Executed
 }

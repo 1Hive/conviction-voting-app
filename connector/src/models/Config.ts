@@ -10,6 +10,8 @@ export default class Config {
   readonly pctBase: string
   readonly stakeToken: TokenData
   readonly requestToken: TokenData
+  readonly maxStakedProposals: number
+  readonly minThresholdStakePercentage: String
 
   constructor(data: ConfigData, connector: IConvictionVotingConnector) {
     this.#connector = connector
@@ -21,5 +23,7 @@ export default class Config {
     this.pctBase = data.pctBase
     this.stakeToken = data.stakeToken
     this.requestToken = data.requestToken
+    this.maxStakedProposals = data.maxStakedProposals
+    this.minThresholdStakePercentage = data.minThresholdStakePercentage
   }
 }
