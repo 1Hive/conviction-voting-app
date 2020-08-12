@@ -20,6 +20,8 @@ export const CONFIG = (type: string) => gql`
         symbol
         decimals
       }
+      maxStakedProposals
+      minThresholdStakePercentage
     }
   }
 `
@@ -36,7 +38,7 @@ export const ALL_PROPOSALS = (type: string) => gql`
       creator
       beneficiary
       requestedAmount
-      executed
+      status
       totalTokensStaked
       stakes {
         entity

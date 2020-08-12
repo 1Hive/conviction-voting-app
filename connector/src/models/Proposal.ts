@@ -16,7 +16,7 @@ export default class Proposal {
   readonly creator: string
   readonly beneficiary?: string
   readonly requestedAmount?: string
-  readonly executed: boolean
+  readonly status: string
   readonly totalTokensStaked: string
   readonly stakes: StakeData[]
   readonly appAddress: string
@@ -31,7 +31,7 @@ export default class Proposal {
     this.creator = data.creator
     this.beneficiary = data.beneficiary
     this.requestedAmount = data.requestedAmount
-    this.executed = data.executed
+    this.status = data.status
     this.totalTokensStaked = data.totalTokensStaked
     this.stakes = data.stakes
     this.appAddress = data.appAddress
