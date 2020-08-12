@@ -1,5 +1,5 @@
-export { default as ConvictionVotingConnectorTheGraph } from './connector'
-
-export { default as ConvictionVoting } from './entities/ConvictionVoting'
-export { default as StakeHistory } from './entities/Stake'
-export { default as Proposal } from './entities/Proposal'
+export { default as ConvictionVoting } from './models/ConvictionVoting'
+export { default as StakeHistory } from './models/Stake'
+export { default as Proposal } from './models/Proposal'
+export { default as ConvictionVotingConnectorTheGraph } from './thegraph/connector'
+export { default } from './connect'

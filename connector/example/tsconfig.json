@@ -8,15 +8,14 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "module": "commonjs",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "target": "es2019",
-    "rootDir": "src",
-    "outDir": "dist/esm"
+    "outDir": "./dist",
+    "rootDir": "src"
   },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["dist", "node_modules", "subgraph", "**/__test__/**", "examples"]
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }
