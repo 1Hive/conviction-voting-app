@@ -1,5 +1,5 @@
 import { connect } from '@aragon/connect'
-import connectConviction, { Proposal } from '../../src/index'
+import connectConviction, { Proposal } from '@1hive/connect-conviction-voting'
 
 const ORG_ADDRESS = '0xe03f1aa34886a753d4e546c870d7f082fdd2fa9b'
 
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
 
 main()
   .then(() => process.exit(0))
-  .catch(err => {
+  .catch((err) => {
     console.error('')
     console.error(err)
     console.log(

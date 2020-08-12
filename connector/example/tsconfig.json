@@ -8,18 +8,14 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "module": "commonjs",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "target": "es2019",
     "outDir": "./dist",
-    "rootDir": "src",
+    "rootDir": "src"
   },
   "include": ["src"],
-  "exclude": ["node_modules"],
-  "references": [
-    { "path": ".." },
-  ]
+  "exclude": ["node_modules"]
 }

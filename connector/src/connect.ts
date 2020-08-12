@@ -19,10 +19,12 @@ export default createAppConnector<ConvictionVoting, Config>(
 
     const subgraphUrl =
       config.subgraphUrl ?? subgraphUrlFromChainId(network.chainId)
+
     const convictionVotingConnector = new ConvictionVotingConnectorTheGraph(
       subgraphUrl,
       verbose
     )
+
     return new ConvictionVoting(convictionVotingConnector, app.address)
   }
 )

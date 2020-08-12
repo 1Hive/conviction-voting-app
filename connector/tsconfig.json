@@ -15,7 +15,7 @@
     "strict": true,
     "target": "es2019",
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist/esm"
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["dist", "node_modules", "subgraph", "**/__test__/**", "examples"]
