@@ -1,9 +1,9 @@
 import { QueryResult } from '@aragon/connect-thegraph'
-import { Config as ConfigGql } from '../queries/types'
-import Config, { ConfigData } from '../entities/Config'
+import Config from '../../models/Config'
+import { ConfigData } from '../../types'
 
 export function parseConfig(result: QueryResult, connector: any): Config {
-  const config: ConfigGql = result.data.config
+  const config = result.data.config
 
   if (!config) {
     throw new Error('Unable to parse config.')

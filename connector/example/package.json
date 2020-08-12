@@ -1,5 +1,5 @@
 {
-  "name": "nodejs",
+  "name": "connect-conviction-voting-example",
   "main": "dist/index.js",
   "version": "0.2.0",
   "private": true,
@@ -8,12 +8,14 @@
     "dev": "yarn build --watch",
     "clean": "rm -rf ./dist ./tsconfig.tsbuildinfo",
     "compile": "tsc",
-    "start": "yarn build && node ./dist/index.js"
+    "start": "ts-node ."
   },
   "dependencies": {
-    "@aragon/connect": "*"
+    "@1hive/connect-conviction-voting": "link:..",
+    "@aragon/connect": "^0.5.2"
   },
   "devDependencies": {
+    "ts-node": "^8.10.2",
     "typescript": "^3.8.3"
   }
 }
