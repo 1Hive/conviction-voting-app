@@ -14,6 +14,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     using SafeMath64 for uint64;
     using ArrayUtils for uint256[];
 
+    bytes32 constant public UPDATE_SETTINGS_ROLE = keccak256("UPDATE_SETTINGS_ROLE");
     bytes32 constant public CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
     bytes32 constant public CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
 
@@ -71,6 +72,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     mapping(address => uint256) internal totalVoterStake;
     mapping(address => uint256[]) internal voterStakedProposals;
 
+    event ConvictionSettingsChanged(uint256 decay, uint256 maxRatio, uint256 weight, uint256 minThresholdStakePercentage);
     event ProposalAdded(address indexed entity, uint256 indexed id, string title, bytes link, uint256 amount, address beneficiary);
     event StakeAdded(address indexed entity, uint256 indexed id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event StakeWithdrawn(address entity, uint256 indexed id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
@@ -114,6 +116,30 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         emit ProposalAdded(0x0, ABSTAIN_PROPOSAL_ID, "Abstain proposal", "", 0, 0x0);
 
         initialized();
+    }
+
+    /**
+     * @notice Update the conviction voting parameters
+     * @param _decay The rate at which conviction is accrued or lost from a proposal
+     * @param _maxRatio Proposal threshold parameter
+     * @param _weight Proposal threshold parameter
+     * @param _minThresholdStakePercentage The minimum percent of stake token max supply that is used for calculating
+        conviction
+     */
+    function setConvictionCalculationSettings(
+        uint256 _decay,
+        uint256 _maxRatio,
+        uint256 _weight,
+        uint256 _minThresholdStakePercentage
+    )
+        public auth(UPDATE_SETTINGS_ROLE)
+    {
+        decay = _decay;
+        maxRatio = _maxRatio;
+        weight = _weight;
+        minThresholdStakePercentage = _minThresholdStakePercentage;
+
+        emit ConvictionSettingsChanged(_decay, _maxRatio, _weight, _minThresholdStakePercentage);
     }
 
     /**
