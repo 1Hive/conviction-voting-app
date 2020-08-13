@@ -72,6 +72,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     mapping(address => uint256) internal totalVoterStake;
     mapping(address => uint256[]) internal voterStakedProposals;
 
+    event ConvictionSettingsChanged(uint256 decay, uint256 maxRatio, uint256 weight, uint256 minThresholdStakePercentage);
     event ProposalAdded(address indexed entity, uint256 indexed id, string title, bytes link, uint256 amount, address beneficiary);
     event StakeAdded(address indexed entity, uint256 indexed id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event StakeWithdrawn(address entity, uint256 indexed id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
@@ -137,6 +138,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         maxRatio = _maxRatio;
         weight = _weight;
         minThresholdStakePercentage = _minThresholdStakePercentage;
+
+        emit ConvictionSettingsChanged(_decay, _maxRatio, _weight, _minThresholdStakePercentage);
     }
 
     /**
