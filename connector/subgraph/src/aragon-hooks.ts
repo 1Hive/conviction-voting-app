@@ -1,6 +1,14 @@
 import { Address, log } from '@graphprotocol/graph-ts'
 import { loadAppConfig } from './helpers'
 
+
+const APP_IDS: string[] = [
+  '0x0fe6b8bdb08ec31cf72c32af3c168ea1f09de36414edebdf6b3b1b7970093680',  // conviction-voting.aragonpm.eth
+  '0xbc5e8545c829b4a2dd66039e0824a32c19e8159e699402865a9e18746f99c390',  // conviction-voting.1hive.aragonpm.eth
+  '0x589851b3734f6578a92f33bfc26877a1166b95238be1f484deeaac6383d14c38',  // conviction-voting.open.aragonpm.eth 
+  '0xe4691f497f5e74daf61612cea2d5a540b095805872218eaa9108aa5fd76779a2'   // conviction-beta.open.aragonpm.eth
+]   
+
 /*
  * Called when an app proxy is detected.
  *
@@ -10,18 +18,9 @@ import { loadAppConfig } from './helpers'
  * The returned name is used to instantiate a template declared in the subgraph manifest file,
  * which must have the same name.
  */
-
-// gardens-dependency.open.aragonpm.eth
-// 0x16c0b0af27b5e169e5f678055840d7ab2b312519d7700a06554c287619f4b9f9
-// appId on xadai
-// 0xbc5e8545c829b4a2dd66039e0824a32c19e8159e699402865a9e18746f99c390
-// conviction-voting.open.aragonpm.eth
-// 0x589851b3734f6578a92f33bfc26877a1166b95238be1f484deeaac6383d14c38
 export function getTemplateForApp(appId: string): string | null {
-  log.debug('appid {}', [appId])
   if (
-    appId ==
-    '0xbc5e8545c829b4a2dd66039e0824a32c19e8159e699402865a9e18746f99c390'
+  APP_IDS.includes(appId)
   ) {
     return 'ConvictionVoting'
   } else {
