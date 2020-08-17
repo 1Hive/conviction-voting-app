@@ -1,6 +1,6 @@
 /* global artifacts contract before beforeEach context it assert web3 */
 
-const { getEventArgument } = require('@aragon/contract-helpers-test/src/events')
+const { getEventArgument, ZERO_ADDRESS, ONE_DAY, bn } = require('@aragon/contract-helpers-test')
 const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts/assertThrow')
 const { RULINGS } = require('@aragon/apps-agreement/test/helpers/utils/enums')
 const installApp = require('./helpers/installApp')
@@ -11,20 +11,17 @@ const HookedTokenManager = artifacts.require('HookedTokenManager')
 const MiniMeToken = artifacts.require('MiniMeToken')
 const VaultMock = artifacts.require('VaultMock')
 
-const BN = web3.utils.toBN
 const ONE_HUNDRED_PERCENT = 1e18
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
-const ONE_DAY = 60 * 60 * 24
 const D = 10 ** 7
 const DEFAULT_ALPHA = 0.9 * D
 const DEFAULT_BETA = 0.2 * D
 const DEFAULT_RHO = 0.002 * D
 const DEFAULT_APP_MANAGER_STAKE_TOKENS = 30000
 const DEFAULT_USER_STAKE_TOKENS = 15000
-const MIN_THRESHOLD_STAKE_PERCENTAGE = BN((0.2 * ONE_HUNDRED_PERCENT).toString()) // 20%
+const MIN_THRESHOLD_STAKE_PERCENTAGE = bn((0.2 * ONE_HUNDRED_PERCENT).toString()) // 20%
 
-const ABSTAIN_PROPOSAL_ID = new BN(1)
+const ABSTAIN_PROPOSAL_ID = new web3.utils.toBN(1)
 const PROPOSAL_STATUS = {
   ACTIVE: 0,
   PAUSED: 1,
@@ -157,7 +154,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       const decay = 1 * D
       const maxRatio = 0.5 * D
       const weight = 0.005 * D
-      const minThresholdStakePercentage = BN((0.3 * ONE_HUNDRED_PERCENT).toString()) // 30%
+      const minThresholdStakePercentage = bn((0.3 * ONE_HUNDRED_PERCENT).toString()) // 30%
 
       it('sets conviction calculation settings', async () => {
         const updateSettingsRole = await convictionVoting.UPDATE_SETTINGS_ROLE()
@@ -174,6 +171,34 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       it('reverts when no permission', async () => {
         await assertRevert(convictionVoting.setConvictionCalculationSettings(decay, maxRatio, weight, minThresholdStakePercentage),
           'APP_AUTH_FAILED')
+      })
+    })
+
+    context('addSignalingProposal(title, link)', () => {
+      it('should create a signaling proposal', async () => {
+        const addProposalReceipt = await convictionVoting.addSignalingProposal('Proposal 1', '0x')
+        const proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+
+        const {
+          requestedAmount: actualRequestedAmount,
+          beneficiary: actualBeneficiary,
+          stakedTokens,
+          convictionLast,
+          blockLast,
+          agreementActionId,
+          proposalStatus,
+          submitter
+        } = await convictionVoting.getProposal(proposalId)
+
+        assert.equal(actualRequestedAmount, 0, 'Incorrect requested amount')
+        assert.equal(actualBeneficiary, ZERO_ADDRESS, 'Incorrect beneficiary')
+        assert.equal(stakedTokens, 0, 'Incorrect staked tokens')
+        assert.equal(convictionLast, 0, 'Incorrect conviction last')
+        assert.equal(blockLast, 0, 'Incorrect block last')
+        assert.equal(agreementActionId, 1, 'Incorrect action ID')
+        assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
+        assert.equal(submitter, appManager, 'Incorrect submitter')
+        assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
       })
     })
 
@@ -200,14 +225,22 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         } = await convictionVoting.getProposal(proposalId)
 
         assert.equal(actualRequestedAmount, requestedAmount, 'Incorrect requested amount')
-        assert.equal(beneficiary, beneficiary, 'Incorrect beneficiary')
+        assert.equal(actualBeneficiary, beneficiary, 'Incorrect beneficiary')
         assert.equal(stakedTokens, 0, 'Incorrect staked tokens')
         assert.equal(convictionLast, 0, 'Incorrect conviction last')
         assert.equal(blockLast, 0, 'Incorrect block last')
-        assert.equal(agreementActionId, 1, 'Incorrect action ID')
+        assert.equal(agreementActionId.toString(), actionId.toString(), 'Incorrect action ID')
         assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
         assert.equal(submitter, appManager, 'Incorrect submitter')
         assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
+      })
+
+      it('reverts when no beneficiary provided', async () => {
+        await assertRevert(convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, ZERO_ADDRESS), 'CV_NO_BENEFICIARY')
+      })
+
+      it('reverts when zero request amount specified', async () => {
+        await assertRevert(convictionVoting.addProposal('Proposal 1', '0x', bn(0), beneficiary), 'CV_REQUESTED_AMOUNT_ZERO')
       })
 
       const assertProposalAndStakesCorrect =
@@ -491,7 +524,6 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             const currentBlock = await convictionVoting.getBlockNumberPublic()
 
             await stakeToken.transfer(user, transferAmount)
-
             const stakedMinusTransferred = DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount
             await assertProposalAndStakesCorrect(
               ABSTAIN_PROPOSAL_ID, DEFAULT_APP_MANAGER_STAKE_TOKENS, stakedMinusTransferred,
@@ -821,12 +853,12 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       beforeEach(
         'deploy DAO and convictionVoting',
         async () => {
-          const appManagerTokens = BN('1000000000000000000000')
-          const userTokens = BN('164000000000000000000')
+          const appManagerTokens = bn('1000000000000000000000')
+          const userTokens = bn('164000000000000000000')
           await deploy(
             18,
             [appManagerTokens, userTokens],
-            BN('745000000000000000000'),
+            bn('745000000000000000000'),
             0.9999599 * D,
             0.2 * D,
             0.002 * D
@@ -844,7 +876,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
       it('threshold function', async () => {
         assert.equal(
-          parseInt(await convictionVoting.calculateThreshold(BN('1000000000000000000')))
+          parseInt(await convictionVoting.calculateThreshold(bn('1000000000000000000')))
             .toPrecision(10), calculateThreshold(1, 745, 1164000000000000000000, 0.9999599, 0.2, 0.002)
             .toPrecision(10))
       })

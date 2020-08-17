@@ -27,6 +27,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     uint64 public constant MAX_STAKED_PROPOSALS = 10;
 
     string private constant ERROR_PROPOSAL_DOES_NOT_EXIST = "CV_PROPOSAL_DOES_NOT_EXIST";
+    string private constant ERROR_REQUESTED_AMOUNT_ZERO = "CV_REQUESTED_AMOUNT_ZERO";
+    string private constant ERROR_NO_BENEFICIARY = "CV_NO_BENEFICIARY";
     string private constant ERROR_STAKING_ALREADY_STAKED = "CV_STAKING_ALREADY_STAKED";
     string private constant ERROR_PROPOSAL_NOT_ACTIVE = "CV_PROPOSAL_NOT_ACTIVE";
     string private constant ERROR_CANNOT_EXECUTE_ABSTAIN_PROPOSAL = "CV_CANNOT_EXECUTE_ABSTAIN_PROPOSAL";
@@ -149,34 +151,28 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Add proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
+     * @notice Create a signaling proposal `_title`
+     * @param _title Title of the proposal
+     * @param _link IPFS or HTTP link with proposal's description
+     */
+    function addSignalingProposal(string _title, bytes _link) external isInitialized() auth(CREATE_PROPOSALS_ROLE) {
+        _addProposal(_title, _link, 0, address(0));
+    }
+
+    /**
+     * @notice Create proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
      * @param _requestedAmount Tokens requested
      * @param _beneficiary Address that will receive payment
      */
-    function addProposal(
-        string _title,
-        bytes _link,
-        uint256 _requestedAmount,
-        address _beneficiary
-    )
+    function addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary)
         external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
-        uint256 agreementActionId = _newAgreementAction(proposalCounter, _link, msg.sender);
-        proposals[proposalCounter] = Proposal(
-            _requestedAmount,
-            _beneficiary,
-            0,
-            0,
-            0,
-            agreementActionId,
-            ProposalStatus.Active,
-            msg.sender
-        );
+        require(_requestedAmount > 0, ERROR_REQUESTED_AMOUNT_ZERO);
+        require(_beneficiary != address(0), ERROR_NO_BENEFICIARY);
 
-        emit ProposalAdded(msg.sender, proposalCounter, agreementActionId, _title, _link, _requestedAmount, _beneficiary);
-        proposalCounter++;
+        _addProposal(_title, _link, _requestedAmount, _beneficiary);
     }
 
     /**
@@ -343,13 +339,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _oldAmount Amount of tokens staked until now
      * @return Current conviction
      */
-    function calculateConviction(
-        uint64 _timePassed,
-        uint256 _lastConv,
-        uint256 _oldAmount
-    )
-        public view returns(uint256)
-    {
+    function calculateConviction(uint64 _timePassed, uint256 _lastConv, uint256 _oldAmount) public view returns(uint256) {
         uint256 t = uint256(_timePassed);
         // atTWO_128 = 2^128 * a^t
         uint256 atTWO_128 = _pow((decay << 128).div(D), t);
@@ -506,6 +496,23 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         );
         _proposal.blockLast = blockNumber;
         _proposal.convictionLast = conviction;
+    }
+
+    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary) internal {
+        uint256 agreementActionId = _newAgreementAction(proposalCounter, _link, msg.sender);
+        proposals[proposalCounter] = Proposal(
+            _requestedAmount,
+            _beneficiary,
+            0,
+            0,
+            0,
+            agreementActionId,
+            ProposalStatus.Active,
+            msg.sender
+        );
+
+        emit ProposalAdded(msg.sender, proposalCounter, agreementActionId, _title, _link, _requestedAmount, _beneficiary);
+        proposalCounter++;
     }
 
     /**
