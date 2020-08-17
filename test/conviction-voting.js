@@ -887,6 +887,13 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         assert.isFalse(canChallenge)
       })
 
+      it('returns false when vote has been cancelled', async () => {
+        await convictionVoting.cancelProposal(proposalId)
+
+        const canChallenge = await convictionVoting.canChallenge(proposalId)
+        assert.isFalse(canChallenge)
+      })
+
       it('returns true when vote has reached threshold but not been executed', async () => {
         await convictionVoting.stakeToProposal(proposalId, 15000, { from: appManager })
         await convictionVoting.mockAdvanceBlocks(10)
@@ -971,6 +978,19 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
 
         const { proposalStatus } = await convictionVoting.getProposal(proposalId)
         assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE)
+      })
+
+      it('allows execution', async () => {
+        await convictionVoting.stakeToProposal(proposalId, 10000)
+        await convictionVoting.mockAdvanceBlocks(40)
+        await agreement.challenge({ actionId })
+        await agreement.dispute({ actionId })
+        await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_SUBMITTER })
+
+        await convictionVoting.executeProposal(proposalId)
+
+        const { proposalStatus } = await convictionVoting.getProposal(proposalId)
+        assert.equal(proposalStatus, PROPOSAL_STATUS.EXECUTED, 'Incorrect proposal status')
       })
     })
 
