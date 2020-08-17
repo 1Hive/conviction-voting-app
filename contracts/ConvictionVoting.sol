@@ -14,9 +14,12 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     using SafeMath64 for uint64;
     using ArrayUtils for uint256[];
 
-    bytes32 constant public UPDATE_SETTINGS_ROLE = keccak256("UPDATE_SETTINGS_ROLE");
-    bytes32 constant public CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
-    bytes32 constant public CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
+//    bytes32 constant public UPDATE_SETTINGS_ROLE = keccak256("UPDATE_SETTINGS_ROLE");
+    bytes32 constant public UPDATE_SETTINGS_ROLE = 0x9d4f140430c9045e12b5a104aa9e641c09b980a26ab8e12a32a2f3d155229ae3;
+//    bytes32 constant public CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
+    bytes32 constant public CREATE_PROPOSALS_ROLE = 0xbf05b9322505d747ab5880dfb677dc4864381e9fc3a25ccfa184a3a53d02f4b2;
+//    bytes32 constant public CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
+    bytes32 constant public CANCEL_PROPOSAL_ROLE = 0x3e317d8f3de745777f176274dda437b0b9bbbe0704f48e9be1821136c177b933;
 
     uint256 public constant D = 10000000;
     uint256 public constant ONE_HUNDRED_PERCENT = 1e18;
@@ -151,7 +154,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Create a signaling proposal `_title`
+     * @notice Create signaling proposal `_title`
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
      */
@@ -160,7 +163,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Create proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
+     * @notice Create proposal `_title` for `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
      * @param _requestedAmount Tokens requested

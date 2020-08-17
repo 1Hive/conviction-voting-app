@@ -1,6 +1,6 @@
 const truffle = require('@aragon/truffle-config-v5')
 
-truffle.compilers.solc.settings.optimizer.runs = process.env.TRUFFLE_TEST ? 1000 : 10000
+truffle.compilers.solc.settings.optimizer.runs = process.env.TRUFFLE_TEST ? 1000 : 3000
 
 truffle.networks.rinkeby.gasPrice = 20000000001
 
