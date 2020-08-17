@@ -1,8 +1,18 @@
 {
   "roles": [
     {
+      "name": "Update settings",
+      "id": "UPDATE_SETTINGS_ROLE",
+      "params": []
+    },
+    {
       "name": "Create a proposal",
       "id": "CREATE_PROPOSALS_ROLE",
+      "params": []
+    },
+    {
+      "name": "Cancel a proposal",
+      "id": "CANCEL_PROPOSAL_ROLE",
       "params": []
     }
   ],

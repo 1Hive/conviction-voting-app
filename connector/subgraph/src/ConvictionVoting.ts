@@ -4,6 +4,7 @@ import {
   ProposalAdded as ProposalAddedEvent,
   StakeAdded as StakeAddedEvent,
   StakeWithdrawn as StakeWithdrawnEvent,
+  ProposalCancelled as ProposalCancelledEvent,
   ProposalExecuted as ProposalExecutedEvent,
 } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { Proposal as ProposalEntity } from '../generated/schema'
@@ -13,6 +14,9 @@ import {
   getStakeHistoryEntity,
   getOrgAddress,
 } from './helpers'
+import { STATUS_CANCELLED, STATUS_EXECUTED } from './proposal-statuses'
+
+
 
 export function handleProposalAdded(event: ProposalAddedEvent): void {
   const proposal = getProposalEntity(event.address, event.params.id)
@@ -49,9 +53,17 @@ export function handleStakeWithdrawn(event: StakeWithdrawnEvent): void {
   )
 }
 
+
 export function handleProposalExecuted(event: ProposalExecutedEvent): void {
   const proposal = getProposalEntity(event.address, event.params.id)
-  proposal.executed = true
+  proposal.status = STATUS_EXECUTED
+  
+  proposal.save()
+}
+
+export function handleProposalCancelled(event: ProposalCancelledEvent): void {
+  const proposal = getProposalEntity(event.address, event.params.id)
+  proposal.status = STATUS_CANCELLED
 
   proposal.save()
 }
