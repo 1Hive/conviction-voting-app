@@ -152,6 +152,31 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       assert.equal(submitter, 0x0, 'Incorrect submitter')
     })
 
+    context('setConvictionCalculationSettings(decay, maxRatio, weight, minThresholdStakePercentage)', () => {
+
+      const decay = 1 * D
+      const maxRatio = 0.5 * D
+      const weight = 0.005 * D
+      const minThresholdStakePercentage = BN((0.3 * ONE_HUNDRED_PERCENT).toString()) // 30%
+
+      it('sets conviction calculation settings', async () => {
+        const updateSettingsRole = await convictionVoting.UPDATE_SETTINGS_ROLE()
+        await deployer.acl.createPermission(appManager, convictionVoting.address, updateSettingsRole, appManager)
+
+        await convictionVoting.setConvictionCalculationSettings(decay, maxRatio, weight, minThresholdStakePercentage)
+
+        assert.equal(await convictionVoting.decay(), decay, 'Incorrect decay')
+        assert.equal(await convictionVoting.maxRatio(), maxRatio, 'Incorrect max ratio')
+        assert.equal(await convictionVoting.weight(), weight, 'Incorrect weight')
+        assert.equal(await convictionVoting.minThresholdStakePercentage(), minThresholdStakePercentage.toString(), 'Incorrect min threshold stake percentage')
+      })
+
+      it('reverts when no permission', async () => {
+        await assertRevert(convictionVoting.setConvictionCalculationSettings(decay, maxRatio, weight, minThresholdStakePercentage),
+          'APP_AUTH_FAILED')
+      })
+    })
+
     context('addProposal(title, link, requestedAmount, beneficiary)', () => {
 
       let proposalId, actionId
