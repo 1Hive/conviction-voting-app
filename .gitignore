@@ -1,7 +1,6 @@
 node_modules
 build
 .cache
-cache
 dist
 ipfs.cmd
 package-lock.json
