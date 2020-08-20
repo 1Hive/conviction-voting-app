@@ -90,6 +90,7 @@ function _onNewStake(
 
   const config = getConfigEntity(appAddress)
 
+  // If the old totalTokensStaked is less than the new means that is a stake else a withdraw
   if (proposal.totalTokensStaked < totalTokensStaked){
     config.totalStaked = config.totalStaked.plus(amount)
   } else {
