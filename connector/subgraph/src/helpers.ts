@@ -25,7 +25,7 @@ function getConfigEntityId(appAddress: Address): string {
   return appAddress.toHexString()
 }
 
-function getConfigEntity(appAddress: Address): ConfigEntity | null {
+export function getConfigEntity(appAddress: Address): ConfigEntity | null {
   const configEntityId = getConfigEntityId(appAddress)
 
   let config = ConfigEntity.load(configEntityId)
@@ -55,6 +55,7 @@ export function loadAppConfig(appAddress: Address): void {
   config.weight = convictionVoting.weight()
   config.maxRatio = convictionVoting.maxRatio()
   config.pctBase = convictionVoting.D()
+  config.totalStaked = convictionVoting.totalStaked()
   config.maxStakedProposals = convictionVoting.MAX_STAKED_PROPOSALS().toI32()
   config.minThresholdStakePercentage = convictionVoting.minThresholdStakePercentage()
 
