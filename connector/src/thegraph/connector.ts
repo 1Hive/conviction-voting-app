@@ -20,17 +20,27 @@ export function subgraphUrlFromChainId(chainId: number) {
   return null
 }
 
+type ConvictionVotingConnectorTheGraphConfig = {
+  pollInterval?: number
+  subgraphUrl?: string
+  verbose?: boolean
+}
+
+
 export default class ConvictionVotingConnectorTheGraph
   implements IConvictionVotingConnector {
   #gql: GraphQLWrapper
 
-  constructor(subgraphUrl: string, verbose: boolean = false) {
-    if (!subgraphUrl) {
+  constructor(config: ConvictionVotingConnectorTheGraphConfig) {
+    if (!config.subgraphUrl) {
       throw new Error(
         'ConvictionVotingConnector requires subgraphUrl to be passed.'
       )
     }
-    this.#gql = new GraphQLWrapper(subgraphUrl, verbose)
+    this.#gql = new GraphQLWrapper(config.subgraphUrl, {
+      pollInterval: config.pollInterval,
+      verbose: config.verbose,
+    })
   }
 
   async disconnect() {
@@ -39,7 +49,7 @@ export default class ConvictionVotingConnectorTheGraph
 
   async config(id: string): Promise<Config> {
     return this.#gql.performQueryWithParser(
-      queries.CONFIG('query'),
+      queries.CONFIG('subscription'),
       { id },
       (result: QueryResult) => parseConfig(result, this)
     )
