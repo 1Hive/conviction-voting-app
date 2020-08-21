@@ -33,6 +33,7 @@ export interface ConfigData {
   requestToken: TokenData
   maxStakedProposals: number
   minThresholdStakePercentage: String
+  totalStaked: number
 }
 
 export interface StakeData {

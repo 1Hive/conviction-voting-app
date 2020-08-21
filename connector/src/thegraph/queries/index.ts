@@ -22,6 +22,7 @@ export const CONFIG = (type: string) => gql`
       }
       maxStakedProposals
       minThresholdStakePercentage
+      totalStaked
     }
   }
 `
