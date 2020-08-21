@@ -47,14 +47,6 @@ export default class ConvictionVotingConnectorTheGraph
     this.#gql.close()
   }
 
-  async config(id: string): Promise<Config> {
-    return this.#gql.performQueryWithParser(
-      queries.CONFIG('subscription'),
-      { id },
-      (result: QueryResult) => parseConfig(result, this)
-    )
-  }
-
   async proposals(
     appAddress: string,
     first: number,
@@ -64,6 +56,15 @@ export default class ConvictionVotingConnectorTheGraph
       queries.ALL_PROPOSALS('query'),
       { appAddress, first, skip },
       (result: QueryResult) => parseProposals(result, this)
+    )
+  }
+
+  onConfig(id: string, callback: Function): SubscriptionHandler {
+    return this.#gql.subscribeToQueryWithParser(
+      queries.CONFIG('subscription'),
+      { id },
+      callback,
+      (result: QueryResult) => parseConfig(result, this)
     )
   }
 

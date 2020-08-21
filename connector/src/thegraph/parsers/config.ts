@@ -3,7 +3,7 @@ import Config from '../../models/Config'
 import { ConfigData } from '../../types'
 
 export function parseConfig(result: QueryResult, connector: any): Config {
-  const config = result.data.config
+  const config = result.data.configs
 
   if (!config) {
     throw new Error('Unable to parse config.')

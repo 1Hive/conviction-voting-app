@@ -1,8 +1,8 @@
 import gql from 'graphql-tag'
 
 export const CONFIG = (type: string) => gql`
-  ${type} Config($id: String!) {
-    config(id: $id) {
+  ${type} Configs($id: String!) {
+    configs(id: $id) {
       id
       decay
       weight

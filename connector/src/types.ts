@@ -58,12 +58,15 @@ export interface ProposalData {
 
 export interface IConvictionVotingConnector {
   disconnect(): Promise<void>
-  config(id: string): Promise<Config>
   proposals(
     appAddress: string,
     first: number,
     skip: number
   ): Promise<Proposal[]>
+  onConfig(
+    id: string, 
+    callback: Function
+  ): SubscriptionHandler
   onProposals(
     appAddress: string,
     first: number,
