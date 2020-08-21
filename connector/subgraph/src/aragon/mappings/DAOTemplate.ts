@@ -1,7 +1,7 @@
-import { DeployDao as DeployDaoEvent } from '../../../generated/karma-template.aragonpm.eth@1.0.0/DAOTemplate'
-import { SetupDao as SetupDaoEvent } from '../../../generated/karma-template.aragonpm.eth@1.0.0/DAOTemplate'
-import { DeployToken as DeployTokenEvent } from '../../../generated/karma-template.aragonpm.eth@1.0.0/DAOTemplate'
-import { InstalledApp as InstalledAppEvent } from '../../../generated/karma-template.aragonpm.eth@1.0.0/DAOTemplate'
+import { DeployDao as DeployDaoEvent } from '../../../generated/DAOFactory@0.8.1/DAOTemplate'
+import { SetupDao as SetupDaoEvent } from '../../../generated/DAOFactory@0.8.1/DAOTemplate'
+import { DeployToken as DeployTokenEvent } from '../../../generated/DAOFactory@0.8.1/DAOTemplate'
+import { InstalledApp as InstalledAppEvent } from '../../../generated/DAOFactory@0.8.1/DAOTemplate'
 import * as aragon from '../aragon'
 
 export function handleDeployDao(event: DeployDaoEvent): void {
