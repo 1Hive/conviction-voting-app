@@ -3,13 +3,13 @@ import Config from '../../models/Config'
 import { ConfigData } from '../../types'
 
 export function parseConfig(result: QueryResult, connector: any): Config {
-  const config = result.data.config
+  const configs = result.data.configs
 
-  if (!config) {
+  if (!configs) {
     throw new Error('Unable to parse config.')
   }
 
-  const data: ConfigData = config
-
-  return new Config(data, connector)
+  return configs.map((config: ConfigData) => {
+    return new Config(config, connector)
+  })
 }

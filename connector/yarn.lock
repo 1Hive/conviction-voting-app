@@ -2,20 +2,20 @@
 # yarn lockfile v1
 
 
-"@aragon/connect-core@^0.5.2", "@aragon/connect-core@^0.5.3":
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/@aragon/connect-core/-/connect-core-0.5.3.tgz#88aa5f5a3492e940ce1f900fe4b05c2fc41fae82"
-  integrity sha512-pMnwP1Ff2lK8qDfhK/7W52H5FBOWP8c0CmKo00kaPXCk2qJlY97pPLOAqPLKV4j8JsJD86x+UKDafke0E86MuA==
+"@aragon/connect-core@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@aragon/connect-core/-/connect-core-0.6.0.tgz#dcbf818e203c5c547dd0f93b6c4c53362688e467"
+  integrity sha512-dxb80Tfkkljw+B8ZxG01U+1pnod3a8qz22BUMsMBet//ZvN7lr6w5ftWOKJxOgDn0mzNLn5yy6X2zq6j9KaKrw==
   dependencies:
     ethers "^5.0.7"
     radspec "^2.0.0-rc.1"
 
-"@aragon/connect-thegraph@^0.5.2":
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/@aragon/connect-thegraph/-/connect-thegraph-0.5.3.tgz#7536189cc0f1258c14d1210f2d0617e75d178ecd"
-  integrity sha512-LK+WDi95LbIngA6FWXWcmniYoAdPesPxwVoHkphMDifukTjLZr93Fm8B3qR2hmV/8HhnYLL8JfP5IzjWPMTHog==
+"@aragon/connect-thegraph@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@aragon/connect-thegraph/-/connect-thegraph-0.6.0.tgz#a93bd391668f79abe432c700a3deefd17ec8ec0b"
+  integrity sha512-fqkgjAUZNN3gXnmOFyzcIz76flB8N9qvF+dlIxCecSs7PRj6hX1YCBM+S+N7G+MHpuxZHQF3pXHdewZasitYXw==
   dependencies:
-    "@aragon/connect-core" "^0.5.3"
+    "@aragon/connect-core" "^0.6.0"
     "@urql/core" "^1.11.7"
     graphql "^15.0.0"
     graphql-tag "^2.10.3"
