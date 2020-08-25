@@ -27,8 +27,6 @@ async function describeProposal(proposal: Proposal): Promise<void> {
 async function main(): Promise<void> {
   const org = await connect(ORG_ADDRESS, 'thegraph', { network: 4 })
 
-  console.log('\nORG!!!!!!!! !!!', org)
-
   const convictionapp = await org.app('conviction-beta')
 
   const conviction = await connectConviction(convictionapp)
@@ -39,8 +37,6 @@ async function main(): Promise<void> {
     console.log('\nNo conviction voting app found in this organization')
     return
   }
-
-  console.log('CONVICTION ', conviction)
 
   console.log(`\nConviction voting app: ${conviction.address}`)
 
