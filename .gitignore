@@ -6,3 +6,4 @@ ipfs.cmd
 package-lock.json
 coverage.json
 coverage
+.idea
