@@ -33,7 +33,8 @@
     "prettier": "^1.18.2",
     "solidity-coverage": "^0.6.2",
     "truffle": "5.1.4",
-    "wait-on": "^4.0.1"
+    "wait-on": "^4.0.1",
+    "chai": "^4.2.0"
   },
   "scripts": {
     "prepare": "cd app && npm install && cd ..",
@@ -53,7 +54,8 @@
     "lint": "eslint . & solium --dir ./contracts",
     "lint:fix": "eslint . --fix & solium --dir ./contracts --fix",
     "compile": "truffle compile",
-    "test": "cross-env TRUFFLE_TEST=true npm run ganache-cli:test",
+    "test:old": "cross-env TRUFFLE_TEST=true npm run ganache-cli:test",
+    "test": "TRUFFLE_TEST=true truffle test --network rpc",
     "coverage": "cross-env SOLIDITY_COVERAGE=true npm run ganache-cli:test",
     "ganache-cli:test": "sh ./node_modules/@aragon/test-helpers/ganache-cli.sh",
     "publish:patch": "aragon apm publish patch",

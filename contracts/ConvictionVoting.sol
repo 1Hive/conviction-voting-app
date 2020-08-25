@@ -496,7 +496,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             uint256 proposalId = voterStakedProposalsCopy[i];
             Proposal storage proposal = proposals[proposalId];
 
-            if (proposal.proposalStatus == ProposalStatus.Executed) {
+            if (proposal.proposalStatus == ProposalStatus.Executed || proposal.proposalStatus == ProposalStatus.Cancelled) {
                 toWithdraw = proposal.voterStake[_from];
                 if (toWithdraw > 0) {
                     _withdrawFromProposal(proposalId, toWithdraw, _from);
@@ -564,7 +564,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             voterStakedProposals[_from].deleteItem(_proposalId);
         }
 
-        if (proposal.proposalStatus != ProposalStatus.Executed) {
+        if (proposal.proposalStatus == ProposalStatus.Active) {
             _calculateAndSetConviction(proposal, previousStake);
         }
 
