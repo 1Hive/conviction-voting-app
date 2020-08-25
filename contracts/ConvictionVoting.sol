@@ -564,7 +564,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             voterStakedProposals[_from].deleteItem(_proposalId);
         }
 
-        if (proposal.proposalStatus != ProposalStatus.Executed) {
+        if (proposal.proposalStatus == ProposalStatus.Active) {
             _calculateAndSetConviction(proposal, previousStake);
         }
 
