@@ -40,6 +40,9 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     string private constant ERROR_STAKING_MORE_THAN_AVAILABLE = "CV_STAKING_MORE_THAN_AVAILABLE";
     string private constant ERROR_MAX_PROPOSALS_REACHED = "CV_MAX_PROPOSALS_REACHED";
     string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
+    string private constant ERROR_A_SHOULD_BE_LESS_THAN_2_POW_128 = "CV_A_SHOULD_BE_LESS_OR_EQUAL_2_POW_128";
+    string private constant ERROR_A_SHOULD_BE_LESS_OR_EQUAL_2_POW_128 = "CV_A_SHOULD_BE_LESS_OR_EQUAL_2_POW_128";
+    string private constant ERROR_B_SHOULD_BE_LESS_THAN_2_POW_128 = "CV_A_SHOULD_BE_LESS_OR_EQUAL_2_POW_128";
 
     enum ProposalStatus {
         Active,              // A vote that has been reported to Agreements
@@ -208,7 +211,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
 
     /**
      * @notice Execute proposal #`_proposalId`
-     * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(_proposalId): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(_proposalId): (uint256, [address], uint256, uint256, uint64, bool)`
+     * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getProposal(_proposalId): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(_proposalId): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param _proposalId Proposal id
      */
     function executeProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) {
@@ -230,7 +233,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @notice Cancel proposal #`_proposalId`
      * @param _proposalId Proposal id
      */
-    function cancelProposal(uint256 _proposalId) external proposalExists(_proposalId) {
+    function cancelProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
 
         bool senderHasPermission = canPerform(msg.sender, CANCEL_PROPOSAL_ROLE, new uint256[](0));
@@ -388,8 +391,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @return _a * _b / 2^128
      */
     function _mul(uint256 _a, uint256 _b) internal pure returns (uint256 _result) {
-        require(_a <= TWO_128, "_a should be less than or equal to 2^128");
-        require(_b < TWO_128, "_b should be less than 2^128");
+        require(_a <= TWO_128, ERROR_A_SHOULD_BE_LESS_OR_EQUAL_2_POW_128);
+        require(_b < TWO_128, ERROR_B_SHOULD_BE_LESS_THAN_2_POW_128);
         return _a.mul(_b).add(TWO_127) >> 128;
     }
 
@@ -401,7 +404,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @return (_a / 2^128)^_b * 2^128
      */
     function _pow(uint256 _a, uint256 _b) internal pure returns (uint256 _result) {
-        require(_a < TWO_128, "_a should be less than 2^128");
+        require(_a < TWO_128, ERROR_A_SHOULD_BE_LESS_THAN_2_POW_128);
         uint256 a = _a;
         uint256 b = _b;
         _result = TWO_128;
