@@ -32,20 +32,28 @@ module.exports = async callback => {
         console.log(`> Processing ${transactions.length} transactions…`)
         return Promise.all(
           transactions.map(({ transactionHash }) =>
-            web3.eth.getTransactionReceipt(transactionHash)
+            Promise.all([
+              web3.eth.getTransaction(transactionHash),
+              web3.eth.getTransactionReceipt(transactionHash),
+            ]).then(([{ hash, from, gasPrice }, { gasUsed }]) => ({
+              hash,
+              from,
+              gasPrice,
+              gasUsed,
+            }))
           )
         )
       })
       .then(transactions => {
         console.log(
-          `> Gas spent from block ${fromBlock} to ${toBlock} (in gwei):`
+          `> Gas spent from block ${fromBlock} to ${toBlock} (in wei):`
         )
         if (expanded) {
           console.log(
             transactions
               .map(
-                ({ transactionHash, from, gasUsed }) =>
-                  `${transactionHash}\t${from}\t${parseInt(gasUsed, 16)}`
+                ({ hash, from, gasUsed, gasPrice }) =>
+                  `${hash}\t${from}\t${parseInt(gasUsed, 16) * gasPrice}`
               )
               .join('\n')
           )
@@ -53,14 +61,14 @@ module.exports = async callback => {
           console.log(
             Object.entries(
               transactions.reduce(
-                (dict, { from, gasUsed }) => ({
+                (dict, { from, gasUsed, gasPrice }) => ({
                   ...dict,
-                  [from]: (dict[from] || 0) + parseInt(gasUsed, 16),
+                  [from]: (dict[from] || 0) + parseInt(gasUsed, 16) * gasPrice,
                 }),
                 {}
               )
             )
-              .map(([from, gas]) => `${from}\t${gas}`)
+              .map(([from, fee]) => `${from}\t${fee}`)
               .join('\n')
           )
         }
