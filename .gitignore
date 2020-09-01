@@ -1,9 +1,19 @@
+# See https://help.github.com/ignore-files/ for more about ignoring files.
+
+# dependencies
 node_modules
-build
-.cache
-dist
-ipfs.cmd
+
+# testing
+/coverage
+
+# production
+/build
+/dist
+
 package-lock.json
-coverage.json
-coverage
-.idea
+yarn.lock
+.DS_Store
+
+/artifacts
+/cache
+.cache

@@ -47,8 +47,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
   before(async () => {
     agreement = await deployer.deployAndInitializeAgreementWrapper({ appManager })
     collateralToken = await deployer.deployCollateralToken()
-    await agreement.sign(appManager)
-    await agreement.sign(user, { from: user })
+    await agreement.sign({ from: appManager })
+    await agreement.sign({ from: user })
   })
 
   const deploy = async (

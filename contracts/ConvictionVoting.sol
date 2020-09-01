@@ -228,7 +228,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION);
 
         proposal.proposalStatus = ProposalStatus.Executed;
-        _closeAgreementAction(proposal.agreementActionId);
+        _closeDisputableAction(proposal.agreementActionId);
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
@@ -247,7 +247,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
 
         proposal.proposalStatus = ProposalStatus.Cancelled;
-        _closeAgreementAction(proposal.agreementActionId);
+        _closeDisputableAction(proposal.agreementActionId);
 
         emit ProposalCancelled(_proposalId, proposal.agreementActionId);
     }
@@ -502,7 +502,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary) internal {
-        uint256 agreementActionId = _newAgreementAction(proposalCounter, _link, msg.sender);
+        uint256 agreementActionId = _registerDisputableAction(proposalCounter, _link, msg.sender);
         proposals[proposalCounter] = Proposal(
             _requestedAmount,
             _beneficiary,

@@ -22,12 +22,13 @@
     "parcel-bundler": "^1.12.3"
   },
   "scripts": {
-    "build": "npm run sync-assets && npm run build:app && npm run build:script",
-    "build:app": "parcel build index.html -d ../dist/ --public-url \".\" --no-cache",
+    "start": "npm run sync-assets && npm run watch & parcel serve index.html -p 3001 --out-dir ../dist/",
+    "watch": "parcel watch src/script.js --out-dir ../dist/ --no-hmr",
+    "serve": "parcel serve index.html --out-dir ../dist/ --no-cache",
+    "build": "npm run sync-assets && npm run build:frontend && npm run build:script",
+    "build:frontend": "parcel build index.html -d ../dist/ --public-url \".\" --no-cache",
     "build:script": "parcel build src/script.js --out-dir ../dist/ --no-cache",
-    "watch:script": "parcel watch src/script.js --out-dir ../dist/ --no-hmr",
-    "devserver": "parcel serve index.html -p 8001 --out-dir ../dist/ --no-cache",
-    "start": "npm run sync-assets && npm run watch:script & npm run devserver",
-    "sync-assets": "copy-aragon-ui-assets ../dist && copyfiles -u 1 './public/**/*' ../dist"
+    "sync-assets": "copy-aragon-ui-assets -n aragon-ui ../dist && rsync -rtu ./public/ ../dist",
+    "now-build": "npm run build"
   }
 }
