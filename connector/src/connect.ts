@@ -7,10 +7,11 @@ import ConvictionVotingConnectorTheGraph, {
 
 type Config = {
   subgraphUrl: string
+  pollInterval?: number
 }
 
 export default createAppConnector<ConvictionVoting, Config>(
-  ({ app, config, connector, network, verbose }) => {
+  ({ app, config, connector, network, orgConnector, verbose }) => {
     if (connector !== 'thegraph') {
       console.warn(
         `Connector unsupported: ${connector}. Using "thegraph" instead.`
@@ -20,10 +21,17 @@ export default createAppConnector<ConvictionVoting, Config>(
     const subgraphUrl =
       config.subgraphUrl ?? subgraphUrlFromChainId(network.chainId)
 
-    const convictionVotingConnector = new ConvictionVotingConnectorTheGraph(
+    let pollInterval
+    if (orgConnector.name === 'thegraph') {
+      pollInterval =
+        config?.pollInterval ?? orgConnector.config?.pollInterval ?? undefined
+    }
+
+    const convictionVotingConnector = new ConvictionVotingConnectorTheGraph({
+      pollInterval,
       subgraphUrl,
       verbose
-    )
+    })
 
     return new ConvictionVoting(convictionVotingConnector, app.address)
   }

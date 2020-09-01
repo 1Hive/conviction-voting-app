@@ -5,6 +5,7 @@ type Config @entity {
   maxRatio: BigInt!
   pctBase: BigInt!
   stakeToken: Token!
+  totalStaked: BigInt!
   maxStakedProposals: Int!
   minThresholdStakePercentage: BigInt!
   requestToken: Token!

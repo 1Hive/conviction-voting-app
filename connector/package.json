@@ -1,6 +1,6 @@
 {
   "name": "@1hive/connect-conviction-voting",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "AGPL-3.0",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -28,8 +28,8 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@aragon/connect-core": "^0.5.2",
-    "@aragon/connect-thegraph": "^0.5.2",
+    "@aragon/connect-core": "^0.6.0",
+    "@aragon/connect-thegraph": "^0.6.0",
     "graphql-tag": "^2.10.3"
   },
   "description": "Access organizations and interact with Convcition Voting apps.",

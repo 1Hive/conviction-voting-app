@@ -9,6 +9,7 @@ import {
 } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { Proposal as ProposalEntity } from '../generated/schema'
 import {
+  getConfigEntity,
   getProposalEntity,
   getStakeEntity,
   getStakeHistoryEntity,
@@ -34,6 +35,7 @@ export function handleStakeAdded(event: StakeAddedEvent): void {
     event.address,
     event.params.entity,
     event.params.id,
+    event.params.amount,
     event.params.tokensStaked,
     event.params.totalTokensStaked,
     event.params.conviction,
@@ -46,6 +48,7 @@ export function handleStakeWithdrawn(event: StakeWithdrawnEvent): void {
     event.address,
     event.params.entity,
     event.params.id,
+    event.params.amount,
     event.params.tokensStaked,
     event.params.totalTokensStaked,
     event.params.conviction,
@@ -72,6 +75,7 @@ function _onNewStake(
   appAddress: Address,
   entity: Address,
   proposalId: BigInt,
+  amount: BigInt,
   tokensStaked: BigInt,
   totalTokensStaked: BigInt,
   conviction: BigInt,
@@ -83,6 +87,16 @@ function _onNewStake(
   if (proposal.creator.toHexString() == '0x') {
     return 
   }
+
+  const config = getConfigEntity(appAddress)
+
+  // If the old totalTokensStaked is less than the new means that is a stake else a withdraw
+  if (proposal.totalTokensStaked < totalTokensStaked){
+    config.totalStaked = config.totalStaked.plus(amount)
+  } else {
+    config.totalStaked = config.totalStaked.minus(amount)
+  }
+  config.save()
 
   proposal.totalTokensStaked = totalTokensStaked
 

@@ -34,16 +34,17 @@ Conviction Voting has been published to APM on Rinkeby at `conviction-voting.ope
 To deploy an organization you can use the [Aragon CLI](https://hack.aragon.org/docs/cli-intro.html).
 
 ```sh
-aragon dao install <dao-addr> conviction-voting.open.aragonpm.eth --app-init-args <org-token> <vault-addr> <funds-token> 9999599 2000000 20000
+aragon dao install <dao-addr> conviction-voting.open.aragonpm.eth --app-init-args <org-token> <vault-addr> <funds-token> 9999599 2000000 20000 200000000000000000
 ```
 This are the initalization parameters you can use:
-* **<org-token>**: The token address of the DAO's token
+* **<org-token>**: The token address of the DAO's token. The supply for tokens with 18 decimals should not exceed 34,028,236,692, a supply bigger than that can cause errors ([more details](./docs/max-safes.md)).
 * **<vault-addr>**: The DAO's main vault/agent address. It can be `0x0000000000000000000000000000000000000000` to set it up for conviction signaling (without money allocation).
 * **<funds-token>**: The token address that is going to be allocated. The token must be in the vault/agent. It can `0x0000000000000000000000000000000000000000` to set it up for conviction signaling (without money allocation).
 * The rest of the parameters are:
   * `decay = 0.9999599`, which sets up conviction halftime to 3 days.
   * `maxRatio = 0.2`, which sets the threshold formula to only allow proposals that request less than 20% of the funds. 
   * `rho = 0.002`, which fine tunes the threshold formula.
+  * `minThresholdStakePercentage = 0.2`, which sets the minimum percent of stake token active supply that is used for calculating the threshold
 
 Once the app has been installed, we can create permissions for anybody to create proposals on conviction voting, and for conviction voting to transfer funds from the vault/agent:
 

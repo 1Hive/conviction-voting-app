@@ -1,8 +1,10 @@
 import gql from 'graphql-tag'
 
 export const CONFIG = (type: string) => gql`
-  ${type} Config($id: String!) {
-    config(id: $id) {
+  ${type} Configs($id: String!) {
+    configs(where: {
+      id: $id
+    }) {
       id
       decay
       weight
@@ -22,6 +24,7 @@ export const CONFIG = (type: string) => gql`
       }
       maxStakedProposals
       minThresholdStakePercentage
+      totalStaked
     }
   }
 `
