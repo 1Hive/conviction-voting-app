@@ -35,7 +35,8 @@
     "prettier": "^1.18.2",
     "solidity-coverage": "^0.6.2",
     "truffle": "5.1.4",
-    "wait-on": "^4.0.1"
+    "wait-on": "^4.0.1",
+    "chai": "^4.2.0"
   },
   "scripts": {
     "prepare": "cd app && npm install && cd ..",
