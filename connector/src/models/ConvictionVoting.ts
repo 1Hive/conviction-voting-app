@@ -1,4 +1,3 @@
-import Config from './Config'
 import Proposal from './Proposal'
 import StakeHistory from './StakeHistory'
 import {
@@ -20,13 +19,14 @@ export default class ConvictionVoting {
     await this.#connector.disconnect()
   }
 
-  async config(): Promise<Config> {
-    return this.#connector.config(this.#address)
-  }
-
   async proposals({ first = 1000, skip = 0 } = {}): Promise<Proposal[]> {
     return this.#connector.proposals(this.#address, first, skip)
   }
+
+  onConfig(callback: Function): SubscriptionHandler {
+    return this.#connector.onConfig(this.#address, callback)
+  }
+
 
   onProposals(
     { first = 1000, skip = 0 } = {},

@@ -1,7 +1,7 @@
 import { connect } from '@aragon/connect'
 import connectConviction, { Proposal } from '@1hive/connect-conviction-voting'
 
-const ORG_ADDRESS = '0xe03f1aa34886a753d4e546c870d7f082fdd2fa9b'
+const ORG_ADDRESS = '0xace2faa375ffc251fafc7360bc3defbc6184e5fe'
 
 function proposalId(proposal: Proposal): string {
   return (
@@ -25,9 +25,9 @@ async function describeProposal(proposal: Proposal): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const org = await connect(ORG_ADDRESS, 'thegraph', { network: 100 })
+  const org = await connect(ORG_ADDRESS, 'thegraph', { network: 4 })
 
-  const convictionapp = await org.app('conviction-voting')
+  const convictionapp = await org.app('conviction-beta')
 
   const conviction = await connectConviction(convictionapp)
 
@@ -44,15 +44,11 @@ async function main(): Promise<void> {
   const proposals = await conviction.proposals()
 
   proposals.map(describeProposal)
-
-  console.log(`\Config:`)
-  const config = await conviction.config()
-  console.log(config)
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((err) => {
+  .catch(err => {
     console.error('')
     console.error(err)
     console.log(
