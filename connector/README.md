@@ -3,20 +3,18 @@
 ## Usage
 
 ```js
-const org = await connect(
-  <org-address>,
-  'thegraph',
-  { chainId: <chain-id> }
-)
-const apps = await org.apps()
-const convictionVotingApp = apps.find(
-  app => app.appName === 'conviction-voting.open.aragonpm.eth'
-)
+  const org = await connect(ORG_ADDRESS, 'thegraph', { network: 4 })
 
-const conviction = new ConvictionVoting(
-  convictionVotingApp.address,
-  <subgraph-url>
-)
+  const convictionapp = await org.app('conviction-beta')
+
+  const conviction = await connectConviction(convictionapp)
 
 const proposals = await conviction.proposals()
+```
+
+
+### If you would like to use a coustom subgraph
+
+```js
+  const conviction = await connectConviction(convictionapp, [ 'thegraph', <subgraph-url> ])
 ```
