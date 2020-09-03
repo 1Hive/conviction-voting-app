@@ -6,6 +6,8 @@ usePlugin('buidler-gas-reporter')
 module.exports = {
     defaultNetwork: 'localhost',
     networks: {
+        buidlerevm: {
+        },
         localhost: {
             url: 'http://localhost:8545',
             accounts: {
