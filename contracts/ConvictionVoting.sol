@@ -87,6 +87,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     event ProposalPaused(uint256 indexed proposalId, uint256 indexed actionId);
     event ProposalResumed(uint256 indexed proposalId, uint256 indexed actionId);
     event ProposalCancelled(uint256 indexed proposalId, uint256 indexed actionId);
+    event ProposalRejected(uint256 indexed proposalId, uint256 indexed actionId);
     event AgreementActionClosed(uint256 indexed proposalId, uint256 indexed actionId);
 
     modifier proposalExists(uint256 _proposalId) {
@@ -395,7 +396,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         Proposal storage proposal = proposals[_proposalId];
         proposal.proposalStatus = ProposalStatus.Cancelled;
 
-        emit ProposalCancelled(_proposalId, proposal.agreementActionId);
+        emit ProposalRejected(_proposalId, proposal.agreementActionId);
     }
 
     /**
