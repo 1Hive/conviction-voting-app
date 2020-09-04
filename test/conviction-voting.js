@@ -878,8 +878,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         })
 
         it('cancels proposal when sender has permission', async () => {
-          const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          const cancelProposalsRole = await convictionVoting.CANCEL_PROPOSALS_ROLE()
+          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalsRole, appManager)
 
           await convictionVoting.cancelProposal(proposalId, { from: user })
 
@@ -899,8 +899,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         })
 
         it('should revert when cancelling abstain proposal', async () => {
-          const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          const cancelProposalsRole = await convictionVoting.CANCEL_PROPOSALS_ROLE()
+          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalsRole, appManager)
           await assertRevert(convictionVoting.cancelProposal(ABSTAIN_PROPOSAL_ID, { from: user }), 'CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL')
         })
 

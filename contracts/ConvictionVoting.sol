@@ -18,8 +18,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     bytes32 constant public UPDATE_SETTINGS_ROLE = 0x9d4f140430c9045e12b5a104aa9e641c09b980a26ab8e12a32a2f3d155229ae3;
 //    bytes32 constant public CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
     bytes32 constant public CREATE_PROPOSALS_ROLE = 0xbf05b9322505d747ab5880dfb677dc4864381e9fc3a25ccfa184a3a53d02f4b2;
-//    bytes32 constant public CANCEL_PROPOSAL_ROLE = keccak256("CANCEL_PROPOSAL_ROLE");
-    bytes32 constant public CANCEL_PROPOSAL_ROLE = 0x3e317d8f3de745777f176274dda437b0b9bbbe0704f48e9be1821136c177b933;
+//    bytes32 constant public CANCEL_PROPOSALS_ROLE = keccak256("CANCEL_PROPOSALS_ROLE");
+    bytes32 constant public CANCEL_PROPOSALS_ROLE = 0x82c52f79cad6ac09c16c165c562b50c5e655a09a19bb99b2d182ab3caff020f2;
 
     uint256 public constant D = 10000000;
     uint256 public constant ONE_HUNDRED_PERCENT = 1e18;
@@ -243,7 +243,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     function cancelProposal(uint256 _proposalId) external proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
 
-        bool senderHasPermission = canPerform(msg.sender, CANCEL_PROPOSAL_ROLE, new uint256[](0));
+        bool senderHasPermission = canPerform(msg.sender, CANCEL_PROPOSALS_ROLE, new uint256[](0));
         require(proposal.submitter == msg.sender || senderHasPermission, ERROR_SENDER_CANNOT_CANCEL);
         require(_proposalId != ABSTAIN_PROPOSAL_ID, ERROR_CANNOT_CANCEL_ABSTAIN_PROPOSAL);
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
