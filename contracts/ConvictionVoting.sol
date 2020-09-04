@@ -42,6 +42,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     string private constant ERROR_AMOUNT_OVER_MAX_RATIO = "CV_AMOUNT_OVER_MAX_RATIO";
     string private constant ERROR_INCORRECT_TOKEN_MANAGER_HOOK = "CV_INCORRECT_TOKEN_MANAGER_HOOK";
     string private constant ERROR_AMOUNT_CAN_NOT_BE_ZERO = "CV_AMOUNT_CAN_NOT_BE_ZERO";
+    string private constant ERROR_INCORRECT_PROPOSAL_STATUS = "CV_INCORRECT_PROPOSAL_STATUS";
     string private constant ERROR_STAKING_MORE_THAN_AVAILABLE = "CV_STAKING_MORE_THAN_AVAILABLE";
     string private constant ERROR_MAX_PROPOSALS_REACHED = "CV_MAX_PROPOSALS_REACHED";
     string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
@@ -528,7 +529,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     function _stake(uint256 _proposalId, uint256 _amount, address _from) internal proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
-        require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
+        require(proposal.proposalStatus == ProposalStatus.Active || proposal.proposalStatus == ProposalStatus.Paused,
+            ERROR_INCORRECT_PROPOSAL_STATUS);
 
         uint256 unstakedAmount = stakeToken.balanceOf(_from).sub(totalVoterStake[_from]);
         if (_amount > unstakedAmount) {
@@ -591,6 +593,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
     /**
      * @dev Withdraw staked tokens from active proposals until a target amount is reached.
+     *      Assumes there are no inactive staked proposals, to save gas.
      * @param _targetAmount Target at which to stop withdrawing tokens
      * @param _from Account to withdraw from
      */
@@ -615,7 +618,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             uint256 proposalId = voterStakedProposalsCopy[i];
             Proposal storage proposal = proposals[proposalId];
 
-            // In active proposals, we only subtract the needed amount to reach the target
+            // For active proposals, we only subtract the needed amount to reach the target
             toWithdraw = Math.min256(_targetAmount.sub(withdrawnAmount), proposal.voterStake[_from]);
             if (toWithdraw > 0) {
                 _withdrawFromProposal(proposalId, toWithdraw, _from);
@@ -646,7 +649,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             voterStakedProposals[_from].deleteItem(_proposalId);
         }
 
-        if (proposal.proposalStatus == ProposalStatus.Active) {
+        if (proposal.proposalStatus == ProposalStatus.Active || proposal.proposalStatus == ProposalStatus.Paused) {
             _calculateAndSetConviction(proposal, previousStake);
         }
 
