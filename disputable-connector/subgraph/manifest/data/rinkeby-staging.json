@@ -1,0 +1,17 @@
+{
+  "network": "rinkeby",
+  "dataSources": {
+    "Organizations": [
+      {
+        "name": "disputableDAO",
+        "address": "0xeac000b64fc11a9ce6d885fe91fb4f9c2359cc21",
+        "startBlock": "7013510"
+      }
+    ],
+    "OrganizationFactories": [],
+    "OrganizationTemplates": [],
+    "LegacyOrganizationTemplates": [],
+    "TokenFactories": [],
+    "Tokens": []
+  }
+}
