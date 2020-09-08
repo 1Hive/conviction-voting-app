@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, log } from '@graphprotocol/graph-ts'
+import { Address, BigInt, Bytes } from '@graphprotocol/graph-ts'
 import {
   Config as ConfigEntity,
   Proposal as ProposalEntity,
