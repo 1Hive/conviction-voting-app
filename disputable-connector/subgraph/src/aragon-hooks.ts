@@ -6,7 +6,7 @@ const CONVICTION_APP_IDS: string[] = [
   '0xca60629a22f03bcad7738fee1a6f0c5863eb89463621b40566a6799b82cbe184',  // disputable-conviction-voting.open.aragonpm.eth
 ]   
 
-const AGREEMENT_APP_ID = '0x34c62f3aec3073826f39c2c35e9a1297d9dbf3cc77472283106f09eee9cf47bf' // agreement.open.aragonpm.eth
+const AGREEMENT_APP_ID = '0x15a969a0e134d745b604fb43f699bb5c146424792084c198d53050c4d08126d1' // agreement.precedence-campaign.aragonpm.eth
 /*
  * Called when an app proxy is detected.
  *
