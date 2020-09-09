@@ -15,7 +15,8 @@
     "deploy-rinkeby": "scripts/deploy.sh 1hive conviction-voting rinkeby",
     "deploy-rinkeby-staging": "STAGING=true scripts/deploy.sh 1hive cv rinkeby",
     "deploy-xdai": "scripts/deploy.sh 1hive conviction-voting xdai",
-    "deploy-xdai-staging": "STAGING=true scripts/deploy.sh 1hive c-v xdai"
+    "deploy-xdai-staging": "STAGING=true scripts/deploy.sh 1hive c-v xdai",
+    "deploy-xdai-beta": "scripts/deploy.sh 1hive c-v-beta xdai"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.18.0",

@@ -4,11 +4,11 @@ type Config @entity {
   weight: BigInt!
   maxRatio: BigInt!
   pctBase: BigInt!
-  stakeToken: Token!
+  stakeToken: Token
   totalStaked: BigInt!
   maxStakedProposals: Int!
   minThresholdStakePercentage: BigInt!
-  requestToken: Token!
+  requestToken: Token
   appAddress: Bytes!
   orgAddress: Bytes!
 }
