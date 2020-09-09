@@ -1,3 +1,11 @@
+type DisputableConvictionVoting @entity {
+  id: ID!
+  dao: Bytes!
+  config: Config
+  proposals:[Proposal!] @derivedFrom(field: "convictionVoting")
+  stakeHistory:[StakeHistory!] @derivedFrom(field: "convictionVoting")
+}
+
 type Config @entity {
   id: ID!
   decay: BigInt!
@@ -15,6 +23,7 @@ type Config @entity {
 
 type Proposal @entity {
   id: ID!
+  convictionVoting: DisputableConvictionVoting!
   number: BigInt!
   name: String
   link: String
@@ -24,8 +33,12 @@ type Proposal @entity {
   requestedAmount: BigInt
   status: ProposalStatus!
   totalTokensStaked: BigInt!
-  appAddress: Bytes!
-  orgAddress: Bytes!
+  actionId: BigInt!
+  disputeId: BigInt
+  challengeId: BigInt!
+  challenger: Bytes!
+  challengeEndDate: BigInt!
+  collateralRequirement: CollateralRequirement! @derivedFrom(field: "proposal")
 }
 
 type Stake @entity {
@@ -37,15 +50,24 @@ type Stake @entity {
 
 type StakeHistory @entity {
   id: ID!
+  convictionVoting: DisputableConvictionVoting!
   entity: Bytes!
   proposalId: BigInt!
   tokensStaked: BigInt!
   totalTokensStaked: BigInt!
   time: BigInt!
   conviction: BigInt!
-  appAddress: Bytes!
-  orgAddress: Bytes!
 }
+
+type CollateralRequirement @entity {
+  id: ID!
+  proposal: Proposal!
+  token: Token!
+  actionAmount: BigInt!
+  challengeAmount: BigInt!
+  challengeDuration: BigInt!
+}
+
 
 type Token @entity {
   id:ID!
@@ -63,6 +85,8 @@ type AragonInfo @entity {
 
 enum ProposalStatus {
   Active
+  Challenged
+  Disputed
   Cancelled
   Executed
 }
