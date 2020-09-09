@@ -6,28 +6,46 @@ import {
   StakeWithdrawn as StakeWithdrawnEvent,
   ProposalCancelled as ProposalCancelledEvent,
   ProposalExecuted as ProposalExecutedEvent,
+  ProposalPaused as ProposalPausedEvent,
 } from '../generated/templates/ConvictionVoting/ConvictionVoting'
-import { Proposal as ProposalEntity } from '../generated/schema'
+import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
+import { Agreement as AgreementContract } from '../generated/templates/Agreement/Agreement'
+import { CollateralRequirement as CollateralRequirementEntity, Proposal as ProposalEntity } from '../generated/schema'
 import {
   getConfigEntity,
   getProposalEntity,
   getStakeEntity,
   getStakeHistoryEntity,
   getOrgAddress,
+  loadTokenData
 } from './helpers'
-import { STATUS_CANCELLED, STATUS_EXECUTED } from './proposal-statuses'
+import { STATUS_ACTIVE, STATUS_CANCELLED, STATUS_CHALLENGED, STATUS_EXECUTED, STATUS_REJECTED } from './proposal-statuses'
 
 
 
 export function handleProposalAdded(event: ProposalAddedEvent): void {
+  const convictionVotingApp = ConvictionVotingContract.bind(event.address)
   const proposal = getProposalEntity(event.address, event.params.id)
 
-  proposal.appAddress = event.address
-  proposal.orgAddress = getOrgAddress(event.address)
-
-  _populateProposalDataFromEvent(proposal, event)
-
+  proposal.name = event.params.title
+  proposal.link = event.params.link.toString()
+  proposal.requestedAmount = event.params.amount
+  proposal.creator = event.params.entity
+  proposal.beneficiary = event.params.beneficiary
+  proposal.convictionVoting = event.address.toHexString()
+  proposal.actionId = event.params.actionId
   proposal.save()
+
+  const agreementApp = AgreementContract.bind(convictionVotingApp.getAgreement())
+  const actionData = agreementApp.getAction(proposal.actionId)
+  const collateralRequirementData = agreementApp.getCollateralRequirement(event.address, actionData.value2)
+  const collateralRequirement = new CollateralRequirementEntity(proposal.id)
+  collateralRequirement.proposal = proposal.id
+  collateralRequirement.token = loadTokenData(collateralRequirementData.value0)
+  collateralRequirement.challengeDuration = collateralRequirementData.value1
+  collateralRequirement.actionAmount = collateralRequirementData.value2
+  collateralRequirement.challengeAmount = collateralRequirementData.value3
+  collateralRequirement.save()
 }
 
 export function handleStakeAdded(event: StakeAddedEvent): void {
@@ -71,6 +89,34 @@ export function handleProposalCancelled(event: ProposalCancelledEvent): void {
   proposal.save()
 }
 
+export function handleProposalPaused(event: ProposalPausedEvent): void {
+  const convictionVotingApp = ConvictionVotingContract.bind(event.address)
+  const agreementApp = AgreementContract.bind(convictionVotingApp.getAgreement())
+  const challengeData = agreementApp.getChallenge(event.params.challengeId)
+  const proposal = getProposalEntity(event.address, event.params.id)
+  proposal.challenger = challengeData.value1
+  proposal.challengeId = event.params.challengeId
+  proposal.challengeEndDate = challengeData.value2
+  proposal.status = STATUS_CHALLENGED
+
+  proposal.save()
+}
+
+export function handleProposalResumed(event: ProposalPausedEvent): void {
+  const proposal = getProposalEntity(event.address, event.params.id)
+  proposal.status = STATUS_ACTIVE
+
+  proposal.save()
+}
+
+export function handleProposalRejected(event: ProposalPausedEvent): void {
+  const proposal = getProposalEntity(event.address, event.params.id)
+  proposal.status = STATUS_REJECTED
+
+  proposal.save()
+}
+
+
 function _onNewStake(
   appAddress: Address,
   entity: Address,
@@ -112,16 +158,6 @@ function _onNewStake(
   )
 }
 
-function _populateProposalDataFromEvent(
-  proposal: ProposalEntity | null,
-  event: ProposalAddedEvent
-): void {
-  proposal.name = event.params.title
-  proposal.link = event.params.link.toString()
-  proposal.requestedAmount = event.params.amount
-  proposal.creator = event.params.entity
-  proposal.beneficiary = event.params.beneficiary
-}
 
 function _updateProposalStakes(
   proposal: ProposalEntity | null,
