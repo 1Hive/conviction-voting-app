@@ -10,7 +10,7 @@ import { MiniMeToken as MiniMeTokenContract } from '../generated/templates/MiniM
 import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { STATUS_ACTIVE } from './proposal-statuses'
 
-export function loadTokenData(address: Address): void {
+export function loadTokenData(address: Address): string {
   const id = address.toHexString()
   let token = TokenEntity.load(id)
 

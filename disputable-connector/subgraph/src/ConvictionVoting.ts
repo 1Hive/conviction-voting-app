@@ -7,6 +7,8 @@ import {
   ProposalCancelled as ProposalCancelledEvent,
   ProposalExecuted as ProposalExecutedEvent,
   ProposalPaused as ProposalPausedEvent,
+  ProposalResumed as ProposalResumedEvent,
+  ProposalRejected as ProposalRejectedEvent
 } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { Agreement as AgreementContract } from '../generated/templates/Agreement/Agreement'
@@ -83,7 +85,7 @@ export function handleProposalExecuted(event: ProposalExecutedEvent): void {
 }
 
 export function handleProposalCancelled(event: ProposalCancelledEvent): void {
-  const proposal = getProposalEntity(event.address, event.params.id)
+  const proposal = getProposalEntity(event.address, event.params.proposalId)
   proposal.status = STATUS_CANCELLED
 
   proposal.save()
@@ -93,7 +95,7 @@ export function handleProposalPaused(event: ProposalPausedEvent): void {
   const convictionVotingApp = ConvictionVotingContract.bind(event.address)
   const agreementApp = AgreementContract.bind(convictionVotingApp.getAgreement())
   const challengeData = agreementApp.getChallenge(event.params.challengeId)
-  const proposal = getProposalEntity(event.address, event.params.id)
+  const proposal = getProposalEntity(event.address, event.params.proposalId)
   proposal.challenger = challengeData.value1
   proposal.challengeId = event.params.challengeId
   proposal.challengeEndDate = challengeData.value2
@@ -102,15 +104,15 @@ export function handleProposalPaused(event: ProposalPausedEvent): void {
   proposal.save()
 }
 
-export function handleProposalResumed(event: ProposalPausedEvent): void {
-  const proposal = getProposalEntity(event.address, event.params.id)
+export function handleProposalResumed(event: ProposalResumedEvent): void {
+  const proposal = getProposalEntity(event.address, event.params.proposalId)
   proposal.status = STATUS_ACTIVE
 
   proposal.save()
 }
 
-export function handleProposalRejected(event: ProposalPausedEvent): void {
-  const proposal = getProposalEntity(event.address, event.params.id)
+export function handleProposalRejected(event: ProposalRejectedEvent): void {
+  const proposal = getProposalEntity(event.address, event.params.proposalId)
   proposal.status = STATUS_REJECTED
 
   proposal.save()
@@ -189,8 +191,7 @@ function _updateStakeHistory(
   stakeHistory.tokensStaked = tokensStaked
   stakeHistory.totalTokensStaked = totalTokensStaked
   stakeHistory.conviction = conviction
-  stakeHistory.appAddress = appAddress
-  stakeHistory.orgAddress = getOrgAddress(appAddress)
+  stakeHistory.convictionVoting = appAddress.toHexString()
 
   stakeHistory.save()
 }

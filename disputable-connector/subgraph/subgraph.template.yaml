@@ -37,7 +37,7 @@ templates:
         - name: MinieMeToken
           file: ./abis/MiniMeToken.json
       eventHandlers:
-        - event: ProposalAdded(indexed address,indexed uint256,string,bytes,uint256,address)
+        - event: ProposalAdded(indexed address,indexed uint256,indexed uint256,string,bytes,uint256,address)
           handler: handleProposalAdded
         - event: StakeAdded(indexed address,indexed uint256,uint256,uint256,uint256,uint256)
           handler: handleStakeAdded
@@ -45,13 +45,13 @@ templates:
           handler: handleStakeWithdrawn
         - event: ProposalExecuted(indexed uint256,uint256)
           handler: handleProposalExecuted
-        - event: ProposalCancelled(indexed uint256)
+        - event: ProposalCancelled(indexed uint256,indexed uint256)
           handler: handleProposalCancelled
-        - event: ProposalPaused(indexed uint256, indexed uint256);
+        - event: ProposalPaused(indexed uint256,indexed uint256,indexed uint256)
           handler: handleProposalPaused
-        - event: ProposalResumed(indexed uint256, indexed uint256);
+        - event: ProposalResumed(indexed uint256,indexed uint256)
           handler: handleProposalResumed
-        - event: ProposalRejected(indexed uint256, indexed uint256);
+        - event: ProposalRejected(indexed uint256,indexed uint256)
           handler: handleProposalRejected
       file: ./src/ConvictionVoting.ts
   - kind: ethereum/contract
