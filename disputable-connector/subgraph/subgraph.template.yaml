@@ -47,4 +47,28 @@ templates:
           handler: handleProposalExecuted
         - event: ProposalCancelled(indexed uint256)
           handler: handleProposalCancelled
+        - event: ProposalPaused(indexed uint256, indexed uint256);
+          handler: handleProposalPaused
+        - event: ProposalResumed(indexed uint256, indexed uint256);
+          handler: handleProposalResumed
+        - event: ProposalRejected(indexed uint256, indexed uint256);
+          handler: handleProposalRejected
       file: ./src/ConvictionVoting.ts
+  - kind: ethereum/contract
+    name: Agreement
+    network: {{network}}
+    source:
+      abi: Agreement
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.3
+      language: wasm/assemblyscript
+      entities:
+        - Agreement
+      abis:
+        - name: Agreement
+          file: ./abis/Agreement.json
+      eventHandlers:
+        - event: ActionDisputed(indexed uint256,indexed uint256)
+          handler: handleActionDisputed
+      file: ./src/Agreement.ts
