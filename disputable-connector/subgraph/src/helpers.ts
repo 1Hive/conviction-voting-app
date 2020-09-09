@@ -10,15 +10,20 @@ import { MiniMeToken as MiniMeTokenContract } from '../generated/templates/MiniM
 import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { STATUS_ACTIVE } from './proposal-statuses'
 
-function loadTokenData(address: Address): void {
-  const tokenContract = MiniMeTokenContract.bind(address)
-  const token = new TokenEntity(address.toHexString())
+export function loadTokenData(address: Address): void {
+  const id = address.toHexString()
+  let token = TokenEntity.load(id)
 
-  token.name = tokenContract.name()
-  token.symbol = tokenContract.symbol()
-  token.decimals = tokenContract.decimals()
+  if (token === null) {
+    const tokenContract = MiniMeTokenContract.bind(address)
+    token = new TokenEntity(id)
+    token.name = tokenContract.name()
+    token.symbol = tokenContract.symbol()
+    token.decimals = tokenContract.decimals()
+    token.save()
+  }
 
-  token.save()
+  return token.id
 }
 
 function getConfigEntityId(appAddress: Address): string {
@@ -91,7 +96,9 @@ export function getProposalEntity(
     proposal.status = STATUS_ACTIVE
     proposal.totalTokensStaked = BigInt.fromI32(0)
     proposal.creator = Bytes.fromHexString('0x') as Bytes
-
+    proposal.challengeId = BigInt.fromI32(0)
+    proposal.challenger = Address.fromString('0x0000000000000000000000000000000000000000')
+    proposal.challengeEndDate = BigInt.fromI32(0)
   }
 
   return proposal
