@@ -8,17 +8,16 @@ type DisputableConvictionVoting @entity {
 
 type Config @entity {
   id: ID!
+  convictionVoting: DisputableConvictionVoting!
   decay: BigInt!
   weight: BigInt!
   maxRatio: BigInt!
   pctBase: BigInt!
-  stakeToken: Token!
+  stakeToken: Token
   totalStaked: BigInt!
   maxStakedProposals: Int!
   minThresholdStakePercentage: BigInt!
-  requestToken: Token!
-  appAddress: Bytes!
-  orgAddress: Bytes!
+  requestToken: Token
 }
 
 type Proposal @entity {

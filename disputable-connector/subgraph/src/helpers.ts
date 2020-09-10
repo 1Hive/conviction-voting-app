@@ -1,6 +1,7 @@
-import { Address, BigInt, Bytes, ByteArray } from '@graphprotocol/graph-ts'
+import { Address, BigInt, Bytes } from '@graphprotocol/graph-ts'
 import {
   Config as ConfigEntity,
+  DisputableConvictionVoting as DisputableConvictionVotingEntity,
   Proposal as ProposalEntity,
   Stake as StakeEntity,
   StakeHistory as StakeHistoryEntity,
@@ -10,13 +11,19 @@ import { MiniMeToken as MiniMeTokenContract } from '../generated/templates/MiniM
 import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { STATUS_ACTIVE } from './proposal-statuses'
 
-export function loadTokenData(address: Address): string {
+export function loadTokenData(address: Address): string | null {
   const id = address.toHexString()
   let token = TokenEntity.load(id)
 
   if (token === null) {
     const tokenContract = MiniMeTokenContract.bind(address)
     token = new TokenEntity(id)
+
+    // App could be instantiated without a vault which means request token could be invalid
+    const symbol = tokenContract.try_symbol()
+    if (symbol.reverted) {
+      return null
+    }
     token.name = tokenContract.name()
     token.symbol = tokenContract.symbol()
     token.decimals = tokenContract.decimals()
@@ -48,12 +55,17 @@ export function loadAppConfig(appAddress: Address): void {
 
   // Load tokens data
   const stakeToken = convictionVoting.stakeToken()
-  loadTokenData(stakeToken)
+  const stakeTokenId = loadTokenData(stakeToken)
+  if(stakeTokenId){
+    config.stakeToken = stakeToken.toHexString()
+  }
   const requestToken = convictionVoting.requestToken()
-  loadTokenData(requestToken)
+  const requestTokenId = loadTokenData(requestToken)
+  if(requestTokenId){
+    config.requestToken = requestToken.toHexString()
+  }
 
-  config.stakeToken = stakeToken.toHexString()
-  config.requestToken = requestToken.toHexString()
+  const convictionVotingEntity = loadOrCreateConvictionVoting(appAddress)
 
   // Load conviction params
   config.decay = convictionVoting.decay()
@@ -63,11 +75,21 @@ export function loadAppConfig(appAddress: Address): void {
   config.totalStaked = convictionVoting.totalStaked()
   config.maxStakedProposals = convictionVoting.MAX_STAKED_PROPOSALS().toI32()
   config.minThresholdStakePercentage = convictionVoting.minThresholdStakePercentage()
-
-  config.appAddress = appAddress
-  config.orgAddress = convictionVoting.kernel()
-
+  config.convictionVoting = appAddress.toHexString()
   config.save()
+
+  convictionVotingEntity.config = config.id
+  convictionVotingEntity.save()
+}
+
+function loadOrCreateConvictionVoting(convictionVotingAddress: Address): DisputableConvictionVotingEntity {
+  let convictionVoting = DisputableConvictionVotingEntity.load(convictionVotingAddress.toHexString())
+  if (convictionVoting === null) {
+    const convictionVotingApp = ConvictionVotingContract.bind(convictionVotingAddress)
+    convictionVoting = new DisputableConvictionVotingEntity(convictionVotingAddress.toHexString())
+    convictionVoting.dao = convictionVotingApp.kernel()
+  }
+  return convictionVoting!
 }
 
 export function getProposalEntityId(
