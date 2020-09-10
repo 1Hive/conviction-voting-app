@@ -23,8 +23,9 @@ import {
 import { STATUS_ACTIVE, STATUS_CANCELLED, STATUS_CHALLENGED, STATUS_EXECUTED, STATUS_REJECTED } from './proposal-statuses'
 
 
-
 export function handleProposalAdded(event: ProposalAddedEvent): void {
+  const ABSTAIN_PROPOSAL_ID = BigInt.fromI32(1)
+
   const convictionVotingApp = ConvictionVotingContract.bind(event.address)
   const proposal = getProposalEntity(event.address, event.params.id)
 
@@ -35,24 +36,24 @@ export function handleProposalAdded(event: ProposalAddedEvent): void {
   proposal.beneficiary = event.params.beneficiary
   proposal.convictionVoting = event.address.toHexString()
   proposal.actionId = event.params.actionId
-  const agreementAppAddress = convictionVotingApp.getAgreement()
+  
   proposal.save()
+  log.info('******* ID is : {}', [event.params.id.toString()])
 
-  log.info('Conviction Address is : {}', [event.address.toHexString()])
-  log.info('agreementAppAddress is: {}', [agreementAppAddress.toHexString()])
-  const agreementApp = AgreementContract.bind(agreementAppAddress)
-  log.info('Before Bind actionId : {}', [proposal.actionId.toString()])
-  const actionData = agreementApp.getAction(proposal.actionId)
-  log.info('Before getAction', [])
-
-  const collateralRequirementData = agreementApp.getCollateralRequirement(event.address, actionData.value2)
-  const collateralRequirement = new CollateralRequirementEntity(proposal.id)
-  collateralRequirement.proposal = proposal.id
-  collateralRequirement.token = loadTokenData(collateralRequirementData.value0)
-  collateralRequirement.challengeDuration = collateralRequirementData.value1
-  collateralRequirement.actionAmount = collateralRequirementData.value2
-  collateralRequirement.challengeAmount = collateralRequirementData.value3
-  collateralRequirement.save()
+  if(event.params.id != ABSTAIN_PROPOSAL_ID){
+    const agreementAppAddress = convictionVotingApp.getAgreement()
+    const agreementApp = AgreementContract.bind(agreementAppAddress)
+    const actionData = agreementApp.getAction(proposal.actionId)
+    const collateralRequirementData = agreementApp.getCollateralRequirement(event.address, actionData.value2)
+    const collateralRequirement = new CollateralRequirementEntity(proposal.id)
+    collateralRequirement.proposal = proposal.id
+    collateralRequirement.token = loadTokenData(collateralRequirementData.value0)
+    collateralRequirement.challengeDuration = collateralRequirementData.value1
+    collateralRequirement.actionAmount = collateralRequirementData.value2
+    collateralRequirement.challengeAmount = collateralRequirementData.value3
+    collateralRequirement.save()
+  }
+  
 }
 
 export function handleStakeAdded(event: StakeAddedEvent): void {
