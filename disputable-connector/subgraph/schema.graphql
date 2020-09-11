@@ -84,8 +84,9 @@ type AragonInfo @entity {
 
 enum ProposalStatus {
   Active
+  Cancelled
   Challenged
   Disputed
-  Cancelled
   Executed
+  Rejected
 }
