@@ -85,11 +85,10 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     event StakeAdded(address indexed entity, uint256 indexed id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event StakeWithdrawn(address entity, uint256 indexed id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 indexed id, uint256 conviction);
-    event ProposalPaused(uint256 indexed proposalId, uint256 indexed actionId);
-    event ProposalResumed(uint256 indexed proposalId, uint256 indexed actionId);
-    event ProposalCancelled(uint256 indexed proposalId, uint256 indexed actionId);
-    event ProposalRejected(uint256 indexed proposalId, uint256 indexed actionId);
-    event AgreementActionClosed(uint256 indexed proposalId, uint256 indexed actionId);
+    event ProposalPaused(uint256 indexed proposalId, uint256 indexed challengeId);
+    event ProposalResumed(uint256 indexed proposalId);
+    event ProposalCancelled(uint256 indexed proposalId);
+    event ProposalRejected(uint256 indexed proposalId);
 
     modifier proposalExists(uint256 _proposalId) {
         require(_proposalId == 1 || proposals[_proposalId].submitter != address(0), ERROR_PROPOSAL_DOES_NOT_EXIST);
@@ -251,7 +250,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         proposal.proposalStatus = ProposalStatus.Cancelled;
         _closeDisputableAction(proposal.agreementActionId);
 
-        emit ProposalCancelled(_proposalId, proposal.agreementActionId);
+        emit ProposalCancelled(_proposalId);
     }
 
     /**
@@ -382,11 +381,11 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @dev Internal implementation of the `onDisputableActionChallenged` hook
      * @param _proposalId Identification number of the disputable action to be challenged
      */
-    function _onDisputableActionChallenged(uint256 _proposalId, uint256 /* _challengeId */, address /* _challenger */) internal {
+    function _onDisputableActionChallenged(uint256 _proposalId, uint256  _challengeId, address /* _challenger */) internal {
         Proposal storage proposal = proposals[_proposalId];
         proposal.proposalStatus = ProposalStatus.Paused;
 
-        emit ProposalPaused(_proposalId, proposal.agreementActionId);
+        emit ProposalPaused(_proposalId, _challengeId);
     }
 
     /**
@@ -397,7 +396,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         Proposal storage proposal = proposals[_proposalId];
         proposal.proposalStatus = ProposalStatus.Cancelled;
 
-        emit ProposalRejected(_proposalId, proposal.agreementActionId);
+        emit ProposalRejected(_proposalId);
     }
 
     /**
@@ -408,7 +407,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         Proposal storage proposal = proposals[_proposalId];
         proposal.proposalStatus = ProposalStatus.Active;
 
-        emit ProposalResumed(_proposalId, proposal.agreementActionId);
+        emit ProposalResumed(_proposalId);
     }
 
     /**
