@@ -65,9 +65,15 @@ templates:
       language: wasm/assemblyscript
       entities:
         - Agreement
+        - ConvictionVoting
+        - ERC20
       abis:
         - name: Agreement
           file: ./abis/Agreement.json
+        - name: ConvictionVoting
+          file: ./abis/ConvictionVoting.json
+        - name: MinieMeToken
+          file: ./abis/MiniMeToken.json
       eventHandlers:
         - event: ActionDisputed(indexed uint256,indexed uint256)
           handler: handleActionDisputed

@@ -38,6 +38,7 @@ export function handleProposalAdded(event: ProposalAddedEvent): void {
   proposal.actionId = event.params.actionId
   
   proposal.save()
+  log.info('******* Conviction address : {}', [event.address.toHexString()])
   log.info('******* ID is : {}', [event.params.id.toString()])
 
   if(event.params.id != ABSTAIN_PROPOSAL_ID){

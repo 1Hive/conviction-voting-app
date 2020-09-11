@@ -30,6 +30,8 @@ export function getTemplateForApp(appId: string): string | null {
 
 export function onOrgTemplateCreated(orgAddress: Address): void {}
 export function onAppTemplateCreated(appAddress: Address, appId: string): void {
-  loadAppConfig(appAddress)
+  if(CONVICTION_APP_IDS.includes(appId)){
+    loadAppConfig(appAddress)
+  }
 }
 export function onTokenTemplateCreated(tokenAddress: Address): void {}

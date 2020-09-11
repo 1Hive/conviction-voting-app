@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes } from '@graphprotocol/graph-ts'
+import { Address, BigInt, Bytes, log } from '@graphprotocol/graph-ts'
 import {
   Config as ConfigEntity,
   DisputableConvictionVoting as DisputableConvictionVotingEntity,
@@ -54,7 +54,10 @@ export function loadAppConfig(appAddress: Address): void {
   const convictionVoting = ConvictionVotingContract.bind(appAddress)
 
   // Load tokens data
+  log.info('******* LOAD APP CONFIG Conviction address : {}', [appAddress.toHexString()])
   const stakeToken = convictionVoting.stakeToken()
+
+  log.info('******* LOAD APP CONFIG STAKE TOKEN : {}', [stakeToken.toHexString()])
   const stakeTokenId = loadTokenData(stakeToken)
   if(stakeTokenId){
     config.stakeToken = stakeToken.toHexString()
