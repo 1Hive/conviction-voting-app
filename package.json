@@ -6,18 +6,19 @@
     "@1hive/apps-token-manager": "3.0.0",
     "@aragon/apps-shared-minime": "^1.0.1",
     "@aragon/apps-vault": "^4.1.0",
-    "@aragon/os": "5.0.0-rc.0",
-    "@aragon/apps-agreement": "1.0.0-rc.0",
-    "@aragon/staking": "0.2.9"
+    "@aragon/os": "5.0.0-rc.0"
   },
   "devDependencies": {
-    "@aragon/cli": "7.0.3",
+    "@aragon/apps-agreement": "1.0.0-rc.0",
+    "@aragon/staking": "0.2.9",
     "@aragon/contract-helpers-test": "^0.1.0-rc.3",
     "@aragon/truffle-config-v5": "^1.0.0",
+    "@aragon/buidler-aragon": "^0.2.9",
     "@nomiclabs/buidler": "^1.4.3",
     "@nomiclabs/buidler-ganache": "^1.3.3",
     "@nomiclabs/buidler-truffle5": "^1.3.4",
     "@nomiclabs/buidler-web3": "^1.3.4",
+    "@nomiclabs/buidler-etherscan": "^1.3.0",
     "buidler-extract": "^1.0.0",
     "buidler-gas-reporter": "^0.1.3",
     "chai": "^4.2.0",

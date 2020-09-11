@@ -6,13 +6,18 @@
       "params": []
     },
     {
-      "name": "Create a proposal",
+      "name": "Create proposals",
       "id": "CREATE_PROPOSALS_ROLE",
       "params": []
     },
     {
-      "name": "Cancel a proposal",
-      "id": "CANCEL_PROPOSAL_ROLE",
+      "name": "Cancel proposals",
+      "id": "CANCEL_PROPOSALS_ROLE",
+      "params": []
+    },
+    {
+      "name": "Challenge votes",
+      "id": "CHALLENGE_ROLE",
       "params": []
     }
   ],

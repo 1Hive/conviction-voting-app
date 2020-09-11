@@ -1,8 +1,8 @@
 const { getEventArgument, ZERO_ADDRESS, ONE_DAY, bn } = require('@aragon/contract-helpers-test')
 const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts/assertThrow')
 const { RULINGS } = require('@aragon/apps-agreement/test/helpers/utils/enums')
-const installApp = require('./helpers/installApp')
 const deployer = require('@aragon/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
+const installApp = require('./helpers/installApp')
 
 const ConvictionVoting = artifacts.require('ConvictionVotingMock')
 const HookedTokenManager = artifacts.require('HookedTokenManager')
@@ -272,6 +272,18 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             stakeAmount, stakeAmount, [proposalId], stakeAmount)
         })
 
+        it('should stake to proposal when challenged', async () => {
+          const stakeAmount = 1000
+          await agreement.challenge({ actionId })
+          const currentBlock = await convictionVoting.getBlockNumberPublic()
+
+          await convictionVoting.stakeToProposal(proposalId, stakeAmount)
+
+          await assertProposalAndStakesCorrect(
+              proposalId, 0, stakeAmount, currentBlock.toNumber() + 1,
+              stakeAmount, stakeAmount, [proposalId], stakeAmount)
+        })
+
         it('should allow staking from multiple accounts', async () => {
           const stakeAmount = 1000
 
@@ -475,16 +487,10 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000000), 'CV_STAKING_MORE_THAN_AVAILABLE')
         })
 
-        it('should revert when challenged', async () => {
-          await agreement.challenge({ actionId })
-
-          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_PROPOSAL_NOT_ACTIVE')
-        })
-
         it('should revert when cancelled', async () => {
           await convictionVoting.cancelProposal(proposalId)
 
-          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_PROPOSAL_NOT_ACTIVE')
+          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_INCORRECT_PROPOSAL_STATUS')
         })
 
         it('should revert when cancelled by Agreements', async () => {
@@ -492,7 +498,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await agreement.dispute({ actionId })
           await agreement.executeRuling({ actionId, ruling: RULINGS.IN_FAVOR_OF_CHALLENGER })
 
-          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_PROPOSAL_NOT_ACTIVE')
+          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_INCORRECT_PROPOSAL_STATUS')
         })
 
         it('should revert when executed', async () => {
@@ -500,7 +506,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await convictionVoting.mockAdvanceBlocks(80)
           await convictionVoting.executeProposal(proposalId)
 
-          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_PROPOSAL_NOT_ACTIVE')
+          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_INCORRECT_PROPOSAL_STATUS')
         })
 
         context('withdrawFromProposal(proposalId, amount)', () => {
@@ -511,7 +517,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             await convictionVoting.stakeToProposal(proposalId, stakeAmount, { from: appManager })
           })
 
-          it('withdraws from proposal', async () => {
+          it('withdraws from proposal and updates conviction', async () => {
             const withdrawAmount = 500
             await convictionVoting.mockAdvanceBlocks(40)
             const { stakedTokens: stakedBefore } = await convictionVoting.getProposal(proposalId)
@@ -522,6 +528,20 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             await assertProposalAndStakesCorrect(
               proposalId, 9867, stakedBefore - withdrawAmount, currentBlock.toNumber(),
               stakeAmount - withdrawAmount, stakeAmount - withdrawAmount, [proposalId], stakeAmount - withdrawAmount)
+          })
+
+          it('withdraws from proposal and updates conviction when challenged', async () => {
+            const withdrawAmount = 500
+            await convictionVoting.mockAdvanceBlocks(40)
+            const { stakedTokens: stakedBefore } = await convictionVoting.getProposal(proposalId)
+            await agreement.challenge({ actionId })
+            const currentBlock = await convictionVoting.getBlockNumberPublic()
+
+            await convictionVoting.withdrawFromProposal(proposalId, withdrawAmount)
+
+            await assertProposalAndStakesCorrect(
+                proposalId, 9867, stakedBefore - withdrawAmount, currentBlock.toNumber(),
+                stakeAmount - withdrawAmount, stakeAmount - withdrawAmount, [proposalId], stakeAmount - withdrawAmount)
           })
 
           it('does not update block last or conviction last when executed', async () => {
@@ -858,8 +878,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         })
 
         it('cancels proposal when sender has permission', async () => {
-          const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          const cancelProposalsRole = await convictionVoting.CANCEL_PROPOSALS_ROLE()
+          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalsRole, appManager)
 
           await convictionVoting.cancelProposal(proposalId, { from: user })
 
@@ -879,8 +899,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
         })
 
         it('should revert when cancelling abstain proposal', async () => {
-          const cancelProposalRole = await convictionVoting.CANCEL_PROPOSAL_ROLE()
-          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalRole, appManager)
+          const cancelProposalsRole = await convictionVoting.CANCEL_PROPOSALS_ROLE()
+          await deployer.acl.createPermission(user, convictionVoting.address, cancelProposalsRole, appManager)
           await assertRevert(convictionVoting.cancelProposal(ABSTAIN_PROPOSAL_ID, { from: user }), 'CV_CANNOT_CANCEL_ABSTAIN_PROPOSAL')
         })
 
