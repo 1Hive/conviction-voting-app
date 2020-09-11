@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, log } from '@graphprotocol/graph-ts'
+import { Address, BigInt, Bytes } from '@graphprotocol/graph-ts'
 import {
   Config as ConfigEntity,
   DisputableConvictionVoting as DisputableConvictionVotingEntity,
@@ -7,7 +7,7 @@ import {
   StakeHistory as StakeHistoryEntity,
   Token as TokenEntity,
 } from '../generated/schema'
-import { MiniMeToken as MiniMeTokenContract } from '../generated/templates/MiniMeToken/MiniMeToken'
+import { MiniMeToken as MiniMeTokenContract } from '../generated/templates/ConvictionVoting/MiniMeToken'
 import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { STATUS_ACTIVE } from './proposal-statuses'
 
@@ -18,7 +18,6 @@ export function loadTokenData(address: Address): string | null {
   if (token === null) {
     const tokenContract = MiniMeTokenContract.bind(address)
     token = new TokenEntity(id)
-
     // App could be instantiated without a vault which means request token could be invalid
     const symbol = tokenContract.try_symbol()
     if (symbol.reverted) {
@@ -54,10 +53,7 @@ export function loadAppConfig(appAddress: Address): void {
   const convictionVoting = ConvictionVotingContract.bind(appAddress)
 
   // Load tokens data
-  log.info('******* LOAD APP CONFIG Conviction address : {}', [appAddress.toHexString()])
   const stakeToken = convictionVoting.stakeToken()
-
-  log.info('******* LOAD APP CONFIG STAKE TOKEN : {}', [stakeToken.toHexString()])
   const stakeTokenId = loadTokenData(stakeToken)
   if(stakeTokenId){
     config.stakeToken = stakeToken.toHexString()

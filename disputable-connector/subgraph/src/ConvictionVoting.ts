@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { Address, BigInt, log } from '@graphprotocol/graph-ts'
+import { Address, BigInt } from '@graphprotocol/graph-ts'
 import {
   ProposalAdded as ProposalAddedEvent,
   StakeAdded as StakeAddedEvent,
@@ -38,8 +38,6 @@ export function handleProposalAdded(event: ProposalAddedEvent): void {
   proposal.actionId = event.params.actionId
   
   proposal.save()
-  log.info('******* Conviction address : {}', [event.address.toHexString()])
-  log.info('******* ID is : {}', [event.params.id.toString()])
 
   if(event.params.id != ABSTAIN_PROPOSAL_ID){
     const agreementAppAddress = convictionVotingApp.getAgreement()
