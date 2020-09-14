@@ -16,5 +16,5 @@ const proposals = await conviction.proposals()
 ### If you would like to use a coustom subgraph
 
 ```js
-  const conviction = await connectConviction(convictionapp, [ 'thegraph', <subgraph-url> ])
+  const conviction = await connectConviction(convictionapp, [ 'thegraph', { subgraphUrl: <subgraph-url> } ])
 ```
