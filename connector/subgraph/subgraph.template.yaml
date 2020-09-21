@@ -35,6 +35,8 @@ templates:
         - name: MinieMeToken
           file: ./abis/MiniMeToken.json
       eventHandlers:
+        - event: ConvictionSettingsChanged(uint256,uint256,uint256,uint256)
+          handler: handleConfigChanged
         - event: ProposalAdded(indexed address,indexed uint256,string,bytes,uint256,address)
           handler: handleProposalAdded
         - event: StakeAdded(indexed address,indexed uint256,uint256,uint256,uint256,uint256)

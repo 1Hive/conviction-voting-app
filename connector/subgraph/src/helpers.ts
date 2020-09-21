@@ -13,7 +13,6 @@ import { STATUS_ACTIVE } from './proposal-statuses'
 
 function loadTokenData(address: Address): boolean {
   const tokenContract = MiniMeTokenContract.bind(address)
-  const token = new TokenEntity(address.toHexString())
 
   // App could be instantiated without a vault which means request token could be invalid
   const symbol = tokenContract.try_symbol()
@@ -21,6 +20,7 @@ function loadTokenData(address: Address): boolean {
     return false
   }
 
+  const token = new TokenEntity(address.toHexString())
   token.symbol = symbol.value
   token.name = tokenContract.name()
   token.decimals = tokenContract.decimals()
