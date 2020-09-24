@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { Address, BigInt, log } from '@graphprotocol/graph-ts'
+import { Address, BigInt } from '@graphprotocol/graph-ts'
 import {
   ConvictionSettingsChanged as ConvictionSettingsChangedEvent,
   ProposalAdded as ProposalAddedEvent,
