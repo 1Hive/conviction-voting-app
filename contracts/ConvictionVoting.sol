@@ -231,7 +231,9 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
 
         // TODO: Add Agreements to Blacklist. Don't remove this TODO until we upgrade to Disputable.
         if (proposal.evmScript.length != 0) {
-            runScript(proposal.evmScript, new bytes(0), new address[](0));
+            address[] memory blacklist = new address[](1);
+            blacklist[0] = address(this);
+            runScript(proposal.evmScript, new bytes(0), blacklist);
         }
 
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
