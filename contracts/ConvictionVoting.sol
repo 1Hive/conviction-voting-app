@@ -22,7 +22,6 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     uint256 constant public ONE_HUNDRED_PERCENT = 1e18;
     uint256 constant private TWO_128 = 0x100000000000000000000000000000000; // 2^128
     uint256 constant private TWO_127 = 0x80000000000000000000000000000000; // 2^127
-    uint256 constant private TWO_64 = 0x10000000000000000; // 2^64
     uint256 constant public ABSTAIN_PROPOSAL_ID = 1;
     uint64 constant public MAX_STAKED_PROPOSALS = 10;
 
@@ -42,7 +41,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
 
     enum ProposalStatus {
-        Active,              // A vote that has been reported to Agreements
+        Active,              // An active vote
         Cancelled,           // A vote that has been cancelled
         Executed             // A vote that has been executed
     }
@@ -54,8 +53,9 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         uint256 convictionLast;
         uint64 blockLast;
         ProposalStatus proposalStatus;
-        mapping(address => uint256) voterStake;
         address submitter;
+        bytes evmScript;
+        mapping(address => uint256) voterStake;
     }
 
     MiniMeToken public stakeToken;
@@ -89,8 +89,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         Vault _vault,
         address _requestToken,
         uint256 _decay,
-        uint256 _maxRatio,
-        uint256 _weight,
+        uint256 _maxRatio,  // Maximum percent of the total funds available that can be requested by a proposal
+        uint256 _weight,    // Modifies conviction required (makes it harder or easier?)
         uint256 _minThresholdStakePercentage
     )
         public onlyInit
@@ -111,7 +111,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             0,
             0,
             ProposalStatus.Active,
-            0x0
+            0x0,
+            new bytes(0)
         );
         emit ProposalAdded(0x0, ABSTAIN_PROPOSAL_ID, "Abstain proposal", "", 0, 0x0);
 
@@ -143,32 +144,38 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
-     * @notice Add proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
+     * @notice Create signaling proposal `_title`
+     * @param _title Title of the proposal
+     * @param _link IPFS or HTTP link with proposal's description
+     */
+    function addSignalingProposal(string _title, bytes _link) external isInitialized() auth(CREATE_PROPOSALS_ROLE) {
+        _addProposal(_title, _link, 0, address(0), new bytes(0));
+    }
+
+    /**
+     * @notice Create funding proposal `_title` for `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
      * @param _requestedAmount Tokens requested
      * @param _beneficiary Address that will receive payment
      */
-    function addProposal(
-        string _title,
-        bytes _link,
-        uint256 _requestedAmount,
-        address _beneficiary
-    )
+    function addFundingProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript)
         external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
-        proposals[proposalCounter] = Proposal(
-            _requestedAmount,
-            _beneficiary,
-            0,
-            0,
-            0,
-            ProposalStatus.Active,
-            msg.sender
-        );
+        _addProposal(_title, _link, _requestedAmount, _beneficiary, new bytes(0));
+    }
 
-        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary);
-        proposalCounter++;
+    /**
+     * @notice Create executable proposal `_title` for `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary` with script `_evmScript`
+     * @param _title Title of the proposal
+     * @param _link IPFS or HTTP link with proposal's description
+     * @param _requestedAmount Tokens requested
+     * @param _beneficiary Address that will receive payment
+     */
+    function addExecutableProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript)
+        external isInitialized() auth(CREATE_PROPOSALS_ROLE)
+    {
+        _addProposal(_title, _link, _requestedAmount, _beneficiary, _evmScript);
     }
 
     /**
@@ -211,7 +218,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(_proposalId): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(_proposalId): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param _proposalId Proposal id
      */
-    function executeProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) {
+    function executeProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) nonReentrant {
         Proposal storage proposal = proposals[_proposalId];
 
         require(_proposalId != ABSTAIN_PROPOSAL_ID, ERROR_CANNOT_EXECUTE_ABSTAIN_PROPOSAL);
@@ -221,6 +228,12 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION);
 
         proposal.proposalStatus = ProposalStatus.Executed;
+
+        // TODO: Add Agreements to Blacklist. Don't remove this TODO until we upgrade to Disputable.
+        if (proposal.evmScript.length != 0) {
+            runScript(proposal.evmScript, new bytes(0), new address[](0));
+        }
+
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
@@ -373,6 +386,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             _withdrawInactiveStakedTokens(totalVoterStake[_from].sub(newBalance), _from);
         }
 
+        // Note that totalVoterStake may be updated in the previous function call, so check the current value
         if (newBalance < totalVoterStake[_from]) {
             _withdrawActiveStakedTokens(totalVoterStake[_from].sub(newBalance), _from);
         }
@@ -435,6 +449,24 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         );
         _proposal.blockLast = blockNumber;
         _proposal.convictionLast = conviction;
+    }
+
+    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript)
+        internal
+    {
+        proposals[proposalCounter] = Proposal(
+            _requestedAmount,
+            _beneficiary,
+            0,
+            0,
+            0,
+            ProposalStatus.Active,
+            msg.sender,
+            _evmScript
+        );
+
+        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary);
+        proposalCounter++;
     }
 
     /**
