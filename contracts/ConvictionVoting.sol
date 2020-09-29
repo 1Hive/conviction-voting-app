@@ -3,6 +3,8 @@ pragma solidity ^0.4.24;
 import "@aragon/os/contracts/apps/AragonApp.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
 import "@aragon/apps-vault/contracts/Vault.sol";
+import "@aragon/os/contracts/lib/token/ERC20.sol";
+import "@aragon/os/contracts/common/SafeERC20.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
@@ -10,6 +12,7 @@ import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 import "./lib/ArrayUtils.sol";
 
 contract ConvictionVoting is AragonApp, TokenManagerHook {
+    using SafeERC20 for ERC20;
     using SafeMath for uint256;
     using SafeMath64 for uint64;
     using ArrayUtils for uint256[];
@@ -55,18 +58,20 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         ProposalStatus proposalStatus;
         address submitter;
         bytes evmScript;
+        bool requiresApproval;
         mapping(address => uint256) voterStake;
     }
 
     MiniMeToken public stakeToken;
     Vault public vault;
-    address public requestToken;
+    ERC20 public requestToken;
     uint256 public decay;
     uint256 public maxRatio;
     uint256 public weight;
     uint256 public minThresholdStakePercentage;
     uint256 public proposalCounter;
     uint256 public totalStaked;
+    address[] public evmScriptBlacklist;
 
     mapping(uint256 => Proposal) internal proposals;
     mapping(address => uint256) internal totalVoterStake;
@@ -87,7 +92,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     function initialize(
         MiniMeToken _stakeToken,
         Vault _vault,
-        address _requestToken,
+        ERC20 _requestToken,
         uint256 _decay,
         uint256 _maxRatio,  // Maximum percent of the total funds available that can be requested by a proposal
         uint256 _weight,    // Modifies conviction required (makes it harder or easier?)
@@ -104,6 +109,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         weight = _weight;
         minThresholdStakePercentage = _minThresholdStakePercentage;
 
+        evmScriptBlacklist.push(vault);
+
         proposals[ABSTAIN_PROPOSAL_ID] = Proposal(
             0,
             0x0,
@@ -112,7 +119,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             0,
             ProposalStatus.Active,
             0x0,
-            new bytes(0)
+            new bytes(0),
+            false
         );
         emit ProposalAdded(0x0, ABSTAIN_PROPOSAL_ID, "Abstain proposal", "", 0, 0x0);
 
@@ -149,7 +157,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _link IPFS or HTTP link with proposal's description
      */
     function addSignalingProposal(string _title, bytes _link) external isInitialized() auth(CREATE_PROPOSALS_ROLE) {
-        _addProposal(_title, _link, 0, address(0), new bytes(0));
+        _addProposal(_title, _link, 0, address(0), new bytes(0), false);
     }
 
     /**
@@ -159,10 +167,10 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _requestedAmount Tokens requested
      * @param _beneficiary Address that will receive payment
      */
-    function addFundingProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript)
+    function addFundingProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary)
         external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
-        _addProposal(_title, _link, _requestedAmount, _beneficiary, new bytes(0));
+        _addProposal(_title, _link, _requestedAmount, _beneficiary, new bytes(0), false);
     }
 
     /**
@@ -171,11 +179,13 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _link IPFS or HTTP link with proposal's description
      * @param _requestedAmount Tokens requested
      * @param _beneficiary Address that will receive payment
+     * @param _evmScript Evm script to execute with successful proposal
+     * @param _requiresApproval If the script will do transferFrom() expecting sender to own funds, set to true
      */
-    function addExecutableProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript)
+    function addExecutableProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript, bool _requiresApproval)
         external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
-        _addProposal(_title, _link, _requestedAmount, _beneficiary, _evmScript);
+        _addProposal(_title, _link, _requestedAmount, _beneficiary, _evmScript, _requiresApproval);
     }
 
     /**
@@ -229,21 +239,33 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
 
         proposal.proposalStatus = ProposalStatus.Executed;
 
-        vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
-
-        // TODO: Add Agreements to Blacklist. Don't remove this TODO until we upgrade to Disputable.
-        if (proposal.evmScript.length != 0) {
-
-            // Check to do approve or transfer
-
-            address[] memory blacklist = new address[](1);
-            blacklist[0] = address(vault);
-            runScript(proposal.evmScript, new bytes(0), blacklist);
-
-            // Undo approve
+        if (proposal.evmScript.length == 0) {
+            vault.transfer(address(requestToken), proposal.beneficiary, proposal.requestedAmount);
+        } else {
+            _executeScriptWithTransfer(proposal);
         }
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
+    }
+
+    function _executeScriptWithTransfer(Proposal storage proposal) internal {
+        uint256 balanceBeforeExecution;
+
+        if (proposal.requiresApproval) {
+            balanceBeforeExecution = requestToken.balanceOf(address(this));
+            vault.transfer(requestToken, address(this), proposal.requestedAmount);
+            requestToken.safeApprove(proposal.beneficiary, proposal.requestedAmount);
+        } else {
+            vault.transfer(address(requestToken), proposal.beneficiary, proposal.requestedAmount);
+        }
+
+        // TODO: Add Agreements to Blacklist. Don't remove this TODO until we upgrade to Disputable.
+        // Any permissioned contracts used for internal functionality must be considered for addition to the blacklist
+        runScript(proposal.evmScript, new bytes(0), evmScriptBlacklist);
+
+        if (proposal.requiresApproval) {
+            require(requestToken.balanceOf(address(this)) == balanceBeforeExecution, "Incorrect balance");
+        }
     }
 
     /**
@@ -458,7 +480,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         _proposal.convictionLast = conviction;
     }
 
-    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript)
+    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript, bool _requiresApproval)
         internal
     {
         proposals[proposalCounter] = Proposal(
@@ -469,7 +491,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             0,
             ProposalStatus.Active,
             msg.sender,
-            _evmScript
+            _evmScript,
+            _requiresApproval
         );
 
         emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary);
