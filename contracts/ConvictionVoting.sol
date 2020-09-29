@@ -44,7 +44,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
 
     enum ProposalStatus {
-        Active,              // An active vote
+        Active,              // A vote that is active
         Cancelled,           // A vote that has been cancelled
         Executed             // A vote that has been executed
     }
@@ -78,7 +78,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     mapping(address => uint256[]) internal voterStakedProposals;
 
     event ConvictionSettingsChanged(uint256 decay, uint256 maxRatio, uint256 weight, uint256 minThresholdStakePercentage);
-    event ProposalAdded(address indexed entity, uint256 indexed id, string title, bytes link, uint256 amount, address beneficiary);
+    event ProposalAdded(address indexed entity, uint256 indexed id, string title, bytes link, uint256 amount, address beneficiary, bytes evmScript, bool requiresApproval);
     event StakeAdded(address indexed entity, uint256 indexed id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event StakeWithdrawn(address entity, uint256 indexed id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 indexed id, uint256 conviction);
@@ -95,7 +95,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         ERC20 _requestToken,
         uint256 _decay,
         uint256 _maxRatio,  // Maximum percent of the total funds available that can be requested by a proposal
-        uint256 _weight,    // Modifies conviction required (makes it harder or easier?)
+        uint256 _weight,    // Modifies conviction required
         uint256 _minThresholdStakePercentage
     )
         public onlyInit
@@ -113,16 +113,16 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
 
         proposals[ABSTAIN_PROPOSAL_ID] = Proposal(
             0,
-            0x0,
+            address(0),
             0,
             0,
             0,
             ProposalStatus.Active,
-            0x0,
+            address(0),
             new bytes(0),
             false
         );
-        emit ProposalAdded(0x0, ABSTAIN_PROPOSAL_ID, "Abstain proposal", "", 0, 0x0);
+        emit ProposalAdded(address(0), ABSTAIN_PROPOSAL_ID, "Abstain proposal", "", 0, address(0), new bytes(0), false);
 
         initialized();
     }
@@ -182,7 +182,14 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _evmScript Evm script to execute with successful proposal
      * @param _requiresApproval If the script will do transferFrom() expecting sender to own funds, set to true
      */
-    function addExecutableProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript, bool _requiresApproval)
+    function addExecutableProposal(
+        string _title,
+        bytes _link,
+        uint256 _requestedAmount,
+        address _beneficiary,
+        bytes _evmScript,
+        bool _requiresApproval
+    )
         external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
         _addProposal(_title, _link, _requestedAmount, _beneficiary, _evmScript, _requiresApproval);
@@ -495,7 +502,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             _requiresApproval
         );
 
-        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary);
+        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary, _evmScript, _requiresApproval);
         proposalCounter++;
     }
 
