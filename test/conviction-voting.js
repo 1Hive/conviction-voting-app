@@ -1,5 +1,6 @@
 const { getEventArgument } = require('@aragon/contract-helpers-test/src/events')
 const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts')
+const { encodeCallScript } = require('@aragon/contract-helpers-test/src/aragon-os/evmScript')
 const deployDAO = require('./helpers/deployDAO')
 const installApp = require('./helpers/installApp')
 
@@ -7,6 +8,7 @@ const ConvictionVoting = artifacts.require('ConvictionVotingMock')
 const HookedTokenManager = artifacts.require('HookedTokenManager')
 const MiniMeToken = artifacts.require('MiniMeToken')
 const VaultMock = artifacts.require('VaultMock')
+const ExecutionTarget = artifacts.require('ExecutionTarget')
 
 const BN = web3.utils.toBN
 const ONE_HUNDRED_PERCENT = 1e18
@@ -109,6 +111,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
       assert.equal(await convictionVoting.maxRatio(), DEFAULT_BETA, 'Incorrect max ratio')
       assert.equal(await convictionVoting.weight(), DEFAULT_RHO, 'Incorrect weight')
       assert.equal(await convictionVoting.minThresholdStakePercentage(), MIN_THRESHOLD_STAKE_PERCENTAGE.toString(), 'Incorrect min threshold stake percentage')
+      assert.equal(await convictionVoting.evmScriptBlacklist(0), vault.address, 'Incorrect evm script blacklist')
       const {
         requestedAmount,
         beneficiary,
@@ -281,8 +284,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await convictionVoting.stakeToProposal(proposal2Id, DEFAULT_APP_MANAGER_STAKE_TOKENS)
 
           await assertProposalAndStakesCorrect(
-              proposal2Id, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock.toNumber() + 1,
-              DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposal2Id], DEFAULT_APP_MANAGER_STAKE_TOKENS)
+            proposal2Id, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock.toNumber() + 1,
+            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposal2Id], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
 
         const createAndExecuteProposals = async (numberOfProposals, stakeForProposals) => {
@@ -350,8 +353,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS)
 
           await assertProposalAndStakesCorrect(
-              proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock.toNumber() + 1,
-              DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
+            proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock.toNumber() + 1,
+            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
 
         it('should reassign previously staked tokens after many previous votes cancelled', async () => {
@@ -363,8 +366,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS)
 
           await assertProposalAndStakesCorrect(
-              proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock.toNumber() + 1,
-              DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
+            proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock.toNumber() + 1,
+            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
 
         it('should reassign previously staked tokens after many previous votes cancelled and executed', async () => {
@@ -379,10 +382,9 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS)
 
           await assertProposalAndStakesCorrect(
-              proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock,
-              DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
+            proposalId, 0, DEFAULT_APP_MANAGER_STAKE_TOKENS, currentBlock,
+            DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
-
 
         it('should not reassign previously staked tokens before previous vote execution', async () => {
           await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS)
@@ -629,8 +631,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             await stakeToken.transfer(user, transferAmount)
 
             await assertProposalAndStakesCorrect(
-                newProposalIds[0], 74470, 0, currentBlock.toNumber(),
-                0, totalAppManagerStake, [newProposalIds[1], newProposalIds[2]], totalAppManagerStake)
+              newProposalIds[0], 74470, 0, currentBlock.toNumber(),
+              0, totalAppManagerStake, [newProposalIds[1], newProposalIds[2]], totalAppManagerStake)
             const proposal1AppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[1], appManager)
             assert.equal(proposal1AppManagerStake.toString(), DEFAULT_APP_MANAGER_STAKE_TOKENS / numberOfProposals - 1000, 'Incorrect proposal 1 voter stake')
             const proposal2AppManagerStake = await convictionVoting.getProposalVoterStake(newProposalIds[2], appManager)
@@ -801,6 +803,114 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await convictionVoting.executeProposal(proposalId)
 
           await assertRevert(convictionVoting.cancelProposal(proposalId), 'CV_PROPOSAL_NOT_ACTIVE')
+        })
+      })
+    })
+
+    context.only('addExecutableProposal(title, link, requestedAmount, beneficiary, evmScript, doesTransferFrom) with no transferFrom', () => {
+
+      let executionTarget, proposalId, actionId, callScript
+
+      beforeEach(async () => {
+        executionTarget = await ExecutionTarget.new()
+        const action = {
+          to: executionTarget.address,
+          calldata: executionTarget.contract.methods.execute().encodeABI()
+        }
+        callScript = encodeCallScript([action])
+        const addProposalReceipt =
+          await convictionVoting.addExecutableProposal('Proposal 1', '0x', requestedAmount, executionTarget.address, callScript, false)
+        proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+      })
+
+      it('should create a proposal', async () => {
+        const {
+          requestedAmount: actualRequestedAmount,
+          beneficiary: actualBeneficiary,
+          stakedTokens,
+          convictionLast,
+          blockLast,
+          proposalStatus,
+          submitter,
+          evmScript,
+          doesTransferFrom
+        } = await convictionVoting.getProposal(proposalId)
+
+        assert.equal(actualRequestedAmount, requestedAmount, 'Incorrect requested amount')
+        assert.equal(beneficiary, beneficiary, 'Incorrect beneficiary')
+        assert.equal(stakedTokens, 0, 'Incorrect staked tokens')
+        assert.equal(convictionLast, 0, 'Incorrect conviction last')
+        assert.equal(blockLast, 0, 'Incorrect block last')
+        assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
+        assert.equal(submitter, appManager, 'Incorrect submitter')
+        assert.equal(evmScript, callScript, 'Incorrect evm script')
+        assert.equal(doesTransferFrom, false, 'Incorrect does transfer from')
+        assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
+      })
+
+      context('stakeToProposal(proposalId, amount)', () => {
+
+        beforeEach(async () => {
+          const stakeAmount = 10000
+          await convictionVoting.stakeToProposal(proposalId, stakeAmount)
+        })
+
+        context('executeProposal(proposalId)', () => {
+
+          it('executes external contract', async () => {
+            await convictionVoting.mockAdvanceBlocks(40)
+
+            await convictionVoting.executeProposal(proposalId)
+
+            assert.equal(await executionTarget.counter(), 1, "Incorrect exection target counter")
+          })
+
+          it('reverts when calling blacklisted vault app', async () => {
+
+          })
+
+        })
+      })
+    })
+
+    context.only('addExecutableProposal(title, link, requestedAmount, beneficiary, evmScript, doesTransferFrom) with transferFrom', () => {
+
+      let executionTarget, proposalId, actionId, callScript
+
+      beforeEach(async () => {
+        executionTarget = await ExecutionTarget.new()
+        const action = {
+          to: executionTarget.address,
+          calldata: executionTarget.contract.methods.executeWithTransferFrom(requestToken.address, requestedAmount).encodeABI()
+        }
+        callScript = encodeCallScript([action])
+        const addProposalReceipt =
+          await convictionVoting.addExecutableProposal('Proposal 1', '0x', requestedAmount, executionTarget.address, callScript, true)
+        proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+      })
+
+      context('stakeToProposal(proposalId, amount)', () => {
+
+        beforeEach(async () => {
+          const stakeAmount = 10000
+          await convictionVoting.stakeToProposal(proposalId, stakeAmount)
+        })
+
+        context('executeProposal(proposalId)', () => {
+
+          it('executes external contract that uses transferFrom', async () => {
+            await convictionVoting.mockAdvanceBlocks(40)
+
+            await convictionVoting.executeProposal(proposalId)
+
+            const requestTokenBalanceAfter = await requestToken.balanceOf(executionTarget.address)
+            assert.equal(requestTokenBalanceAfter, requestedAmount, "Incorrect request token balance")
+            assert.equal(await executionTarget.counter(), 1, "Incorrect exection target counter")
+          })
+
+          it('reverts when executing with transferFrom but does not take all funds', async () => {
+
+          })
         })
       })
     })

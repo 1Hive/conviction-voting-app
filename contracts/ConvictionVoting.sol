@@ -59,7 +59,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         ProposalStatus proposalStatus;
         address submitter;
         bytes evmScript;
-        bool requiresApproval;
+        bool doesTransferFrom;
         mapping(address => uint256) voterStake;
     }
 
@@ -181,7 +181,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _requestedAmount Tokens requested
      * @param _beneficiary Address that will receive payment
      * @param _evmScript Evm script to execute with successful proposal
-     * @param _requiresApproval If the script will do transferFrom() expecting sender to own funds, set to true
+     * @param _doesTransferFrom If the script will do transferFrom() expecting sender to own funds with an approval, set to true
      */
     function addExecutableProposal(
         string _title,
@@ -189,11 +189,11 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         uint256 _requestedAmount,
         address _beneficiary,
         bytes _evmScript,
-        bool _requiresApproval
+        bool _doesTransferFrom
     )
         external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
-        _addProposal(_title, _link, _requestedAmount, _beneficiary, _evmScript, _requiresApproval);
+        _addProposal(_title, _link, _requestedAmount, _beneficiary, _evmScript, _doesTransferFrom);
     }
 
     /**
@@ -292,7 +292,9 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         uint256 convictionLast,
         uint64 blockLast,
         ProposalStatus proposalStatus,
-        address submitter
+        address submitter,
+        bytes evmScript,
+        bool doesTransferFrom
     )
     {
         Proposal storage proposal = proposals[_proposalId];
@@ -303,7 +305,9 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             proposal.convictionLast,
             proposal.blockLast,
             proposal.proposalStatus,
-            proposal.submitter
+            proposal.submitter,
+            proposal.evmScript,
+            proposal.doesTransferFrom
         );
     }
 
@@ -468,7 +472,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         _proposal.convictionLast = conviction;
     }
 
-    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript, bool _requiresApproval)
+    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary, bytes _evmScript, bool _doesTransferFrom)
         internal
     {
         proposals[proposalCounter] = Proposal(
@@ -480,10 +484,10 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
             ProposalStatus.Active,
             msg.sender,
             _evmScript,
-            _requiresApproval
+            _doesTransferFrom
         );
 
-        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary, _evmScript, _requiresApproval);
+        emit ProposalAdded(msg.sender, proposalCounter, _title, _link, _requestedAmount, _beneficiary, _evmScript, _doesTransferFrom);
         proposalCounter++;
     }
 
@@ -624,7 +628,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     function _executeScriptWithTransfer(Proposal storage proposal) internal {
         uint256 balanceBeforeExecution;
 
-        if (proposal.requiresApproval) {
+        if (proposal.doesTransferFrom) {
             balanceBeforeExecution = requestToken.balanceOf(address(this));
             vault.transfer(requestToken, address(this), proposal.requestedAmount);
             requestToken.safeApprove(proposal.beneficiary, proposal.requestedAmount);
@@ -636,7 +640,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         // Any permissioned contracts used for internal functionality must be considered for addition to the blacklist
         runScript(proposal.evmScript, new bytes(0), evmScriptBlacklist);
 
-        if (proposal.requiresApproval) {
+        if (proposal.doesTransferFrom) {
             require(requestToken.balanceOf(address(this)) == balanceBeforeExecution, ERROR_REQUEST_AMOUNT_NOT_USED);
         }
     }
