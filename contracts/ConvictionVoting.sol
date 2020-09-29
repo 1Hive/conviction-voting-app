@@ -256,26 +256,6 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
     }
 
-    function _executeScriptWithTransfer(Proposal storage proposal) internal {
-        uint256 balanceBeforeExecution;
-
-        if (proposal.requiresApproval) {
-            balanceBeforeExecution = requestToken.balanceOf(address(this));
-            vault.transfer(requestToken, address(this), proposal.requestedAmount);
-            requestToken.safeApprove(proposal.beneficiary, proposal.requestedAmount);
-        } else {
-            vault.transfer(address(requestToken), proposal.beneficiary, proposal.requestedAmount);
-        }
-
-        // TODO: Add Agreements to Blacklist. Don't remove this TODO until we upgrade to Disputable.
-        // Any permissioned contracts used for internal functionality must be considered for addition to the blacklist
-        runScript(proposal.evmScript, new bytes(0), evmScriptBlacklist);
-
-        if (proposal.requiresApproval) {
-            require(requestToken.balanceOf(address(this)) == balanceBeforeExecution, ERROR_REQUEST_AMOUNT_NOT_USED);
-        }
-    }
-
     /**
      * @notice Cancel proposal #`_proposalId`
      * @param _proposalId Proposal id
@@ -639,5 +619,25 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         }
 
         emit StakeWithdrawn(_from, _proposalId, _amount, proposal.voterStake[_from], proposal.stakedTokens, proposal.convictionLast);
+    }
+
+    function _executeScriptWithTransfer(Proposal storage proposal) internal {
+        uint256 balanceBeforeExecution;
+
+        if (proposal.requiresApproval) {
+            balanceBeforeExecution = requestToken.balanceOf(address(this));
+            vault.transfer(requestToken, address(this), proposal.requestedAmount);
+            requestToken.safeApprove(proposal.beneficiary, proposal.requestedAmount);
+        } else {
+            vault.transfer(address(requestToken), proposal.beneficiary, proposal.requestedAmount);
+        }
+
+        // TODO: Add Agreements to Blacklist. Don't remove this TODO until we upgrade to Disputable.
+        // Any permissioned contracts used for internal functionality must be considered for addition to the blacklist
+        runScript(proposal.evmScript, new bytes(0), evmScriptBlacklist);
+
+        if (proposal.requiresApproval) {
+            require(requestToken.balanceOf(address(this)) == balanceBeforeExecution, ERROR_REQUEST_AMOUNT_NOT_USED);
+        }
     }
 }
