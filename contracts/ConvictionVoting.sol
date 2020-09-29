@@ -42,6 +42,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     string private constant ERROR_STAKING_MORE_THAN_AVAILABLE = "CV_STAKING_MORE_THAN_AVAILABLE";
     string private constant ERROR_MAX_PROPOSALS_REACHED = "CV_MAX_PROPOSALS_REACHED";
     string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
+    string private constant ERROR_REQUEST_AMOUNT_NOT_USED = "CV_REQUEST_AMOUNT_NOT_USED";
 
     enum ProposalStatus {
         Active,              // A vote that is active
@@ -271,7 +272,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         runScript(proposal.evmScript, new bytes(0), evmScriptBlacklist);
 
         if (proposal.requiresApproval) {
-            require(requestToken.balanceOf(address(this)) == balanceBeforeExecution, "Incorrect balance");
+            require(requestToken.balanceOf(address(this)) == balanceBeforeExecution, ERROR_REQUEST_AMOUNT_NOT_USED);
         }
     }
 
