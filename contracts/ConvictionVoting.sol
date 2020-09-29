@@ -8,6 +8,7 @@ import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 import "./lib/ArrayUtils.sol";
+import "./IThreshold.sol";
 
 contract ConvictionVoting is AragonApp, TokenManagerHook {
     using SafeMath for uint256;
@@ -60,6 +61,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
 
     MiniMeToken public stakeToken;
     Vault public vault;
+    IThreshold public customThreshold;
     address public requestToken;
     uint256 public decay;
     uint256 public maxRatio;
@@ -143,6 +145,14 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     /**
+     * @notice Update the conviction voting threshold function to contract `_customThreshold`
+     * @param _customThreshold Address of the contract of type IThreshold
+     */
+    function setCustomThresholdFunction(IThreshold _customThreshold) public auth(UPDATE_SETTINGS_ROLE) {
+        customThreshold = _customThreshold;
+    }
+
+    /**
      * @notice Add proposal `_title` for  `@tokenAmount((self.requestToken(): address), _requestedAmount)` to `_beneficiary`
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
@@ -218,7 +228,10 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         require(proposal.requestedAmount > 0, ERROR_CANNOT_EXECUTE_ZERO_VALUE_PROPOSAL);
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
         _calculateAndSetConviction(proposal, proposal.stakedTokens);
-        require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION);
+        uint256 threshold = customThreshold != address(0)
+            ? customThreshold.calculateThreshold(proposal.requestedAmount)
+            : calculateThreshold(proposal.requestedAmount);
+        require(proposal.convictionLast > threshold, ERROR_INSUFFICIENT_CONVICION);
 
         proposal.proposalStatus = ProposalStatus.Executed;
         vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
