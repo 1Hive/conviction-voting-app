@@ -577,6 +577,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         emit StakeWithdrawn(_from, _proposalId, _amount, proposal.voterStake[_from], proposal.stakedTokens, proposal.convictionLast);
     }
 
+    // Copied from a Uniswap library.
     function _convertToRequestToken(uint256 _amount) internal view returns (uint256) {
         (uint256 reserve0, uint256 reserve1,) = requestStableTokenExchange.getReserves();
         require(_amount > 0, 'UniswapV2Library: INSUFFICIENT_OUTPUT_AMOUNT');
