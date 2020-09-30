@@ -578,13 +578,11 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     }
 
     function _convertToRequestToken(uint256 _amount) internal view returns (uint256) {
-        (uint112 reserve0, uint112 reserve1,) = requestStableTokenExchange.getReserves();
-        uint256 reserve0u256 = uint256(reserve0);
-        uint256 reserve1u256 = uint256(reserve1);
+        (uint256 reserve0, uint256 reserve1,) = requestStableTokenExchange.getReserves();
         require(_amount > 0, 'UniswapV2Library: INSUFFICIENT_OUTPUT_AMOUNT');
-        require(reserve0u256 > 0 && reserve1u256 > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
-        uint256 numerator = reserve0u256.mul(_amount).mul(1000);
-        uint256 denominator = reserve1u256.sub(_amount).mul(997);
+        require(reserve0 > 0 && reserve1 > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
+        uint256 numerator = reserve0.mul(_amount).mul(1000);
+        uint256 denominator = reserve1.sub(_amount).mul(997);
         return (numerator / denominator).add(1);
     }
 }
