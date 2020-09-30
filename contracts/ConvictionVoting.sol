@@ -8,7 +8,7 @@ import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 import "./lib/ArrayUtils.sol";
-import "./lib/IUniswapV2Pair.sol";
+import "./lib/IExampleSlidingWindowOracle.sol";
 
 contract ConvictionVoting is AragonApp, TokenManagerHook {
     using SafeMath for uint256;
@@ -68,7 +68,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
     uint256 public minThresholdStakePercentage;
     uint256 public proposalCounter;
     uint256 public totalStaked;
-    IUniswapV2Pair requestStableTokenExchange;
+    IExampleSlidingWindowOracle public stableTokenOracle;
+    address public stableToken;
 
     mapping(uint256 => Proposal) internal proposals;
     mapping(address => uint256) internal totalVoterStake;
@@ -94,7 +95,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         uint256 _maxRatio,
         uint256 _weight,
         uint256 _minThresholdStakePercentage,
-        IUniswapV2Pair _requestStableTokenExchange
+        IExampleSlidingWindowOracle _stableTokenOracle,
+        address _stableToken
     )
         public onlyInit
     {
@@ -106,7 +108,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         maxRatio = _maxRatio;
         weight = _weight;
         minThresholdStakePercentage = _minThresholdStakePercentage;
-        requestStableTokenExchange = _requestStableTokenExchange;
+        stableTokenOracle = _stableTokenOracle;
+        stableToken = _stableToken;
 
         proposals[ABSTAIN_PROPOSAL_ID] = Proposal(
             0,
@@ -144,6 +147,21 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         minThresholdStakePercentage = _minThresholdStakePercentage;
 
         emit ConvictionSettingsChanged(_decay, _maxRatio, _weight, _minThresholdStakePercentage);
+    }
+
+    /**
+     * @notice Update the stable token oracle settings
+     * @param _stableTokenOracle The new stable token oracle
+     * @param _stableToken The new stable token
+     */
+    function setStableTokenOracle(
+        IExampleSlidingWindowOracle _stableTokenOracle,
+        address _stableToken
+    )
+        public auth(UPDATE_SETTINGS_ROLE)
+    {
+        stableTokenOracle = _stableTokenOracle;
+        stableToken = _stableToken;
     }
 
     /**
@@ -225,7 +243,8 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         require(proposal.convictionLast > calculateThreshold(proposal.requestedStableAmount), ERROR_INSUFFICIENT_CONVICION);
 
         proposal.proposalStatus = ProposalStatus.Executed;
-        uint256 requestedAmount = _convertToRequestToken(proposal.requestedStableAmount);
+
+        uint256 requestedAmount = stableTokenOracle.consult(stableToken, proposal.requestedStableAmount, requestToken);
         vault.transfer(requestToken, proposal.beneficiary, requestedAmount);
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
@@ -345,7 +364,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * executed it.
      */
     function calculateThreshold(uint256 _requestedStableAmount) public view returns (uint256 _threshold) {
-        uint256 requestedAmount = _convertToRequestToken(_requestedStableAmount);
+        uint256 requestedAmount = stableTokenOracle.consult(stableToken, _requestedStableAmount, requestToken);
         uint256 funds = vault.balance(requestToken);
         require(maxRatio.mul(funds) > requestedAmount.mul(D), ERROR_AMOUNT_OVER_MAX_RATIO);
         // denom = maxRatio * 2 ** 64 / D  - requestedAmount * 2 ** 64 / funds
@@ -575,15 +594,5 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         }
 
         emit StakeWithdrawn(_from, _proposalId, _amount, proposal.voterStake[_from], proposal.stakedTokens, proposal.convictionLast);
-    }
-
-    // Copied from a Uniswap library.
-    function _convertToRequestToken(uint256 _amount) internal view returns (uint256) {
-        (uint256 reserve0, uint256 reserve1,) = requestStableTokenExchange.getReserves();
-        require(_amount > 0, 'UniswapV2Library: INSUFFICIENT_OUTPUT_AMOUNT');
-        require(reserve0 > 0 && reserve1 > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
-        uint256 numerator = reserve0.mul(_amount).mul(1000);
-        uint256 denominator = reserve1.sub(_amount).mul(997);
-        return (numerator / denominator).add(1);
     }
 }
