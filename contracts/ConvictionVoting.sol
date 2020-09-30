@@ -154,10 +154,7 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
      * @param _stableTokenOracle The new stable token oracle
      * @param _stableToken The new stable token
      */
-    function setStableTokenOracle(
-        IExampleSlidingWindowOracle _stableTokenOracle,
-        address _stableToken
-    )
+    function setStableTokenOracleSettings(IExampleSlidingWindowOracle _stableTokenOracle, address _stableToken)
         public auth(UPDATE_SETTINGS_ROLE)
     {
         stableTokenOracle = _stableTokenOracle;
@@ -243,7 +240,6 @@ contract ConvictionVoting is AragonApp, TokenManagerHook {
         require(proposal.convictionLast > calculateThreshold(proposal.requestedStableAmount), ERROR_INSUFFICIENT_CONVICION);
 
         proposal.proposalStatus = ProposalStatus.Executed;
-
         uint256 requestedAmount = stableTokenOracle.consult(stableToken, proposal.requestedStableAmount, requestToken);
         vault.transfer(requestToken, proposal.beneficiary, requestedAmount);
 
