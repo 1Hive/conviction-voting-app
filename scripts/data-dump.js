@@ -32,7 +32,7 @@ const functionSignatures = WATCHED_CALLS.map(
 ).reduce((accumulated, x, i) => ({ ...accumulated, [x]: i }), {})
 
 module.exports = async callback => {
-  console.log('txHash\tfrom\tgasUsed\tfunc\tparam1\tparam2')
+  console.log('txHash\tblockNum\tfrom\tgasUsed\tfunc\tparam1\tparam2')
   const currentBlock = await web3.eth.getBlockNumber()
   const proxy = argValue(PROXY_ARG, DEFAULT_PROXY)
   const fromBlock = parseInt(argValue(FROM_BLOCK_ARG, DEFAULT_INIT_BLOCK))
@@ -56,8 +56,12 @@ module.exports = async callback => {
               web3.eth.getTransaction(transactionHash),
               web3.eth.getTransactionReceipt(transactionHash),
             ]).then(
-              ([{ hash, from, value, input, gasPrice }, { gasUsed }]) => ({
+              ([
+                { hash, blockNumber, from, value, input, gasPrice },
+                { gasUsed },
+              ]) => ({
                 hash,
+                blockNumber,
                 from,
                 value,
                 input,
@@ -72,8 +76,8 @@ module.exports = async callback => {
         console.log(
           transactions
             .map(
-              ({ hash, from, input, gasUsed, gasPrice }) =>
-                `${hash}\t${from}\t${calcGas(
+              ({ hash, blockNumber, from, input, gasUsed, gasPrice }) =>
+                `${hash}\t${blockNumber}\t${from}\t${calcGas(
                   gasUsed,
                   gasPrice
                 )}\t${decodeSignatureAndParameters(input)}`
