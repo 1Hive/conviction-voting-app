@@ -17,8 +17,6 @@ const WATCHED_CALLS = [
   'withdrawFromProposal(uint256,uint256)',
 ]
 
-const EXCLUDE_PARAMS = ['addProposal(string,bytes,uint256,address)', 'Unknown']
-
 const DEFAULT_PROXY = '0xe00b7b05c163e96923dfba4189c03b075a7d2849' // Conviction Voting Pilot
 const DEFAULT_INIT_BLOCK = 10736632 // Conviction Voting Pilot
 
@@ -101,8 +99,13 @@ const decodeSignature = data => {
 const decodeSignatureAndParameters = data => {
   try {
     const decodedSignature = decodeSignature(data)
-    if (EXCLUDE_PARAMS.includes(decodedSignature)) {
+    if (decodedSignature === 'Unknown') {
       return decodedSignature
+    }
+    if (decodedSignature === 'addProposal(string,bytes,uint256,address)') {
+      const param1 = web3.utils.hexToNumberString('0x' + data.substr(138, 64))
+      const param2 = '0x' + data.substr(226, 40)
+      return `"${decodedSignature}"\t${param1}\t${param2}`
     }
     const param1 = web3.utils.hexToNumberString('0x' + data.substr(10, 64))
     const param2 = data.substr(10, 64)
