@@ -7,6 +7,7 @@ const ConvictionVoting = artifacts.require('ConvictionVotingMock')
 const HookedTokenManager = artifacts.require('HookedTokenManager')
 const MiniMeToken = artifacts.require('MiniMeToken')
 const VaultMock = artifacts.require('VaultMock')
+const ThresholdMock = artifacts.require('ThresholdMock')
 
 const BN = web3.utils.toBN
 const ONE_HUNDRED_PERCENT = 1e18
@@ -861,6 +862,40 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
             .toPrecision(10), calculateThreshold(1, 745, 1164000000000000000000, 0.9999599, 0.2, 0.002)
             .toPrecision(10))
       })
+    })
+  })
+  context('Custom threshold', () => {
+
+    beforeEach(
+      'deploy DAO and convictionVoting with custom threshold',
+      async () => {
+        const appManagerTokens = BN('1000000000000000000000')
+        const userTokens = BN('164000000000000000000')
+        await deploy(
+          18,
+          [appManagerTokens, userTokens],
+          BN('745000000000000000000'),
+          0.9999599 * D,
+          0.2 * D,
+          0.002 * D
+        )
+        const customThreshold = await VaultMock.new({ from: appManager })
+        const updateSettingsRole = await convictionVoting.UPDATE_SETTINGS_ROLE()
+        await acl.createPermission(appManager, convictionVoting.address, updateSettingsRole, appManager)
+        await convictionVoting.setCustomThresholdFunction(customThreshold.address)
+
+        const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
+        const proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+        await convictionVoting.stakeToProposal(proposalId, appManagerTokens, { from: appManager })
+        await convictionVoting.stakeToProposal(proposalId, userTokens, { from: user })
+      }
+    )
+
+    it('threshold function', async () => {
+      assert.equal(
+        parseInt(await convictionVoting.calculateThreshold(BN('1000000000000000000')))
+          .toPrecision(10), calculateThreshold(1, 745, 1164000000000000000000, 0.9999599, 0.2, 0.002)
+          .toPrecision(10))
     })
   })
 })
