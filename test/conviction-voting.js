@@ -453,7 +453,6 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
               DEFAULT_APP_MANAGER_STAKE_TOKENS, DEFAULT_APP_MANAGER_STAKE_TOKENS, [proposalId], DEFAULT_APP_MANAGER_STAKE_TOKENS)
         })
 
-
         it('should not reassign previously staked tokens before previous vote execution', async () => {
           await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS)
           await convictionVoting.mockAdvanceBlocks(40)
@@ -507,6 +506,25 @@ contract('ConvictionVoting', ([appManager, user, beneficiary]) => {
           await convictionVoting.executeProposal(proposalId)
 
           await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_INCORRECT_PROPOSAL_STATUS')
+        })
+
+        it('should revert when not set as a token manager hook', async () => {
+          convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
+          await convictionVoting.initialize(stakeToken.address, vault.address, requestToken.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
+          const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
+          await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
+          await agreement.activate({
+            disputable: convictionVoting,
+            collateralToken,
+            actionCollateral: 0,
+            challengeCollateral: 0,
+            challengeDuration: ONE_DAY,
+            from: appManager
+          })
+          const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, beneficiary)
+          proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+
+          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), "CV_NO_TOKEN_MANAGER_SET")
         })
 
         context('withdrawFromProposal(proposalId, amount)', () => {

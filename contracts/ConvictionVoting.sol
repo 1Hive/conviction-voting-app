@@ -46,6 +46,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     string private constant ERROR_STAKING_MORE_THAN_AVAILABLE = "CV_STAKING_MORE_THAN_AVAILABLE";
     string private constant ERROR_MAX_PROPOSALS_REACHED = "CV_MAX_PROPOSALS_REACHED";
     string private constant ERROR_WITHDRAW_MORE_THAN_STAKED = "CV_WITHDRAW_MORE_THAN_STAKED";
+    string private constant ERROR_NO_TOKEN_MANAGER_SET = "CV_NO_TOKEN_MANAGER_SET";
 
     enum ProposalStatus {
         Active,              // A vote that has been reported to Agreements
@@ -526,6 +527,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _from Account from which we stake
      */
     function _stake(uint256 _proposalId, uint256 _amount, address _from) internal proposalExists(_proposalId) {
+        require(getTokenManager() != address(0), ERROR_NO_TOKEN_MANAGER_SET);
+
         Proposal storage proposal = proposals[_proposalId];
         require(_amount > 0, ERROR_AMOUNT_CAN_NOT_BE_ZERO);
         require(proposal.proposalStatus == ProposalStatus.Active || proposal.proposalStatus == ProposalStatus.Paused,
