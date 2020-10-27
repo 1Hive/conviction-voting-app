@@ -31,6 +31,8 @@ NOTE: What the script `npm run start:ipfs:run` does is running `npm run start:ip
 
 Conviction Voting has been published to APM on Rinkeby at `conviction-voting.open.aragonpm.eth`.
 
+**A newer version with the latest functionality is available at `conviction-beta.open.aragonpm.eth`**
+
 To deploy an organization you can use the [Aragon CLI](https://hack.aragon.org/docs/cli-intro.html).
 
 ```sh

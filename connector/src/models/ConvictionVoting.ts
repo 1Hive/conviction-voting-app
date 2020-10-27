@@ -47,4 +47,11 @@ export default class ConvictionVoting {
   ): SubscriptionHandler {
     return this.#connector.onStakesHistory(this.#address, first, skip, callback)
   }
+
+  onStakesHistoryByProposal(proposalId: string,
+    { first = 1000, skip = 0 } = {},
+    callback: Function
+  ): SubscriptionHandler {
+    return this.#connector.onStakesHistoryByProposal(this.#address, proposalId, first, skip, callback)
+  }
 }

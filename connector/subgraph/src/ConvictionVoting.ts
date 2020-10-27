@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { Address, BigInt, log } from '@graphprotocol/graph-ts'
+import { Address, BigInt } from '@graphprotocol/graph-ts'
 import {
+  ConvictionSettingsChanged as ConvictionSettingsChangedEvent,
   ProposalAdded as ProposalAddedEvent,
   StakeAdded as StakeAddedEvent,
   StakeWithdrawn as StakeWithdrawnEvent,
@@ -17,7 +18,17 @@ import {
 } from './helpers'
 import { STATUS_CANCELLED, STATUS_EXECUTED } from './proposal-statuses'
 
+export function handleConfigChanged(
+  event: ConvictionSettingsChangedEvent
+): void {
+  const config = getConfigEntity(event.address)
+  config.decay = event.params.decay
+  config.maxRatio = event.params.maxRatio
+  config.weight = event.params.weight
+  config.minThresholdStakePercentage = event.params.minThresholdStakePercentage
 
+  config.save()
+}
 
 export function handleProposalAdded(event: ProposalAddedEvent): void {
   const proposal = getProposalEntity(event.address, event.params.id)
@@ -56,11 +67,10 @@ export function handleStakeWithdrawn(event: StakeWithdrawnEvent): void {
   )
 }
 
-
 export function handleProposalExecuted(event: ProposalExecutedEvent): void {
   const proposal = getProposalEntity(event.address, event.params.id)
   proposal.status = STATUS_EXECUTED
-  
+
   proposal.save()
 }
 
@@ -83,15 +93,15 @@ function _onNewStake(
 ): void {
   const proposal = getProposalEntity(appAddress, proposalId)
 
-  // Hotfix: Orgs managed to stake to non existing proposals 
+  // Hotfix: Orgs managed to stake to non existing proposals
   if (proposal.creator.toHexString() == '0x') {
-    return 
+    return
   }
 
   const config = getConfigEntity(appAddress)
 
   // If the old totalTokensStaked is less than the new means that is a stake else a withdraw
-  if (proposal.totalTokensStaked < totalTokensStaked){
+  if (proposal.totalTokensStaked < totalTokensStaked) {
     config.totalStaked = config.totalStaked.plus(amount)
   } else {
     config.totalStaked = config.totalStaked.minus(amount)

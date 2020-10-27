@@ -43,7 +43,7 @@ export const ALL_PROPOSALS = (type: string) => gql`
       requestedAmount
       status
       totalTokensStaked
-      stakes {
+      stakes(first: 1000) {
         entity
         amount
       }

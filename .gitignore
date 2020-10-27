@@ -2,18 +2,15 @@
 
 # dependencies
 node_modules
-
-# testing
-/coverage
-
-# production
+/artifacts
 /build
+.cache
+/cache
 /dist
-
+ipfs.cmd
 package-lock.json
 yarn.lock
+coverage.json
+/coverage
+.idea
 .DS_Store
-
-/artifacts
-/cache
-.cache

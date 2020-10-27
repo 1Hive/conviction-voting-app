@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, ByteArray } from '@graphprotocol/graph-ts'
+import { Address, BigInt, Bytes } from '@graphprotocol/graph-ts'
 import {
   Config as ConfigEntity,
   Proposal as ProposalEntity,
@@ -10,15 +10,24 @@ import { MiniMeToken as MiniMeTokenContract } from '../generated/templates/MiniM
 import { ConvictionVoting as ConvictionVotingContract } from '../generated/templates/ConvictionVoting/ConvictionVoting'
 import { STATUS_ACTIVE } from './proposal-statuses'
 
-function loadTokenData(address: Address): void {
-  const tokenContract = MiniMeTokenContract.bind(address)
-  const token = new TokenEntity(address.toHexString())
 
+function loadTokenData(address: Address): boolean {
+  const tokenContract = MiniMeTokenContract.bind(address)
+
+  // App could be instantiated without a vault which means request token could be invalid
+  const symbol = tokenContract.try_symbol()
+  if (symbol.reverted) {
+    return false
+  }
+
+  const token = new TokenEntity(address.toHexString())
+  token.symbol = symbol.value
   token.name = tokenContract.name()
-  token.symbol = tokenContract.symbol()
   token.decimals = tokenContract.decimals()
 
   token.save()
+
+  return true
 }
 
 function getConfigEntityId(appAddress: Address): string {
@@ -40,15 +49,19 @@ export function getConfigEntity(appAddress: Address): ConfigEntity | null {
 export function loadAppConfig(appAddress: Address): void {
   const config = getConfigEntity(appAddress)
   const convictionVoting = ConvictionVotingContract.bind(appAddress)
-
   // Load tokens data
   const stakeToken = convictionVoting.stakeToken()
-  loadTokenData(stakeToken)
-  const requestToken = convictionVoting.requestToken()
-  loadTokenData(requestToken)
+  let success = loadTokenData(stakeToken)
+  if (success) {
+    config.stakeToken = stakeToken.toHexString()
+  }
 
-  config.stakeToken = stakeToken.toHexString()
-  config.requestToken = requestToken.toHexString()
+  const requestToken = convictionVoting.requestToken()
+  // App could be instantiated without a vault
+  success = loadTokenData(requestToken)
+  if (success) {
+    config.requestToken = requestToken.toHexString()
+  }
 
   // Load conviction params
   config.decay = convictionVoting.decay()
