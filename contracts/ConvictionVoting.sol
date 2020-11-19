@@ -8,6 +8,7 @@ import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
 import "./lib/ArrayUtils.sol";
+import "./lib/IPriceOracle.sol";
 
 contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     using SafeMath for uint256;
@@ -57,6 +58,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
     struct Proposal {
         uint256 requestedAmount;
+        bool stableRequestAmount;
         address beneficiary;
         uint256 stakedTokens;
         uint256 convictionLast;
@@ -68,8 +70,10 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     MiniMeToken public stakeToken;
-    Vault public vault;
     address public requestToken;
+    address public stableToken;
+    IPriceOracle public stableTokenOracle;
+    Vault public vault;
     uint256 public decay;
     uint256 public maxRatio;
     uint256 public weight;
@@ -82,7 +86,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     mapping(address => uint256[]) internal voterStakedProposals;
 
     event ConvictionSettingsChanged(uint256 decay, uint256 maxRatio, uint256 weight, uint256 minThresholdStakePercentage);
-    event ProposalAdded(address indexed entity, uint256 indexed id, uint256 indexed actionId, string title, bytes link, uint256 amount, address beneficiary);
+    event ProposalAdded(address indexed entity, uint256 indexed id, uint256 indexed actionId, string title, bytes link, uint256 amount, bool stable, address beneficiary);
     event StakeAdded(address indexed entity, uint256 indexed id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event StakeWithdrawn(address entity, uint256 indexed id, uint256 amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
     event ProposalExecuted(uint256 indexed id, uint256 conviction);
@@ -98,8 +102,10 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
     function initialize(
         MiniMeToken _stakeToken,
-        Vault _vault,
         address _requestToken,
+        address _stableToken,
+        IPriceOracle _stableTokenOracle,
+        Vault _vault,
         uint256 _decay,
         uint256 _maxRatio,
         uint256 _weight,
@@ -109,8 +115,10 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     {
         proposalCounter = 2; // First proposal should be #2, #1 is reserved for abstain proposal, #0 is not used for better UX.
         stakeToken = _stakeToken;
-        vault = _vault;
         requestToken = _requestToken;
+        stableToken = _stableToken;
+        stableTokenOracle = _stableTokenOracle;
+        vault = _vault;
         decay = _decay;
         maxRatio = _maxRatio;
         weight = _weight;
@@ -118,6 +126,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
         proposals[ABSTAIN_PROPOSAL_ID] = Proposal(
             0,
+            false,
             0x0,
             0,
             0,
@@ -126,9 +135,21 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             ProposalStatus.Active,
             0x0
         );
-        emit ProposalAdded(0x0, ABSTAIN_PROPOSAL_ID, 0, "Abstain proposal", "", 0, 0x0);
+        emit ProposalAdded(0x0, ABSTAIN_PROPOSAL_ID, 0, "Abstain proposal", "", 0, false, 0x0);
 
         initialized();
+    }
+
+    /**
+    * @notice Update the stable token oracle settings
+    * @param _stableTokenOracle The new stable token oracle
+    * @param _stableToken The new stable token
+    */
+    function setStableTokenOracleSettings(IPriceOracle _stableTokenOracle, address _stableToken)
+        public auth(UPDATE_SETTINGS_ROLE)
+    {
+        stableTokenOracle = _stableTokenOracle;
+        stableToken = _stableToken;
     }
 
     /**
@@ -161,7 +182,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _link IPFS or HTTP link with proposal's description
      */
     function addSignalingProposal(string _title, bytes _link) external isInitialized() auth(CREATE_PROPOSALS_ROLE) {
-        _addProposal(_title, _link, 0, address(0));
+        _addProposal(_title, _link, 0, false, address(0));
     }
 
     /**
@@ -169,15 +190,16 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
      * @param _requestedAmount Tokens requested
+     * @param _stableRequestAmount Whether the requested amount is in the request token or the stable token, converted to the request token upon exeuction
      * @param _beneficiary Address that will receive payment
      */
-    function addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary)
+    function addProposal(string _title, bytes _link, uint256 _requestedAmount, bool _stableRequestAmount, address _beneficiary)
         external isInitialized() auth(CREATE_PROPOSALS_ROLE)
     {
         require(_requestedAmount > 0, ERROR_REQUESTED_AMOUNT_ZERO);
         require(_beneficiary != address(0), ERROR_NO_BENEFICIARY);
 
-        _addProposal(_title, _link, _requestedAmount, _beneficiary);
+        _addProposal(_title, _link, _requestedAmount, _stableRequestAmount, _beneficiary);
     }
 
     /**
@@ -227,11 +249,16 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         require(proposal.requestedAmount > 0, ERROR_CANNOT_EXECUTE_ZERO_VALUE_PROPOSAL);
         require(proposal.proposalStatus == ProposalStatus.Active, ERROR_PROPOSAL_NOT_ACTIVE);
         _calculateAndSetConviction(proposal, proposal.stakedTokens);
-        require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount), ERROR_INSUFFICIENT_CONVICION);
+        require(proposal.convictionLast > calculateThreshold(proposal.requestedAmount, proposal.stableRequestAmount), ERROR_INSUFFICIENT_CONVICION);
 
         proposal.proposalStatus = ProposalStatus.Executed;
         _closeDisputableAction(proposal.agreementActionId);
-        vault.transfer(requestToken, proposal.beneficiary, proposal.requestedAmount);
+
+        uint256 requestedAmount = proposal.requestedAmount;
+        if (proposal.stableRequestAmount) {
+            requestedAmount = stableTokenOracle.consult(stableToken, requestedAmount, requestToken);
+        }
+        vault.transfer(requestToken, proposal.beneficiary, requestedAmount);
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
     }
@@ -361,14 +388,20 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * decay = a * D
      * threshold = weight * totalStaked * D ** 2 * funds ** 2 / (D - decay) / (maxRatio * funds - requestedAmount * D) ** 2
      * @param _requestedAmount Requested amount of tokens on certain proposal
+     * @param _stableRequestAmount Whether the requested amount is in the request token or stable token
      * @return Threshold a proposal's conviction should surpass in order to be able to
      * executed it.
      */
-    function calculateThreshold(uint256 _requestedAmount) public view returns (uint256 _threshold) {
+    function calculateThreshold(uint256 _requestedAmount, bool _stableRequestAmount) public view returns (uint256 _threshold) {
+        uint256 requestedAmount = _requestedAmount;
+        if (_stableRequestAmount) {
+            requestedAmount = stableTokenOracle.consult(stableToken, _requestedAmount, requestToken);
+        }
+
         uint256 funds = vault.balance(requestToken);
-        require(maxRatio.mul(funds) > _requestedAmount.mul(D), ERROR_AMOUNT_OVER_MAX_RATIO);
+        require(maxRatio.mul(funds) > requestedAmount.mul(D), ERROR_AMOUNT_OVER_MAX_RATIO);
         // denom = maxRatio * 2 ** 64 / D  - requestedAmount * 2 ** 64 / funds
-        uint256 denom = (maxRatio << 64).div(D).sub((_requestedAmount << 64).div(funds));
+        uint256 denom = (maxRatio << 64).div(D).sub((requestedAmount << 64).div(funds));
         // _threshold = (weight * 2 ** 128 / D) / (denom ** 2 / 2 ** 64) * totalStaked * D / 2 ** 128
         _threshold = ((weight << 128).div(D).div(denom.mul(denom) >> 64)).mul(D).div(D.sub(decay)).mul(_totalStaked()) >> 64;
     }
@@ -503,10 +536,11 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         _proposal.convictionLast = conviction;
     }
 
-    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, address _beneficiary) internal {
+    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, bool _stableRequestAmount, address _beneficiary) internal {
         uint256 agreementActionId = _registerDisputableAction(proposalCounter, _link, msg.sender);
         proposals[proposalCounter] = Proposal(
             _requestedAmount,
+            _stableRequestAmount,
             _beneficiary,
             0,
             0,
@@ -516,7 +550,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
             msg.sender
         );
 
-        emit ProposalAdded(msg.sender, proposalCounter, agreementActionId, _title, _link, _requestedAmount, _beneficiary);
+        emit ProposalAdded(msg.sender, proposalCounter, agreementActionId, _title, _link, _requestedAmount, _stableRequestAmount, _beneficiary);
         proposalCounter++;
     }
 
