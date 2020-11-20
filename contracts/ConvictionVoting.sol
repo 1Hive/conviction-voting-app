@@ -296,6 +296,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      */
     function getProposal(uint256 _proposalId) public view returns (
         uint256 requestedAmount,
+        bool stableRequestAmount,
         address beneficiary,
         uint256 stakedTokens,
         uint256 convictionLast,
@@ -308,6 +309,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         Proposal storage proposal = proposals[_proposalId];
         return (
             proposal.requestedAmount,
+            proposal.stableRequestAmount,
             proposal.beneficiary,
             proposal.stakedTokens,
             proposal.convictionLast,
