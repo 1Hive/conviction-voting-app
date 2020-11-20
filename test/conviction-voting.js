@@ -78,7 +78,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
     stableToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
     await stableToken.generateTokens(vault.address, vaultFunds)
 
-    convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
+    convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE'], [ANY_ADDRESS, 'PAUSE_CONTRACT_ROLE']], appManager)
     await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
 
@@ -158,6 +158,13 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       assert.equal(submitter, 0x0, 'Incorrect submitter')
     })
 
+    context('pauseContract(pauseEnabled)', async () => {
+      it('reverts when no permission', async () => {
+        await deployer.acl.revokePermission(ANY_ADDRESS, convictionVoting.address, await convictionVoting.PAUSE_CONTRACT_ROLE())
+        await assertRevert(convictionVoting.pauseContract(true), 'APP_AUTH_FAILED')
+      })
+    })
+
     context('setStableTokenOracleSettings(stableTokenOracle, stableToken)', () => {
 
       const newStableToken = unknown
@@ -232,6 +239,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
         assert.equal(submitter, appManager, 'Incorrect submitter')
         assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
       })
+
+      it('reverts when contract paused', async() => {
+        await convictionVoting.pauseContract(true);
+        await assertRevert(convictionVoting.addSignalingProposal('Proposal 1', '0x'), 'CV_CONTRACT_PAUSED')
+      })
     })
 
     context('addProposal(title, link, requestedAmount, stableRequestAmount (false), beneficiary)', () => {
@@ -265,6 +277,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
         assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
         assert.equal(submitter, appManager, 'Incorrect submitter')
         assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
+      })
+
+      it('reverts when contract paused', async() => {
+        await convictionVoting.pauseContract(true);
+        await assertRevert(convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, false, beneficiary), 'CV_CONTRACT_PAUSED')
       })
 
       it('reverts when no beneficiary provided', async () => {
@@ -507,6 +524,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
           await assertRevert(convictionVoting.stakeToProposal(proposalId, 100), 'CV_MAX_PROPOSALS_REACHED')
         })
 
+        it('should revert when contract paused', async() => {
+          await convictionVoting.pauseContract(true);
+          await assertRevert(convictionVoting.stakeToProposal(proposalId, 1000), 'CV_CONTRACT_PAUSED')
+        })
+
         it('should revert when proposal does not exist', async () => {
           const nonExistentProposalId = 99
           await assertRevert(convictionVoting.stakeToProposal(nonExistentProposalId, 100), 'CV_PROPOSAL_DOES_NOT_EXIST')
@@ -610,6 +632,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
             assert.equal(convictionAfter.toString(), convictionBefore.toString(), 'Incorrect conviction')
           })
 
+          it('reverts when contract paused', async() => {
+            await convictionVoting.pauseContract(true);
+            await assertRevert(convictionVoting.withdrawFromProposal(proposalId, 500), 'CV_CONTRACT_PAUSED')
+          })
+
           it('reverts when proposal does not exist', async () => {
             const nonExistentProposalId = 99
             await assertRevert(convictionVoting.withdrawFromProposal(nonExistentProposalId, stakeAmount), 'CV_PROPOSAL_DOES_NOT_EXIST')
@@ -638,6 +665,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
               currentBlock.toNumber() + 1, 0, 0, [], 0)
           })
 
+          it('reverts when contract paused', async() => {
+            await convictionVoting.pauseContract(true);
+            await assertRevert(convictionVoting.withdrawAllFromProposal(proposalId), 'CV_CONTRACT_PAUSED')
+          })
+
           it('reverts when proposal does not exist', async () => {
             const nonExistentProposalId = 99
             await assertRevert(convictionVoting.withdrawAllFromProposal(nonExistentProposalId), 'CV_PROPOSAL_DOES_NOT_EXIST')
@@ -661,6 +693,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
               proposalStake, proposalStake, [proposalId], proposalStake)
             const totalStakeAfter = await convictionVoting.getTotalVoterStake(appManager)
             assert.equal(totalStakeAfter, proposalStake, 'Incorrect stake after') // Only stake left on one open proposal
+          })
+
+          it('reverts when contract paused', async() => {
+            await convictionVoting.pauseContract(true);
+            await assertRevert(convictionVoting.withdrawFromInactiveProposals(), 'CV_CONTRACT_PAUSED')
           })
         })
 
@@ -815,6 +852,21 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
               stakedTokens, stakedTokens, [proposalId], stakedTokens)
           })
 
+          it('unstakes staked tokens when contract paused', async () => {
+            const transferAmount = 5000
+            await convictionVoting.stakeToProposal(proposalId, DEFAULT_APP_MANAGER_STAKE_TOKENS)
+            const currentBlock = await convictionVoting.getBlockNumberPublic()
+            await convictionVoting.pauseContract(true)
+
+            await stakeToken.transfer(user, transferAmount)
+
+            const stakedMinusTransferred = DEFAULT_APP_MANAGER_STAKE_TOKENS - transferAmount
+            await assertProposalAndStakesCorrect(
+              proposalId, 57000, stakedMinusTransferred,
+              currentBlock.toNumber() + 2, stakedMinusTransferred,
+              stakedMinusTransferred, [proposalId], stakedMinusTransferred)
+          })
+
           it('allows minting new tokens', async () => {
             const stakeAmount = 200
             await stakeTokenManager.mint(user, stakeAmount)
@@ -840,6 +892,14 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
             assert.equal(beneficiaryBalanceAfter.toNumber(), beneficiaryBalanceBefore.toNumber() + requestedAmount, 'Incorrect beneficiary balance')
             const { closed } = await agreement.getAction(actionId)
             assert.isTrue(closed, 'Incorrect closed status')
+          })
+
+          it('should revert when contract paused', async() => {
+            await convictionVoting.stakeToProposal(proposalId, 10000)
+            await convictionVoting.mockAdvanceBlocks(40)
+            await convictionVoting.pauseContract(true);
+
+            await assertRevert(convictionVoting.executeProposal(proposalId), 'CV_CONTRACT_PAUSED')
           })
 
           it('should revert when executing non existing proposal', async () => {
@@ -929,6 +989,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
             stakeAmount, stakeAmount, [proposalId], stakeAmount)
         })
 
+        it('should revert when contract paused', async() => {
+          await convictionVoting.pauseContract(true);
+          await assertRevert(convictionVoting.stakeAllToProposal(proposalId), 'CV_CONTRACT_PAUSED')
+        })
+
         it('should revert when proposal does not exist', async () => {
           const nonExistentProposalId = 99
           await assertRevert(convictionVoting.stakeAllToProposal(nonExistentProposalId), 'CV_PROPOSAL_DOES_NOT_EXIST')
@@ -960,6 +1025,11 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
           assert.equal(proposalStatus, PROPOSAL_STATUS.CANCELLED, 'Incorrect proposal status')
           const { closed } = await agreement.getAction(actionId)
           assert.isTrue(closed, 'Incorrect closed status')
+        })
+
+        it('should revert when contract paused', async() => {
+          await convictionVoting.pauseContract(true);
+          await assertRevert(convictionVoting.cancelProposal(proposalId), 'CV_CONTRACT_PAUSED')
         })
 
         it('should revert when proposal does not exist', async () => {
@@ -1176,6 +1246,14 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
         await convictionVoting.stakeToProposal(proposalId, 15000, { from: appManager })
         await convictionVoting.mockAdvanceBlocks(10)
         await convictionVoting.executeProposal(proposalId, { from: user })
+
+        const canChallenge = await convictionVoting.canChallenge(proposalId)
+
+        assert.isFalse(canChallenge)
+      })
+
+      it('returns false when contract is paused', async () => {
+        await convictionVoting.pauseContract(true)
 
         const canChallenge = await convictionVoting.canChallenge(proposalId)
 

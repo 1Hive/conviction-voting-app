@@ -15,6 +15,8 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     using SafeMath64 for uint64;
     using ArrayUtils for uint256[];
 
+//    bytes32 constant public PAUSE_CONTRACT_ROLE = keccak256("PAUSE_CONTRACT_ROLE");
+    bytes32 constant public PAUSE_CONTRACT_ROLE = 0x0e3a87ad3cd0c04dcd1e538226de2b467c72316c162f937f5b6f791361662462;
 //    bytes32 constant public UPDATE_SETTINGS_ROLE = keccak256("UPDATE_SETTINGS_ROLE");
     bytes32 constant public UPDATE_SETTINGS_ROLE = 0x9d4f140430c9045e12b5a104aa9e641c09b980a26ab8e12a32a2f3d155229ae3;
 //    bytes32 constant public CREATE_PROPOSALS_ROLE = keccak256("CREATE_PROPOSALS_ROLE");
@@ -30,6 +32,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     uint256 public constant ABSTAIN_PROPOSAL_ID = 1;
     uint64 public constant MAX_STAKED_PROPOSALS = 10;
 
+    string private constant ERROR_CONTRACT_PAUSED = "CV_CONTRACT_PAUSED";
     string private constant ERROR_PROPOSAL_DOES_NOT_EXIST = "CV_PROPOSAL_DOES_NOT_EXIST";
     string private constant ERROR_REQUESTED_AMOUNT_ZERO = "CV_REQUESTED_AMOUNT_ZERO";
     string private constant ERROR_NO_BENEFICIARY = "CV_NO_BENEFICIARY";
@@ -80,11 +83,13 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     uint256 public minThresholdStakePercentage;
     uint256 public proposalCounter;
     uint256 public totalStaked;
+    bool public contractPaused;
 
     mapping(uint256 => Proposal) internal proposals;
     mapping(address => uint256) internal totalVoterStake;
     mapping(address => uint256[]) internal voterStakedProposals;
 
+    event ContractPaused(bool pauseEnabled);
     event ConvictionSettingsChanged(uint256 decay, uint256 maxRatio, uint256 weight, uint256 minThresholdStakePercentage);
     event ProposalAdded(address indexed entity, uint256 indexed id, uint256 indexed actionId, string title, bytes link, uint256 amount, bool stable, address beneficiary);
     event StakeAdded(address indexed entity, uint256 indexed id, uint256  amount, uint256 tokensStaked, uint256 totalTokensStaked, uint256 conviction);
@@ -97,6 +102,11 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
 
     modifier proposalExists(uint256 _proposalId) {
         require(_proposalId == 1 || proposals[_proposalId].submitter != address(0), ERROR_PROPOSAL_DOES_NOT_EXIST);
+        _;
+    }
+
+    modifier notPaused() {
+        require(!contractPaused, ERROR_CONTRACT_PAUSED);
         _;
     }
 
@@ -141,12 +151,21 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
+    * @notice Pause the contract preventing general interaction
+    * @param _pauseEnabled Whether to enable or disable pause
+    */
+    function pauseContract(bool _pauseEnabled) external auth(PAUSE_CONTRACT_ROLE) {
+        contractPaused = _pauseEnabled;
+        emit ContractPaused(contractPaused);
+    }
+
+    /**
     * @notice Update the stable token oracle settings
     * @param _stableTokenOracle The new stable token oracle
     * @param _stableToken The new stable token
     */
     function setStableTokenOracleSettings(IPriceOracle _stableTokenOracle, address _stableToken)
-        public auth(UPDATE_SETTINGS_ROLE)
+        external auth(UPDATE_SETTINGS_ROLE)
     {
         stableTokenOracle = _stableTokenOracle;
         stableToken = _stableToken;
@@ -166,7 +185,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         uint256 _weight,
         uint256 _minThresholdStakePercentage
     )
-        public auth(UPDATE_SETTINGS_ROLE)
+        external auth(UPDATE_SETTINGS_ROLE)
     {
         decay = _decay;
         maxRatio = _maxRatio;
@@ -181,7 +200,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
      */
-    function addSignalingProposal(string _title, bytes _link) external isInitialized() auth(CREATE_PROPOSALS_ROLE) {
+    function addSignalingProposal(string _title, bytes _link) external isInitialized auth(CREATE_PROPOSALS_ROLE) {
         _addProposal(_title, _link, 0, false, address(0));
     }
 
@@ -194,7 +213,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _beneficiary Address that will receive payment
      */
     function addProposal(string _title, bytes _link, uint256 _requestedAmount, bool _stableRequestAmount, address _beneficiary)
-        external isInitialized() auth(CREATE_PROPOSALS_ROLE)
+        external isInitialized auth(CREATE_PROPOSALS_ROLE)
     {
         require(_requestedAmount > 0, ERROR_REQUESTED_AMOUNT_ZERO);
         require(_beneficiary != address(0), ERROR_NO_BENEFICIARY);
@@ -207,7 +226,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
       * @param _proposalId Proposal id
       * @param _amount Amount of tokens staked
       */
-    function stakeToProposal(uint256 _proposalId, uint256 _amount) external isInitialized() {
+    function stakeToProposal(uint256 _proposalId, uint256 _amount) external isInitialized {
         _stake(_proposalId, _amount, msg.sender);
     }
 
@@ -215,7 +234,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @notice Stake all my `(self.stakeToken(): address).symbol(): string` tokens on proposal #`_proposalId`
      * @param _proposalId Proposal id
      */
-    function stakeAllToProposal(uint256 _proposalId) external isInitialized() {
+    function stakeAllToProposal(uint256 _proposalId) external isInitialized {
         require(totalVoterStake[msg.sender] == 0, ERROR_STAKING_ALREADY_STAKED);
         _stake(_proposalId, stakeToken.balanceOf(msg.sender), msg.sender);
     }
@@ -225,7 +244,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _proposalId Proposal id
      * @param _amount Amount of tokens withdrawn
      */
-    function withdrawFromProposal(uint256 _proposalId, uint256 _amount) external isInitialized() proposalExists(_proposalId) {
+    function withdrawFromProposal(uint256 _proposalId, uint256 _amount) external notPaused isInitialized proposalExists(_proposalId) {
         _withdrawFromProposal(_proposalId, _amount, msg.sender);
     }
 
@@ -233,14 +252,14 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @notice Withdraw all `(self.stakeToken(): address).symbol(): string` tokens previously staked on proposal #`_proposalId`
      * @param _proposalId Proposal id
      */
-    function withdrawAllFromProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) {
+    function withdrawAllFromProposal(uint256 _proposalId) external notPaused isInitialized proposalExists(_proposalId) {
         _withdrawFromProposal(_proposalId, proposals[_proposalId].voterStake[msg.sender], msg.sender);
     }
 
     /**
      * @notice Withdraw all callers stake from inactive proposals
      */
-    function withdrawFromInactiveProposals() external isInitialized() {
+    function withdrawFromInactiveProposals() external notPaused isInitialized {
         _withdrawInactiveStakedTokens(uint256(-1), msg.sender);
     }
 
@@ -249,7 +268,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(_proposalId): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(_proposalId): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param _proposalId Proposal id
      */
-    function executeProposal(uint256 _proposalId) external isInitialized() proposalExists(_proposalId) {
+    function executeProposal(uint256 _proposalId) external notPaused isInitialized proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
 
         require(_proposalId != ABSTAIN_PROPOSAL_ID, ERROR_CANNOT_EXECUTE_ABSTAIN_PROPOSAL);
@@ -274,7 +293,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @notice Cancel proposal #`_proposalId`
      * @param _proposalId Proposal id
      */
-    function cancelProposal(uint256 _proposalId) external proposalExists(_proposalId) {
+    function cancelProposal(uint256 _proposalId) external notPaused proposalExists(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
 
         bool senderHasPermission = canPerform(msg.sender, CANCEL_PROPOSALS_ROLE, new uint256[](0));
@@ -359,7 +378,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     * @dev IDisputable interface conformance
     */
     function canChallenge(uint256 _proposalId) external view returns (bool) {
-        return proposals[_proposalId].proposalStatus == ProposalStatus.Active;
+        return proposals[_proposalId].proposalStatus == ProposalStatus.Active && !contractPaused;
     }
 
     /**
@@ -369,7 +388,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         Proposal storage proposal = proposals[_proposalId];
 
         return proposal.proposalStatus == ProposalStatus.Executed
-        || proposal.proposalStatus == ProposalStatus.Cancelled;
+            || proposal.proposalStatus == ProposalStatus.Cancelled;
     }
 
     /**
@@ -545,7 +564,9 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         _proposal.convictionLast = conviction;
     }
 
-    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, bool _stableRequestAmount, address _beneficiary) internal {
+    function _addProposal(string _title, bytes _link, uint256 _requestedAmount, bool _stableRequestAmount, address _beneficiary)
+        internal notPaused
+    {
         uint256 agreementActionId = _registerDisputableAction(proposalCounter, _link, msg.sender);
         proposals[proposalCounter] = Proposal(
             _requestedAmount,
@@ -569,7 +590,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _amount Amount of staked tokens
      * @param _from Account from which we stake
      */
-    function _stake(uint256 _proposalId, uint256 _amount, address _from) internal proposalExists(_proposalId) {
+    function _stake(uint256 _proposalId, uint256 _amount, address _from) internal notPaused proposalExists(_proposalId) {
         require(getTokenManager() != address(0), ERROR_NO_TOKEN_MANAGER_SET);
 
         Proposal storage proposal = proposals[_proposalId];
