@@ -24,10 +24,7 @@ module.exports = {
         },
         xdai: {
             url: 'https://dai.poa.network',
-            accounts: [
-                process.env.ETH_KEY ||
-                '0xa8a54b2d8197bc0b19bb8a084031be71835580a01e70a45a13babd16c9bc1563',
-            ],
+            accounts: [process.env.ETH_KEY],
             gas: 12e6,
             gasPrice: 1000000000
         },
