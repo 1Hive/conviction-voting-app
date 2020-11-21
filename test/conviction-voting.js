@@ -18,7 +18,8 @@ const DEFAULT_BETA = 0.2 * D
 const DEFAULT_RHO = 0.002 * D
 const DEFAULT_APP_MANAGER_STAKE_TOKENS = 30000
 const DEFAULT_USER_STAKE_TOKENS = 15000
-const MIN_THRESHOLD_STAKE_PERCENTAGE = bn((0.2 * ONE_HUNDRED_PERCENT).toString()) // 20%
+const MIN_THRESHOLD_STAKE_PERCENTAGE = 0.2 // 20%
+const MIN_THRESHOLD_STAKE_PERCENTAGE_BN = bn((MIN_THRESHOLD_STAKE_PERCENTAGE * ONE_HUNDRED_PERCENT).toString()) // 20%
 const FEE_TOKEN_PRICE_IN_STABLE_TOKEN = bn(5);
 
 const ABSTAIN_PROPOSAL_ID = new web3.utils.toBN(1)
@@ -33,10 +34,15 @@ function calculateConviction(t, y0, x, a) {
   return y0 * a ** t + (x * (1 - a ** t)) / (1 - a)
 }
 
-function calculateThreshold(requested, funds, supply, alpha, beta, rho) {
-  const share = requested / funds
+function calculateThreshold(fundsRequested, fundsAvailable, stakeTokenSupply, stakeTokenActive, alpha, beta, rho) {
+  const minThresholdStake = stakeTokenSupply * MIN_THRESHOLD_STAKE_PERCENTAGE
+  if (stakeTokenActive < minThresholdStake) {
+    stakeTokenActive = minThresholdStake
+  }
+
+  const share = fundsRequested / fundsAvailable
   if (share < beta) {
-    return (supply * rho) / (1 - alpha) / (beta - share) ** 2
+    return (stakeTokenActive * rho) / (1 - alpha) / (beta - share) ** 2
   } else {
     return Number.POSITIVE_INFINITY
   }
@@ -76,10 +82,9 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
     requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'HNY', 18, 'HNY', true)
     await requestToken.generateTokens(vault.address, vaultFunds)
     stableToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
-    await stableToken.generateTokens(vault.address, vaultFunds)
 
     convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
-    await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
+    await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE_BN) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
 
     const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
@@ -112,7 +117,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       stableToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
       await requestToken.generateTokens(vault.address, 15000)
       convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
-      await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE)
+      await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE_BN)
 
       await assertRevert(stakeTokenManager.registerHook(convictionVoting.address), 'CV_INCORRECT_TOKEN_MANAGER_HOOK')
     })
@@ -135,7 +140,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       assert.equal(await convictionVoting.decay(), DEFAULT_ALPHA, 'Incorrect decay')
       assert.equal(await convictionVoting.maxRatio(), DEFAULT_BETA, 'Incorrect max ratio')
       assert.equal(await convictionVoting.weight(), DEFAULT_RHO, 'Incorrect weight')
-      assert.equal(await convictionVoting.minThresholdStakePercentage(), MIN_THRESHOLD_STAKE_PERCENTAGE.toString(), 'Incorrect min threshold stake percentage')
+      assert.equal(await convictionVoting.minThresholdStakePercentage(), MIN_THRESHOLD_STAKE_PERCENTAGE_BN.toString(), 'Incorrect min threshold stake percentage')
       const {
         requestedAmount,
         stableRequestAmount,
@@ -145,7 +150,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
         blockLast,
         agreementActionId,
         proposalStatus,
-        submitter
+        submitter,
+        threshold
       } = await convictionVoting.getProposal(ABSTAIN_PROPOSAL_ID)
       assert.equal(requestedAmount, 0, 'Incorrect requested amount')
       assert.equal(stableRequestAmount, false, 'Incorrect stable request amount')
@@ -156,6 +162,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       assert.equal(agreementActionId, 0, 'Incorrect action ID')
       assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
       assert.equal(submitter, 0x0, 'Incorrect submitter')
+      assert.equal(threshold, 0, 'Incorrect threshold')
     })
 
     context('setStableTokenOracleSettings(stableTokenOracle, stableToken)', () => {
@@ -218,7 +225,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
           blockLast,
           agreementActionId,
           proposalStatus,
-          submitter
+          submitter,
+          threshold
         } = await convictionVoting.getProposal(proposalId)
 
         assert.equal(actualRequestedAmount, 0, 'Incorrect requested amount')
@@ -230,6 +238,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
         assert.equal(agreementActionId, 1, 'Incorrect action ID')
         assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
         assert.equal(submitter, appManager, 'Incorrect submitter')
+        assert.equal(threshold, 0, 'Incorrect threshold')
         assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
       })
     })
@@ -247,16 +256,19 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       it('should create a proposal', async () => {
         const {
           requestedAmount: actualRequestedAmount,
+          stableRequestAmount,
           beneficiary: actualBeneficiary,
           stakedTokens,
           convictionLast,
           blockLast,
           agreementActionId,
           proposalStatus,
-          submitter
+          submitter,
+          threshold
         } = await convictionVoting.getProposal(proposalId)
 
         assert.equal(actualRequestedAmount, requestedAmount, 'Incorrect requested amount')
+        assert.equal(stableRequestAmount, false, 'Incorrect stable request amount')
         assert.equal(actualBeneficiary, beneficiary, 'Incorrect beneficiary')
         assert.equal(stakedTokens, 0, 'Incorrect staked tokens')
         assert.equal(convictionLast, 0, 'Incorrect conviction last')
@@ -264,6 +276,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
         assert.equal(agreementActionId.toString(), actionId.toString(), 'Incorrect action ID')
         assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
         assert.equal(submitter, appManager, 'Incorrect submitter')
+        const expectedThreshold = Math.round(calculateThreshold(requestedAmount, 15000, 45000,0, 0.9, 0.2, 0.002))
+        assert.equal(threshold.toNumber(), expectedThreshold, 'Incorrect thresold')
         assert.equal(await convictionVoting.proposalCounter(), proposalId.toNumber() + 1, 'Incorrect proposal counter')
       })
 
@@ -544,7 +558,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
 
         it('should revert when not set as a token manager hook', async () => {
           convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
-          await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE) // alpha = 0.9, beta = 0.2, rho = 0.002
+          await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE_BN) // alpha = 0.9, beta = 0.2, rho = 0.002
           const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
           await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
           await agreement.activate({
@@ -1009,7 +1023,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
 
     context('addProposal(title, link, requestedAmount, stableRequestAmount (true), beneficiary)', () => {
 
-      const stableRequestedAmount = 1000
+      const stableRequestedAmount = bn(1000)
       let proposalId, actionId
 
       beforeEach(async () => {
@@ -1019,19 +1033,24 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       })
 
       context('stakeToProposal(proposalId, amount)', () => {
-        const stakeAmount = 1000
+        const stakeAmount = 10000
 
         beforeEach(async () => {
           await convictionVoting.stakeToProposal(proposalId, stakeAmount)
+        })
+
+        it('sets the correct threshold', async () => {
+          const { threshold } = await convictionVoting.getProposal(proposalId)
+          const requestTokenReturnAmount = stableRequestedAmount.div(FEE_TOKEN_PRICE_IN_STABLE_TOKEN)
+          const expectedThreshold = Math.floor(calculateThreshold(requestTokenReturnAmount, 15000, 45000,stakeAmount, 0.9, 0.2, 0.002))
+          assert.equal(threshold.toNumber(), expectedThreshold, 'Incorrect threshold')
         })
 
         context('executeProposal(proposalId)', () => {
           it('converts stable amount to request token and transfers to beneficiary', async () => {
             const vaultBalanceBefore = await requestToken.balanceOf(vault.address)
             const beneficiaryBalanceBefore = await requestToken.balanceOf(beneficiary)
-            const requestTokenReturnAmount = stableRequestedAmount / FEE_TOKEN_PRICE_IN_STABLE_TOKEN
-            const stakeAmount = 10000
-            await convictionVoting.stakeToProposal(proposalId, stakeAmount)
+            const requestTokenReturnAmount = stableRequestedAmount.div(FEE_TOKEN_PRICE_IN_STABLE_TOKEN)
             await convictionVoting.mockAdvanceBlocks(40)
 
             await convictionVoting.executeProposal(proposalId)
@@ -1064,16 +1083,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       })
 
       it('threshold function', async () => {
-        assert.equal((await convictionVoting.calculateThreshold(1000, false)).toNumber(),
-          Math.round(calculateThreshold(1000, 15000, 45000, 0.9, 0.2, 0.002))
-        )
-      })
-
-      it('threshold function', async () => {
-        const requestAmount = bn(10000)
-        const requestTokenReturnAmount = requestAmount.div(FEE_TOKEN_PRICE_IN_STABLE_TOKEN)
-        assert.equal((await convictionVoting.calculateThreshold(requestAmount, true)).toNumber(),
-          Math.round(calculateThreshold(requestTokenReturnAmount, 15000, 45000, 0.9, 0.2, 0.002))
+        assert.equal((await convictionVoting.calculateThreshold(1000)).toNumber(),
+          Math.round(calculateThreshold(1000, 15000, 45000, 45000, 0.9, 0.2, 0.002))
         )
       })
     })
@@ -1106,16 +1117,8 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
 
       it('threshold function', async () => {
         assert.equal(
-          parseInt(await convictionVoting.calculateThreshold(bn('1000000000000000000'), false)).toPrecision(10),
-          calculateThreshold(1, 745, 1164000000000000000000, 0.9999599, 0.2, 0.002).toPrecision(10))
-      })
-
-      it('threshold function', async () => {
-        const requestAmount = bn('5000000000000000000')
-        const requestTokenReturnAmount = requestAmount.div(FEE_TOKEN_PRICE_IN_STABLE_TOKEN)
-        assert.equal(
-          parseInt(await convictionVoting.calculateThreshold(requestAmount, true)).toPrecision(10),
-          calculateThreshold(1, 745, 1164000000000000000000, 0.9999599, 0.2, 0.002).toPrecision(10))
+          parseInt(await convictionVoting.calculateThreshold(bn('1000000000000000000'))).toPrecision(10),
+          calculateThreshold(1, 745, 1164000000000000000000, 1164000000000000000000, 0.9999599, 0.2, 0.002).toPrecision(10))
       })
     })
   })
