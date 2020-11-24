@@ -5,9 +5,9 @@ import "@aragon/os/contracts/kernel/Kernel.sol";
 import "@aragon/os/contracts/factory/DAOFactory.sol";
 import "@aragon/os/contracts/factory/EVMScriptRegistryFactory.sol";
 
-import "@aragon/apps-agreement/contracts/test/mocks/AgreementMock.sol";
-import "@aragon/apps-agreement/contracts/test/mocks/disputable/ArbitratorMock.sol";
-import "@aragon/apps-agreement/contracts/test/mocks/disputable/AragonAppFeesCashierMock.sol";
+import "@1hive/apps-agreement/contracts/test/mocks/AgreementMock.sol";
+import "@1hive/apps-agreement/contracts/test/mocks/disputable/ArbitratorMock.sol";
+import "@1hive/apps-agreement/contracts/test/mocks/disputable/AragonAppFeesCashierMock.sol";
 
 import "@1hive/apps-token-manager/contracts/HookedTokenManager.sol";
 
