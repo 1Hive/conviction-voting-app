@@ -658,6 +658,26 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
           })
         })
 
+        context('withdrawFromInactiveProposals()', () => {
+          it('withdraws from inactive proposals', async () => {
+            const proposalStake = DEFAULT_APP_MANAGER_STAKE_TOKENS / 3
+            const currentBlock = await convictionVoting.getBlockNumberPublic()
+            await convictionVoting.stakeToProposal(proposalId, proposalStake)
+            await createAndExecuteProposals(1, proposalStake)
+            await createAndCancelProposals(1, proposalStake)
+            const totalStakeBefore = await convictionVoting.getTotalVoterStake(appManager)
+            assert.equal(totalStakeBefore, DEFAULT_APP_MANAGER_STAKE_TOKENS, 'Incorrect stake before')
+
+            await convictionVoting.withdrawFromInactiveProposals()
+
+            await assertProposalAndStakesCorrect(
+              proposalId, 0, proposalStake, currentBlock.toNumber() + 1,
+              proposalStake, proposalStake, [proposalId], proposalStake)
+            const totalStakeAfter = await convictionVoting.getTotalVoterStake(appManager)
+            assert.equal(totalStakeAfter, proposalStake, 'Incorrect stake after') // Only stake left on one open proposal
+          })
+        })
+
         context('onTransfer(from, to, amount)', () => {
           it('unstakes staked tokens when transferring more than currently unstaked', async () => {
             const transferAmount = 5000

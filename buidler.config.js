@@ -22,6 +22,12 @@ module.exports = {
             gas: 7.9e6,
             gasPrice: 15000000001
         },
+        xdai: {
+            url: 'https://dai.poa.network',
+            accounts: [process.env.ETH_KEY],
+            gas: 12e6,
+            gasPrice: 1000000000
+        },
     },
     solc: {
         version: '0.4.24',

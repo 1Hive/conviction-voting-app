@@ -238,6 +238,13 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
+     * @notice Withdraw all callers stake from inactive proposals
+     */
+    function withdrawFromInactiveProposals() external isInitialized() {
+        _withdrawInactiveStakedTokens(uint256(-1), msg.sender);
+    }
+
+    /**
      * @notice Execute proposal #`_proposalId`
      * @dev ...by sending `@tokenAmount((self.requestToken(): address), self.getPropoal(_proposalId): ([uint256], address, uint256, uint256, uint64, bool))` to `self.getPropoal(_proposalId): (uint256, [address], uint256, uint256, uint64, bool)`
      * @param _proposalId Proposal id
