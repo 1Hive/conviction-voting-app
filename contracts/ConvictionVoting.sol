@@ -151,7 +151,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     }
 
     /**
-    * @notice Pause the contract preventing general interaction
+    * @notice Pause / unpause the contract preventing / allowing general interaction
     * @param _pauseEnabled Whether to enable or disable pause
     */
     function pauseContract(bool _pauseEnabled) external auth(PAUSE_CONTRACT_ROLE) {
@@ -244,7 +244,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _proposalId Proposal id
      * @param _amount Amount of tokens withdrawn
      */
-    function withdrawFromProposal(uint256 _proposalId, uint256 _amount) external notPaused isInitialized proposalExists(_proposalId) {
+    function withdrawFromProposal(uint256 _proposalId, uint256 _amount) external isInitialized proposalExists(_proposalId) {
         _withdrawFromProposal(_proposalId, _amount, msg.sender);
     }
 
@@ -252,14 +252,14 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @notice Withdraw all `(self.stakeToken(): address).symbol(): string` tokens previously staked on proposal #`_proposalId`
      * @param _proposalId Proposal id
      */
-    function withdrawAllFromProposal(uint256 _proposalId) external notPaused isInitialized proposalExists(_proposalId) {
+    function withdrawAllFromProposal(uint256 _proposalId) external isInitialized proposalExists(_proposalId) {
         _withdrawFromProposal(_proposalId, proposals[_proposalId].voterStake[msg.sender], msg.sender);
     }
 
     /**
      * @notice Withdraw all callers stake from inactive proposals
      */
-    function withdrawFromInactiveProposals() external notPaused isInitialized {
+    function withdrawFromInactiveProposals() external isInitialized {
         _withdrawInactiveStakedTokens(uint256(-1), msg.sender);
     }
 
