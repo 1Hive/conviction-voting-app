@@ -33,7 +33,7 @@ module.exports = {
         version: '0.4.24',
         optimizer: {
             enabled: true,
-            runs: 100
+            runs: 1 // Increase to 10000 for deployment to xDai (no byte code limit on xdai)
         },
     }
 }
