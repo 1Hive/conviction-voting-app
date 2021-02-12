@@ -15,10 +15,7 @@ module.exports = {
         },
         rinkeby: {
             url: 'https://rinkeby.eth.aragon.network',
-            accounts: [
-                process.env.ETH_KEY ||
-                '0xa8a54b2d8197bc0b19bb8a084031be71835580a01e70a45a13babd16c9bc1563',
-            ],
+            accounts: [process.env.ETH_KEY],
             gas: 7.9e6,
             gasPrice: 15000000001
         },
