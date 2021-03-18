@@ -19,6 +19,16 @@
       "name": "Challenge votes",
       "id": "CHALLENGE_ROLE",
       "params": []
+    },
+    {
+      "name": "Pause contract",
+      "id": "PAUSE_CONTRACT_ROLE",
+      "params": []
+    },
+    {
+      "name": "Set agreement",
+      "id": "SET_AGREEMENT_ROLE",
+      "params": []
     }
   ],
   "environments": {
@@ -43,7 +53,6 @@
       "appName": "disputable-conviction-voting.open.aragonpm.eth",
       "wsRPC": "wss://xdai.poanetwork.dev/wss",
       "network": "xdai"
-
     }
   },
   "path": "contracts/ConvictionVoting.sol"
