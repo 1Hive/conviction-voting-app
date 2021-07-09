@@ -1,5 +1,5 @@
-const { getEventArgument, ZERO_ADDRESS, ONE_DAY, bn } = require('@aragon/contract-helpers-test')
-const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts/assertThrow')
+const { getEventArgument, ZERO_ADDRESS, ONE_DAY, bn } = require('@1hive/contract-helpers-test')
+const { assertRevert } = require('@1hive/contract-helpers-test/src/asserts/assertThrow')
 const { RULINGS } = require('@1hive/apps-agreement/test/helpers/utils/enums')
 const deployer = require('@1hive/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
 const installApp = require('./helpers/installApp')
