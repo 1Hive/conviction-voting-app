@@ -25,12 +25,22 @@ module.exports = {
             gas: 12e6,
             gasPrice: 1000000000
         },
+        arbtest: {
+            url: 'https://rinkeby.arbitrum.io/rpc',
+            accounts: [process.env.ETH_KEY],
+            gasPrice: 0,
+        },
+        arbitrum: {
+            url: 'https://arb1.arbitrum.io/rpc',
+            accounts: [process.env.ETH_KEY],
+            gasPrice: 0,
+        },
     },
     solc: {
         version: '0.4.24',
         optimizer: {
             enabled: true,
-            runs: 1 // Increase to 10000 for deployment to xDai (no byte code limit on xdai)
+            runs: 10000 // Set to 1 for bytecode size constrained networks (not arbitrum)
         },
     }
 }
