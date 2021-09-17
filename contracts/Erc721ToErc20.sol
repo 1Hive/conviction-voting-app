@@ -28,9 +28,15 @@ contract Erc721ToErc20 {
     }
 
     function setConvictionVoting(address _convictionVoting) public onlyOwner {
-        require(convictionVoting == address(0), "E721toE20: Already set");
         convictionVoting = _convictionVoting;
-        _convictionVoting.onRegisterAsHook(0, address(this));
+
+        if (address(_convictionVoting) != address(0)) {
+            _convictionVoting.onRegisterAsHook(0, address(this));
+        }
+    }
+
+    function burnOwner() public onlyOwner {
+        owner = address(0);
     }
 
     function totalSupply() view returns (uint256) {
@@ -44,13 +50,16 @@ contract Erc721ToErc20 {
     function onTransfer(address _from, address _to, uint256 _id) public onlyErc721 {
         // TODO: This must be called for mint/burn as well (any time an NFT is created or destroyed)
 
-        if (erc721.balanceOf(_from) == 0) {
+        if (_from != address(0) /* <<< whatever the mint address is */ && erc721.balanceOf(_from) == 0) {
             balances[_from] -= TOKENS_PER_NFT;
             totalSupply -= TOKENS_PER_NFT;
-            convictionVoting.onTransfer(_from, _to, TOKENS_PER_NFT);
+
+            if (address(convictionVoting) != address(0)) {
+                convictionVoting.onTransfer(_from, _to, TOKENS_PER_NFT);
+            }
         }
 
-        if (erc721.balanceOf(_to) == 1) {
+        if (_to != address(0) /* <<< whatever the burn address is */ && erc721.balanceOf(_to) == 1) {
             balances[_to] += TOKENS_PER_NFT;
             totalSupply += TOKENS_PER_NFT;
         }
