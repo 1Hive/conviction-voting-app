@@ -6,6 +6,8 @@ contract GnosisSafeMock is GnosisSafe {
 
     Operation public operationPassed;
 
+    // This functionality has been copied from the Gnosis Safe Module execution function:
+    // https://github.com/gnosis/safe-contracts/blob/main/contracts/base/ModuleManager.sol#L80
     function execTransactionFromModuleReturnData(address to, uint256 value, bytes memory data, Operation operation)
         public returns (bool success, bytes memory returnData)
     {

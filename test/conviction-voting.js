@@ -206,6 +206,24 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       })
     })
 
+    context.only('setFundsManager(fundsManager)', () => {
+
+      const newFundsManager = unknown
+
+      it('sets the funds manager', async () => {
+        const updateSettingsRole = await convictionVoting.UPDATE_SETTINGS_ROLE()
+        await deployer.acl.createPermission(appManager, convictionVoting.address, updateSettingsRole, appManager)
+
+        await convictionVoting.setFundsManager(newFundsManager)
+
+        assert.equal(await convictionVoting.fundsManager(), newFundsManager, 'Incorrect funds manager')
+      })
+
+      it('reverts when no permission', async () => {
+        await assertRevert(convictionVoting.setFundsManager(newFundsManager), 'APP_AUTH_FAILED')
+      })
+    })
+
     context('setConvictionCalculationSettings(decay, maxRatio, weight, minThresholdStakePercentage)', () => {
 
       const decay = 1 * D

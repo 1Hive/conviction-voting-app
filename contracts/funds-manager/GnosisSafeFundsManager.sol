@@ -5,6 +5,7 @@ import "./GnosisSafe.sol";
 import "@aragon/os/contracts/lib/token/ERC20.sol";
 
 // TODO: Check that the gnosis safe funds are kept directly in the safe and not some other address/contract
+// This contract must be granted the permission to transfer funds on the Gnosis Safe it accepts
 contract GnosisSafeFundsManager is FundsManager {
 
     bytes4 public constant TRANSFER_SELECTOR = 0xa9059cbb; // Equivalent of bytes4(keccak256("transfer(address,uint256)"))

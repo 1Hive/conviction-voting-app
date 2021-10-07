@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "./FundsManager.sol";
 import "@aragon/apps-vault/contracts/Vault.sol";
 
-// Requires being granted the permission to transfer funds on the Aragon Vault
+// This contract must be granted the permission to transfer funds on the Aragon Vault it accepts
 contract AragonVaultFundsManager is FundsManager {
 
     address public owner;
