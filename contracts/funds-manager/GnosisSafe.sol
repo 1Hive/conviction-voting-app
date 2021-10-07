@@ -4,7 +4,7 @@ contract GnosisSafe {
 
     enum Operation {Call, DelegateCall}
 
-    function execTransactionFromModule(address to, uint256 value, bytes memory data, Operation operation)
-        public returns (bool success);
+    function execTransactionFromModuleReturnData(address to, uint256 value, bytes memory data, Operation operation)
+        public returns (bool success, bytes memory returnData);
 
 }

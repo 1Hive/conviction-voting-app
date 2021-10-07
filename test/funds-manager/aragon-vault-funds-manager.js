@@ -18,7 +18,7 @@ contract('AragonVaultFundsManager', ([owner, newOwner, tokenReceiver]) => {
     await token.generateTokens(vault.address, VAULT_FUNDS)
   })
 
-  describe.only("Contract tests", () => {
+  describe("Contract tests", () => {
 
     it('sets correct constructor params', async () => {
       assert.equal(await aragonVaultFundsManager.owner(), owner, "Incorrect owner")

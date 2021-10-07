@@ -33,7 +33,15 @@ contract GnosisSafeFundsManager is FundsManager {
 
     function transfer(address _token, address _beneficiary, uint256 _amount) public onlyOwner {
         bytes memory transferBytes = abi.encodeWithSelector(TRANSFER_SELECTOR, _beneficiary, _amount);
-        require(gnosisSafe.execTransactionFromModule(_token, 0, transferBytes, GnosisSafe.Operation.Call),
-            "ERR:TRANSFER_REVERTED");
+        (bool success, bytes memory returnData) = gnosisSafe.execTransactionFromModuleReturnData(_token, 0, transferBytes, GnosisSafe.Operation.Call);
+
+        bool returnBool = false;
+        assembly {
+            // Load the data after 32 bytes length slot, eg add 0x20
+            returnBool := mload(add(returnData, 0x20))
+        }
+
+        require(success, "ERR:TRANSFER_REVERTED");
+        require(returnBool, "ERR:TRANSFER_NOT_RETURN_TRUE");
     }
 }
