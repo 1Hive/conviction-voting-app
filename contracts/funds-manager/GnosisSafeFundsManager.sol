@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./FundsManager.sol";
 import "./GnosisSafe.sol";
-import "@aragon/os/contracts/lib/token/ERC20.sol";
+import "./ERC20.sol";
 
 // TODO: Check that the gnosis safe funds are kept directly in the safe and not some other address/contract
 // This contract must be granted the permission to transfer funds on the Gnosis Safe it accepts

@@ -206,7 +206,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       })
     })
 
-    context.only('setFundsManager(fundsManager)', () => {
+    context('setFundsManager(fundsManager)', () => {
 
       const newFundsManager = unknown
 

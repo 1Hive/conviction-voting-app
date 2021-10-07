@@ -90,7 +90,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     mapping(address => uint256[]) internal voterStakedProposals;
 
     event ContractPaused(bool pauseEnabled);
-    event OracleSedttingsChanged(IPriceOracle stableTokenOracle, address stableToken);
+    event OracleSettingsChanged(IPriceOracle stableTokenOracle, address stableToken);
     event FundsManagerChanged(FundsManager fundsManager);
     event ConvictionSettingsChanged(uint256 decay, uint256 maxRatio, uint256 weight, uint256 minThresholdStakePercentage);
     event ProposalAdded(address indexed entity, uint256 indexed id, uint256 indexed actionId, string title, bytes link, uint256 amount, bool stable, address beneficiary);
