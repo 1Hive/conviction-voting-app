@@ -25,12 +25,12 @@ contract GnosisSafeFundsManager is FundsManager {
         owner = _owner;
     }
 
-    function balance(address _token) returns (uint256) {
+    function balance(address _token) public returns (uint256) {
         ERC20 token = ERC20(_token);
         return token.balanceOf(address(gnosisSafe));
     }
 
-    function transfer(address _token, address _beneficiary, uint256 _amount) onlyOwner {
+    function transfer(address _token, address _beneficiary, uint256 _amount) public onlyOwner {
         bytes memory transferBytes = abi.encodeWithSelector(TRANSFER_SELECTOR, _beneficiary, _amount);
         require(gnosisSafe.execTransactionFromModule(_token, 0, transferBytes, GnosisSafe.Operation.Call),
             "ERR:TRANSFER_REVERTED");

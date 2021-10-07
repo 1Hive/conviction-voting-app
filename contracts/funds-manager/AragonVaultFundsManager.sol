@@ -13,8 +13,8 @@ contract AragonVaultFundsManager is FundsManager {
         _;
     }
 
-    constructor(address _owner, Vault _aragonVault) public {
-        owner = _owner;
+    constructor(Vault _aragonVault) public {
+        owner = msg.sender;
         aragonVault = _aragonVault;
     }
 
