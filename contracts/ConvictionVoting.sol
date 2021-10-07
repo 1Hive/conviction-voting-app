@@ -2,11 +2,11 @@ pragma solidity ^0.4.24;
 
 import "@aragon/os/contracts/apps/disputable/DisputableAragonApp.sol";
 import "@aragon/apps-shared-minime/contracts/MiniMeToken.sol";
-import "@aragon/apps-vault/contracts/Vault.sol";
 import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
+import "./funds-manager/FundsManager.sol";
 import "./lib/ArrayUtils.sol";
 import "./lib/IPriceOracle.sol";
 
@@ -76,7 +76,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
     address public requestToken;
     address public stableToken;
     IPriceOracle public stableTokenOracle;
-    Vault public vault;
+    FundsManager public fundsManager;
     uint256 public decay;
     uint256 public maxRatio;
     uint256 public weight;
@@ -116,7 +116,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         address _requestToken,
         address _stableToken,
         IPriceOracle _stableTokenOracle,
-        Vault _vault,
+        FundsManager _fundsManager,
         uint256 _decay,
         uint256 _maxRatio,
         uint256 _weight,
@@ -129,7 +129,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         requestToken = _requestToken;
         stableToken = _stableToken;
         stableTokenOracle = _stableTokenOracle;
-        vault = _vault;
+        fundsManager = _fundsManager;
         decay = _decay;
         maxRatio = _maxRatio;
         weight = _weight;
@@ -285,7 +285,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
         proposal.proposalStatus = ProposalStatus.Executed;
         _closeDisputableAction(proposal.agreementActionId);
 
-        vault.transfer(requestToken, proposal.beneficiary, requestedAmount);
+        fundsManager.transfer(requestToken, proposal.beneficiary, requestedAmount);
 
         emit ProposalExecuted(_proposalId, proposal.convictionLast);
     }
@@ -425,7 +425,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * executed it.
      */
     function calculateThreshold(uint256 _requestedAmount) public view returns (uint256 _threshold) {
-        uint256 funds = vault.balance(requestToken);
+        uint256 funds = fundsManager.balance(requestToken);
         require(maxRatio.mul(funds) > _requestedAmount.mul(D), ERROR_AMOUNT_OVER_MAX_RATIO);
         // denom = maxRatio * 2 ** 64 / D  - requestedAmount * 2 ** 64 / funds
         uint256 denom = (maxRatio << 64).div(D).sub((_requestedAmount << 64).div(funds));

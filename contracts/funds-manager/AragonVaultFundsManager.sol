@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "./VaultManager.sol";
+import "./FundsManager.sol";
 import "@aragon/apps-vault/contracts/Vault.sol";
 
-contract AragonVaultManager is IVaultManager {
+contract AragonVaultFundsManager is FundsManager {
 
     address public owner;
     Vault public aragonVault;
