@@ -40,7 +40,7 @@ module.exports = {
         version: '0.4.24',
         optimizer: {
             enabled: true,
-            runs: 10000 // Set to 1 for bytecode size constrained networks (not arbitrum)
+            runs: 1 // Set to 1 for bytecode size constrained networks (not arbitrum)
         },
     }
 }
