@@ -6,7 +6,7 @@ import "@aragon/os/contracts/lib/math/SafeMath.sol";
 import "@aragon/os/contracts/lib/math/SafeMath64.sol";
 import "@aragon/os/contracts/lib/math/Math.sol";
 import "@1hive/apps-token-manager/contracts/TokenManagerHook.sol";
-import "./funds-manager/FundsManager.sol";
+import "@1hive/funds-manager/contracts/FundsManager.sol";
 import "./lib/ArrayUtils.sol";
 import "./lib/IPriceOracle.sol";
 

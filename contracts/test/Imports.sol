@@ -11,4 +11,6 @@ import "@1hive/apps-agreement/contracts/test/mocks/disputable/AragonAppFeesCashi
 
 import "@1hive/apps-token-manager/contracts/HookedTokenManager.sol";
 
+import "@1hive/funds-manager/contracts/AragonVaultFundsManager.sol";
+
 contract Imports {}
