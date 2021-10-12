@@ -89,7 +89,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
     convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE'], [ANY_ADDRESS, 'PAUSE_CONTRACT_ROLE']], appManager)
     await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, aragonVaultFundsManager.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE_BN) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
-    await aragonVaultFundsManager.setOwner(convictionVoting.address)
+    await aragonVaultFundsManager.addFundsUser(convictionVoting.address)
 
     const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
     await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
