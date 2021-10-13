@@ -14,10 +14,6 @@ contract Erc721ToErc20 {
         require(msg.sender == owner, "E721toE20: Not owner");
     }
 
-    modifier onlyErc721() {
-        require(msg.sender == erc721, "E721toE20: Not ERC721");
-    }
-
     constructor() public {
         owner = msg.sender;
     }
@@ -47,10 +43,14 @@ contract Erc721ToErc20 {
         return balances[_account];
     }
 
-    function onTransfer(address _from, address _to, uint256 _id) public onlyErc721 {
-        // TODO: This must be called for mint/burn as well (any time an NFT is created or destroyed)
+    // Occurs before transfer has happened and balanceOf is updated
+    // This must be called for mint/burn as well (any time an NFT is created or destroyed)
+    function onTransfer(address _from, address _to, uint256 _id) public {
+        require(msg.sender == erc721, "E721toE20: Not ERC721");
 
-        if (_from != address(0) /* <<< whatever the mint address is */ && erc721.balanceOf(_from) == 0) {
+        if (_from != address(0) // the mint address
+            && erc721.balanceOf(_from) == 1) // Note balanceOf will be 0 after transfer is completed, this prevents an account with multiple NFT's being revoked vote weight until they have 0 NFT's
+        {
             balances[_from] -= TOKENS_PER_NFT;
             totalSupply -= TOKENS_PER_NFT;
 
@@ -59,7 +59,9 @@ contract Erc721ToErc20 {
             }
         }
 
-        if (_to != address(0) /* <<< whatever the burn address is */ && erc721.balanceOf(_to) == 1) {
+        if (_to != address(0) // the burn address
+            && erc721.balanceOf(_to) == 0) // Note balanceOf will be 1 after transfer is completed, this prevents an account with multiple NFT's being granted multiple vote weights
+        {
             balances[_to] += TOKENS_PER_NFT;
             totalSupply += TOKENS_PER_NFT;
         }
