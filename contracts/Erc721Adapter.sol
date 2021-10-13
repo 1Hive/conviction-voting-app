@@ -3,8 +3,10 @@ pragma solidity ^0.4.24;
 import "./ConvictionVoting.sol";
 import "./IErc721Adapter.sol";
 import "./ERC721.sol";
+import "@aragon/os/contracts/lib/math/SafeMath.sol";
 
 contract Erc721Adapter is IErc721Adapter {
+    using SafeMath for uint256;
 
     uint256 constant public TOKENS_PER_NFT = 1000e18;
 
@@ -15,7 +17,7 @@ contract Erc721Adapter is IErc721Adapter {
     mapping(address => uint256) public balances;
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "E721toE20: Not owner");
+        require(msg.sender == owner, "ERR:NOT_OWNER");
         _;
     }
 
@@ -28,7 +30,7 @@ contract Erc721Adapter is IErc721Adapter {
     }
 
     function setErc721(ERC721 _erc721) public onlyOwner {
-        require(erc721 == address(0), "E721toE20: Already set");
+        require(erc721 == address(0), "ERR:ALREADY_SET");
         erc721 = _erc721;
     }
 
@@ -53,13 +55,14 @@ contract Erc721Adapter is IErc721Adapter {
     // In the LivingNft this occurs before the transfer has happened and balanceOf is updated
     // Note this must be called for all mint/burn operations on the NFT as well
     function onTransfer(address _from, address _to, uint256 _id) public {
-        require(msg.sender == address(erc721), "E721toE20: Not ERC721");
+        require(msg.sender == address(erc721), "ERR:NOT_ERC721");
+        require(_from != _to, "ERR:SEND_TO_SELF");
 
         if (_from != address(0) // the mint address
             && erc721.balanceOf(_from) == 1) // Note balanceOf will be 0 after transfer is completed, this prevents an account with multiple NFT's being revoked vote weight until they have 0 NFT's
         {
-            balances[_from] -= TOKENS_PER_NFT;
-            totalSupply -= TOKENS_PER_NFT;
+            balances[_from] = balances[_from].sub(TOKENS_PER_NFT);
+            totalSupply = totalSupply.sub(TOKENS_PER_NFT);
 
             if (address(convictionVoting) != address(0)) {
                 convictionVoting.onTransfer(_from, _to, TOKENS_PER_NFT);
@@ -69,8 +72,8 @@ contract Erc721Adapter is IErc721Adapter {
         if (_to != address(0) // the burn address
             && erc721.balanceOf(_to) == 0) // Note balanceOf will be 1 after transfer is completed, this prevents an account with multiple NFT's being granted multiple vote weights
         {
-            balances[_to] += TOKENS_PER_NFT;
-            totalSupply += TOKENS_PER_NFT;
+            balances[_to] = balances[_to].add(TOKENS_PER_NFT);
+            totalSupply = totalSupply.add(TOKENS_PER_NFT);
         }
     }
 }
