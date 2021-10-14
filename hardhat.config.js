@@ -129,13 +129,15 @@ module.exports = {
       accounts: accounts("arbtest"),
       ensRegistry: "0x73ddD4B38982aB515daCf43289B41706f9A39199",
     },
-    mumbai: {
+    frame: {
       url: "http://localhost:1248",
       httpHeaders: { origin: "hardhat" },
-      ensRegistry: "0xB1576a9bE5EC445368740161174f3Dd1034fF8be",
+      timeout: 0,
+      gas: 0,
     },
   },
   ipfs: {
+    gateway: "https://ipfs.blossom.software/",
     pinata: {
       key: process.env.PINATA_KEY || "",
       secret: process.env.PINATA_SECRET_KEY || "",
