@@ -2,9 +2,9 @@
 
 1Hive's Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
 
-#### 🐲 Project Stage: Rinkeby
+#### 🐲 Project Stage: Complete
 
-The Conviction Voting app has been published to `open.aragonpm.eth` on Rinkeby network. If you experience any issues or are interested in contributing please see review our [open issues](https://github.com/1hive/conviction-voting-app).
+The Conviction Voting app has been published to `open.aragonpm.eth`. If you experience any issues or are interested in contributing please see review our [open issues](https://github.com/1hive/conviction-voting-app).
 
 #### 🚨 Security Review Status: pre-audit
 
