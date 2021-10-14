@@ -114,9 +114,25 @@ module.exports = {
       accounts: accounts("polygon"),
       ensRegistry: "0x4E065c622d584Fbe5D9078C3081840155FA69581",
     },
-    frame: {
+    mumbai: {
+      url: node_url("mumbai"),
+      accounts: accounts("mumbai"),
+      ensRegistry: "0xB1576a9bE5EC445368740161174f3Dd1034fF8be",
+    },
+    arbitrum: {
+      url: node_url("arbitrum"),
+      accounts: accounts("arbitrum"),
+      ensRegistry: "0xB1576a9bE5EC445368740161174f3Dd1034fF8be",
+    },
+    arbtest: {
+      url: node_url("arbtest"),
+      accounts: accounts("arbtest"),
+      ensRegistry: "0x73ddD4B38982aB515daCf43289B41706f9A39199",
+    },
+    mumbai: {
       url: "http://localhost:1248",
       httpHeaders: { origin: "hardhat" },
+      ensRegistry: "0xB1576a9bE5EC445368740161174f3Dd1034fF8be",
     },
   },
   ipfs: {

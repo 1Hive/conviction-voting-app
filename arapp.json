@@ -53,6 +53,16 @@
       "appName": "disputable-conviction-voting.open.aragonpm.eth",
       "wsRPC": "wss://xdai.poanetwork.dev/wss",
       "network": "xdai"
+    },
+    "arbtest": {
+      "registry": "0x73ddD4B38982aB515daCf43289B41706f9A39199",
+      "appName": "disputable-conviction-voting.open.aragonpm.eth",
+      "network": "arbtest"
+    },
+    "arbitrum": {
+      "registry": "0x2DDE068a7fdF72c10848298cC0317E691E40E593",
+      "appName": "disputable-conviction-voting.open.aragonpm.eth",
+      "network": "arbitrum"
     }
   },
   "path": "contracts/ConvictionVoting.sol"
