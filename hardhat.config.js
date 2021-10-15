@@ -8,12 +8,21 @@ require("hardhat-deploy");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
 
-const { node_url, accounts } = require("./utils/network");
+const {node_url, accounts, account} = require("./utils/network");
 
 process.removeAllListeners("warning");
 module.exports = {
   solidity: {
     compilers: [
+      {
+        version: "0.4.24",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1, // Set to higher for Arbitrum or non-code limited networks
+          }
+        }
+      },
       {
         version: "0.5.17",
         settings: {
@@ -22,54 +31,45 @@ module.exports = {
             runs: 10000,
           },
         },
-      },
-      {
-        version: "0.4.24",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1, // Set to 1 for bytecode size constrained networks (not arbitrum).
-                    // Increase to 10000 for deployment to xDai (no byte code limit on xdai). 
-          },
-        },
-      },
-    ],
+      }
+    ]
   },
   aragon: {
     appEnsName: "disputable-conviction-voting.open.aragonpm.eth",
     appContractName: "ConvictionVoting",
     appRoles: [
       {
-        name: "Update settings",
-        id: "UPDATE_SETTINGS_ROLE",
-        params: [],
+        "name": "Update settings",
+        "id": "UPDATE_SETTINGS_ROLE",
+        "params": []
       },
       {
-        name: "Create proposals",
-        id: "CREATE_PROPOSALS_ROLE",
-        params: [],
+        "name": "Create proposals",
+        "id": "CREATE_PROPOSALS_ROLE",
+        "params": []
       },
       {
-        name: "Cancel proposals",
-        id: "CANCEL_PROPOSALS_ROLE",
-        params: [],
+        "name": "Cancel proposals",
+        "id": "CANCEL_PROPOSALS_ROLE",
+        "params": []
       },
       {
-        name: "Challenge votes",
-        id: "CHALLENGE_ROLE",
-        params: [],
+        "name": "Challenge votes",
+        "id": "CHALLENGE_ROLE",
+        "params": []
       },
       {
-        name: "Pause contract",
-        id: "PAUSE_CONTRACT_ROLE",
-        params: [],
+        "name": "Pause contract",
+        "id": "PAUSE_CONTRACT_ROLE",
+        "params": []
       },
       {
-        name: "Set agreement",
-        id: "SET_AGREEMENT_ROLE",
-        params: [],
-      },
+        "name": "Set agreement",
+        "id": "SET_AGREEMENT_ROLE",
+        "params": []
+      }
     ],
+    appBuildOutputPath: "app/build/",
   },
   networks: {
     hardhat: {
@@ -78,11 +78,11 @@ module.exports = {
       accounts: accounts(process.env.HARDHAT_FORK),
       forking: process.env.HARDHAT_FORK
         ? {
-            url: node_url(process.env.HARDHAT_FORK),
-            blockNumber: process.env.HARDHAT_FORK_NUMBER
-              ? parseInt(process.env.HARDHAT_FORK_NUMBER)
-              : undefined,
-          }
+          url: node_url(process.env.HARDHAT_FORK),
+          blockNumber: process.env.HARDHAT_FORK_NUMBER
+            ? parseInt(process.env.HARDHAT_FORK_NUMBER)
+            : undefined,
+        }
         : undefined,
     },
     localhost: {
@@ -112,7 +112,7 @@ module.exports = {
     },
     polygon: {
       url: node_url("polygon"),
-      accounts: accounts("polygon"),
+      accounts: account("polygon"),
       ensRegistry: "0x4E065c622d584Fbe5D9078C3081840155FA69581",
     },
     mumbai: {
@@ -132,7 +132,7 @@ module.exports = {
     },
     frame: {
       url: "http://localhost:1248",
-      httpHeaders: { origin: "hardhat" },
+      httpHeaders: {origin: "hardhat"},
       timeout: 0,
       gas: 0,
     },
@@ -152,12 +152,12 @@ module.exports = {
   },
   external: process.env.HARDHAT_FORK
     ? {
-        deployments: {
-          // process.env.HARDHAT_FORK will specify the network that the fork is made from.
-          // these lines allow it to fetch the deployments from the network being forked from both for node and deploy task
-          hardhat: ["deployments/" + process.env.HARDHAT_FORK],
-          localhost: ["deployments/" + process.env.HARDHAT_FORK],
-        },
-      }
+      deployments: {
+        // process.env.HARDHAT_FORK will specify the network that the fork is made from.
+        // these lines allow it to fetch the deployments from the network being forked from both for node and deploy task
+        hardhat: ["deployments/" + process.env.HARDHAT_FORK],
+        localhost: ["deployments/" + process.env.HARDHAT_FORK],
+      },
+    }
     : undefined,
 };

@@ -44,11 +44,31 @@ function getMnemonic(networkName) {
   return mnemonic;
 }
 
+function getAccount(networkName) {
+  if (networkName) {
+    const account = process.env['ACCOUNT_' + networkName.toUpperCase()]
+    if (account && account !== '') {
+      return [account]
+    }
+  }
+
+  const account = process.env.ACCOUNT
+  if (!account || account === '') {
+    return []
+  }
+  return [account]
+}
+
 function accounts(networkName) {
   return { mnemonic: getMnemonic(networkName) };
 }
 
+function account(networkName) {
+  return getAccount(networkName)
+}
+
 module.exports = {
   accounts,
+  account,
   node_url,
 };
