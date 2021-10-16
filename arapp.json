@@ -63,6 +63,16 @@
       "registry": "0x2DDE068a7fdF72c10848298cC0317E691E40E593",
       "appName": "disputable-conviction-voting.open.aragonpm.eth",
       "network": "arbitrum"
+    },
+    "mumbai": {
+      "registry": "0xB1576a9bE5EC445368740161174f3Dd1034fF8be",
+      "appName": "disputable-conviction-voting.open.aragonpm.eth",
+      "network": "mumbai"
+    },
+    "polygon": {
+      "registry": "0x4E065c622d584Fbe5D9078C3081840155FA69581",
+      "appName": "disputable-conviction-voting.open.aragonpm.eth",
+      "network": "polygon"
     }
   },
   "path": "contracts/ConvictionVoting.sol"

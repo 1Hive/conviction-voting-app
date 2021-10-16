@@ -1,5 +1,5 @@
-const { hash } = require('eth-ens-namehash')
-const { getEventArgument } = require('@1hive/contract-helpers-test')
+const { getEventArgument } = require('@aragon/contract-helpers-test')
+const { ethers } = require('ethers')
 
 let i = 1
 const installApp = async (
@@ -14,7 +14,7 @@ const installApp = async (
   const appBase = await artifact.new(...args)
   // Instantiate a proxy for the app, using the base contract as its logic implementation.
   const instanceReceipt = await dao.newAppInstance(
-    hash(`app${i++}.aragonpm.test`), // appId - Unique identifier for each app installed in the DAO; can be any bytes32 string in the tests.
+    ethers.utils.id(`app${i++}.aragonpm.test`), // appId - Unique identifier for each app installed in the DAO; can be any bytes32 string in the tests.
     appBase.address, // appBase - Location of the app's base implementation.
     '0x', // initializePayload - Used to instantiate and initialize the proxy in the same call (if given a non-empty bytes string).
     false, // setDefault - Whether the app proxy is the default proxy.
