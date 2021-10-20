@@ -1,13 +1,14 @@
 const { getEventArgument, ZERO_ADDRESS, ONE_DAY, bn } = require('@aragon/contract-helpers-test')
-const { assertRevert } = require('@aragon/contract-helpers-test/src/asserts/assertThrow')
 const { RULINGS } = require('@1hive/apps-agreement/test/helpers/utils/enums')
 const deployer = require('@1hive/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
+const { assertRevert } = require('./helpers/assertThrow')
 const installApp = require('./helpers/installApp')
 
 const ConvictionVoting = artifacts.require('ConvictionVotingMock')
 const HookedTokenManager = artifacts.require('HookedTokenManager')
 const MiniMeToken = artifacts.require('MiniMeToken')
 const VaultMock = artifacts.require('VaultMock')
+const AragonVaultFundsManager = artifacts.require('AragonVaultFundsManager')
 const PriceOracle = artifacts.require('PriceOracleMock')
 
 const ONE_HUNDRED_PERCENT = 1e18
@@ -49,7 +50,8 @@ function calculateThreshold(fundsRequested, fundsAvailable, stakeTokenSupply, st
 }
 
 contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
-  let convictionVoting, stakeTokenManager, stakeToken, requestToken, stableToken, priceOracle, vault, agreement, collateralToken
+  let convictionVoting, stakeTokenManager, stakeToken, requestToken, stableToken, priceOracle, vault, agreement,
+    collateralToken, aragonVaultFundsManager
   const requestedAmount = 1000
 
   before(async () => {
@@ -78,14 +80,16 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
     await stakeTokenManager.mint(user, userTokens)
 
     vault = await VaultMock.new({ from: appManager })
+    aragonVaultFundsManager = await AragonVaultFundsManager.new(vault.address)
     priceOracle = await PriceOracle.new(FEE_TOKEN_PRICE_IN_STABLE_TOKEN)
     requestToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'HNY', 18, 'HNY', true)
     await requestToken.generateTokens(vault.address, vaultFunds)
     stableToken = await MiniMeToken.new(ZERO_ADDRESS, ZERO_ADDRESS, 0, 'DAI', 18, 'DAI', true)
 
     convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE'], [ANY_ADDRESS, 'PAUSE_CONTRACT_ROLE']], appManager)
-    await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE_BN) // alpha = 0.9, beta = 0.2, rho = 0.002
+    await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, aragonVaultFundsManager.address, alpha, beta, rho, MIN_THRESHOLD_STAKE_PERCENTAGE_BN) // alpha = 0.9, beta = 0.2, rho = 0.002
     await stakeTokenManager.registerHook(convictionVoting.address)
+    await aragonVaultFundsManager.addFundsUser(convictionVoting.address)
 
     const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
     await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
@@ -136,7 +140,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       assert.equal(await convictionVoting.requestToken(), requestToken.address, 'Incorrect request token')
       assert.equal(await convictionVoting.stableToken(), stableToken.address, 'Incorrect stable token')
       assert.equal(await convictionVoting.stableTokenOracle(), priceOracle.address, 'Incorrect stable token oracle')
-      assert.equal(await convictionVoting.vault(), vault.address, 'Incorrect vault token')
+      assert.equal(await convictionVoting.fundsManager(), aragonVaultFundsManager.address, 'Incorrect funds manager')
       assert.equal(await convictionVoting.decay(), DEFAULT_ALPHA, 'Incorrect decay')
       assert.equal(await convictionVoting.maxRatio(), DEFAULT_BETA, 'Incorrect max ratio')
       assert.equal(await convictionVoting.weight(), DEFAULT_RHO, 'Incorrect weight')
@@ -199,6 +203,24 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
       it('reverts when no permission', async () => {
         await assertRevert(convictionVoting.setStableTokenOracleSettings(newPriceOracle, newStableToken),
           'APP_AUTH_FAILED')
+      })
+    })
+
+    context('setFundsManager(fundsManager)', () => {
+
+      const newFundsManager = unknown
+
+      it('sets the funds manager', async () => {
+        const updateSettingsRole = await convictionVoting.UPDATE_SETTINGS_ROLE()
+        await deployer.acl.createPermission(appManager, convictionVoting.address, updateSettingsRole, appManager)
+
+        await convictionVoting.setFundsManager(newFundsManager)
+
+        assert.equal(await convictionVoting.fundsManager(), newFundsManager, 'Incorrect funds manager')
+      })
+
+      it('reverts when no permission', async () => {
+        await assertRevert(convictionVoting.setFundsManager(newFundsManager), 'APP_AUTH_FAILED')
       })
     })
 
@@ -589,7 +611,7 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
 
         it('should revert when not set as a token manager hook', async () => {
           convictionVoting = await installApp(deployer.dao, deployer.acl, ConvictionVoting, [[ANY_ADDRESS, 'CREATE_PROPOSALS_ROLE']], appManager)
-          await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, vault.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE_BN) // alpha = 0.9, beta = 0.2, rho = 0.002
+          await convictionVoting.initialize(stakeToken.address, requestToken.address, stableToken.address, priceOracle.address, aragonVaultFundsManager.address, DEFAULT_ALPHA, DEFAULT_BETA, DEFAULT_RHO, MIN_THRESHOLD_STAKE_PERCENTAGE_BN) // alpha = 0.9, beta = 0.2, rho = 0.002
           const SetAgreementRole = await convictionVoting.SET_AGREEMENT_ROLE()
           await deployer.acl.createPermission(agreement.address, convictionVoting.address, SetAgreementRole, appManager)
           await agreement.activate({

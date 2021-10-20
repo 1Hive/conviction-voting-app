@@ -1,16 +1,32 @@
-# See https://help.github.com/ignore-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies
 node_modules
-/artifacts
-/build
-.cache
-/cache
-/dist
-ipfs.cmd
-package-lock.json
-yarn.lock
+*/node_modules
+
+# coverage
+coverage
+coverageEnv
 coverage.json
-/coverage
-.idea
+allFiredEvents
+scTopics
+
+# lerna
+lerna-debug.log
+
+# build artifacts
+# Ignore only for first level to select just the contract build directories
+abi
+dist
+cache
+artifacts
+app/build
+
+# yarn
+yarn-error.log
+
+# Ignore package-lock files (only use yarn.lock)
+package-lock.json
+
+# Misc
 .DS_Store
+.cache
+.env
