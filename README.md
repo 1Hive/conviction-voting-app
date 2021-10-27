@@ -1,4 +1,4 @@
-# Conviction Voting
+# Conviction Voting <a href="https://1hive.org/"><img align="right" src=".github/assets/1hive.svg" height="80px" /></a>
 
 1Hive's Conviction Voting app is used to allocate funds on proposals based on the conviction an entire organization has on them. Conviction can be signaled by staking organization tokens on proposals, and it is not fully activated until a certain period of time has passed.
 
