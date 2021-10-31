@@ -20,8 +20,8 @@ module.exports = {
           optimizer: {
             enabled: true,
             runs: 1, // Set to higher for Arbitrum or non-code limited networks
-          }
-        }
+          },
+        },
       },
       {
         version: "0.5.17",
@@ -31,43 +31,43 @@ module.exports = {
             runs: 10000,
           },
         },
-      }
-    ]
+      },
+    ],
   },
   aragon: {
     appEnsName: "disputable-conviction-voting.open.aragonpm.eth",
     appContractName: "ConvictionVoting",
     appRoles: [
       {
-        "name": "Update settings",
-        "id": "UPDATE_SETTINGS_ROLE",
-        "params": []
+        name: "Update settings",
+        id: "UPDATE_SETTINGS_ROLE",
+        params: [],
       },
       {
-        "name": "Create proposals",
-        "id": "CREATE_PROPOSALS_ROLE",
-        "params": []
+        name: "Create proposals",
+        id: "CREATE_PROPOSALS_ROLE",
+        params: [],
       },
       {
-        "name": "Cancel proposals",
-        "id": "CANCEL_PROPOSALS_ROLE",
-        "params": []
+        name: "Cancel proposals",
+        id: "CANCEL_PROPOSALS_ROLE",
+        params: [],
       },
       {
-        "name": "Challenge votes",
-        "id": "CHALLENGE_ROLE",
-        "params": []
+        name: "Challenge votes",
+        id: "CHALLENGE_ROLE",
+        params: [],
       },
       {
-        "name": "Pause contract",
-        "id": "PAUSE_CONTRACT_ROLE",
-        "params": []
+        name: "Pause contract",
+        id: "PAUSE_CONTRACT_ROLE",
+        params: [],
       },
       {
-        "name": "Set agreement",
-        "id": "SET_AGREEMENT_ROLE",
-        "params": []
-      }
+        name: "Set agreement",
+        id: "SET_AGREEMENT_ROLE",
+        params: [],
+      },
     ],
     appBuildOutputPath: "app/build/",
   },
@@ -78,11 +78,11 @@ module.exports = {
       accounts: accounts(process.env.HARDHAT_FORK),
       forking: process.env.HARDHAT_FORK
         ? {
-          url: node_url(process.env.HARDHAT_FORK),
-          blockNumber: process.env.HARDHAT_FORK_NUMBER
-            ? parseInt(process.env.HARDHAT_FORK_NUMBER)
-            : undefined,
-        }
+            url: node_url(process.env.HARDHAT_FORK),
+            blockNumber: process.env.HARDHAT_FORK_NUMBER
+              ? parseInt(process.env.HARDHAT_FORK_NUMBER)
+              : undefined,
+          }
         : undefined,
     },
     localhost: {
@@ -113,7 +113,7 @@ module.exports = {
     polygon: {
       url: node_url("polygon"),
       accounts: account("polygon"),
-      ensRegistry: "0x4E065c622d584Fbe5D9078C3081840155FA69581",
+      ensRegistry: "0x7EdE100965B1E870d726cD480dD41F2af1Ca0130",
     },
     mumbai: {
       url: node_url("mumbai"),
@@ -132,7 +132,7 @@ module.exports = {
     },
     frame: {
       url: "http://localhost:1248",
-      httpHeaders: {origin: "hardhat"},
+      httpHeaders: { origin: "hardhat" },
       timeout: 0,
       gas: 0,
     },
@@ -152,12 +152,12 @@ module.exports = {
   },
   external: process.env.HARDHAT_FORK
     ? {
-      deployments: {
-        // process.env.HARDHAT_FORK will specify the network that the fork is made from.
-        // these lines allow it to fetch the deployments from the network being forked from both for node and deploy task
-        hardhat: ["deployments/" + process.env.HARDHAT_FORK],
-        localhost: ["deployments/" + process.env.HARDHAT_FORK],
-      },
-    }
+        deployments: {
+          // process.env.HARDHAT_FORK will specify the network that the fork is made from.
+          // these lines allow it to fetch the deployments from the network being forked from both for node and deploy task
+          hardhat: ["deployments/" + process.env.HARDHAT_FORK],
+          localhost: ["deployments/" + process.env.HARDHAT_FORK],
+        },
+      }
     : undefined,
 };
