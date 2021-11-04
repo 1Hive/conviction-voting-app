@@ -8,7 +8,9 @@
     {
       "name": "Create proposals",
       "id": "CREATE_PROPOSALS_ROLE",
-      "params": []
+      "params": [
+        "Sender"
+      ]
     },
     {
       "name": "Cancel proposals",

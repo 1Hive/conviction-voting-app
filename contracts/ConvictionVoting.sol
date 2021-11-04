@@ -213,7 +213,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _title Title of the proposal
      * @param _link IPFS or HTTP link with proposal's description
      */
-    function addSignalingProposal(string _title, bytes _link) external isInitialized auth(CREATE_PROPOSALS_ROLE) {
+    function addSignalingProposal(string _title, bytes _link) external authP(CREATE_PROPOSALS_ROLE, arr(msg.sender)) {
         _addProposal(_title, _link, 0, false, address(0));
     }
 
@@ -226,7 +226,7 @@ contract ConvictionVoting is DisputableAragonApp, TokenManagerHook {
      * @param _beneficiary Address that will receive payment
      */
     function addProposal(string _title, bytes _link, uint256 _requestedAmount, bool _stableRequestAmount, address _beneficiary)
-        external isInitialized auth(CREATE_PROPOSALS_ROLE)
+        external authP(CREATE_PROPOSALS_ROLE, arr(msg.sender))
     {
         require(_requestedAmount > 0, ERROR_REQUESTED_AMOUNT_ZERO);
         require(_beneficiary != address(0), ERROR_NO_BENEFICIARY);

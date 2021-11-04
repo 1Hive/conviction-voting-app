@@ -19,14 +19,6 @@
     "@aragon/apps-token-manager" "^2.1.0"
     "@aragon/os" "5.0.0-rc.0"
 
-"@aragon/contract-helpers-test@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@aragon/contract-helpers-test/-/contract-helpers-test-0.1.1.tgz#1040bf60dcd6de99489678e0a5eded53a04d2685"
-  integrity sha512-VqD5FGcWCjM92r4k7Wp0qWR0PjnDcLvK8TN3TV56iWcULc3Jttbg9deIfrDjy3VBQqAFevIUizEHWuxOfFtw4Q==
-  dependencies:
-    web3-eth-abi "1.2.5"
-    web3-utils "1.2.5"
-
 "@1hive/funds-manager@1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@1hive/funds-manager/-/funds-manager-1.0.4.tgz#8346bed10cefb423901a5c6ee264d224366ab867"
@@ -3565,7 +3557,7 @@ eth-block-tracker@^2.2.2:
     pify "^2.3.0"
     tape "^4.6.3"
 
-eth-ens-namehash@2.0.8, eth-ens-namehash@^2.0.0, eth-ens-namehash@^2.0.8:
+eth-ens-namehash@2.0.8, eth-ens-namehash@^2.0.0:
   version "2.0.8"
   resolved "https://registry.yarnpkg.com/eth-ens-namehash/-/eth-ens-namehash-2.0.8.tgz#229ac46eca86d52e0c991e7cb2aef83ff0f68bcf"
   integrity sha1-IprEbsqG1S4MmR58sq74P/D2i88=

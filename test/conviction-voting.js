@@ -1,4 +1,5 @@
 const { getEventArgument, ZERO_ADDRESS, ONE_DAY, bn } = require('@aragon/contract-helpers-test')
+const { createEqOraclePermissionParam, ANY_ENTITY } = require('@aragon/contract-helpers-test/src/aragon-os')
 const { RULINGS } = require('@1hive/apps-agreement/test/helpers/utils/enums')
 const deployer = require('@1hive/apps-agreement/test/helpers/utils/deployer')(web3, artifacts)
 const { assertRevert } = require('./helpers/assertThrow')
@@ -10,6 +11,7 @@ const MiniMeToken = artifacts.require('MiniMeToken')
 const VaultMock = artifacts.require('VaultMock')
 const AragonVaultFundsManager = artifacts.require('AragonVaultFundsManager')
 const PriceOracle = artifacts.require('PriceOracleMock')
+const ACLOracleMock = artifacts.require('ACLOracleMock')
 
 const ONE_HUNDRED_PERCENT = 1e18
 const ANY_ADDRESS = '0xffffffffffffffffffffffffffffffffffffffff'
@@ -284,6 +286,24 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
         await convictionVoting.pauseContract(true);
         await assertRevert(convictionVoting.addSignalingProposal('Proposal 1', '0x'), 'CV_CONTRACT_PAUSED')
       })
+
+      describe('behind ACL oracle', () => {
+        beforeEach(async () => {
+          const { address: aclOracleAddr } = await ACLOracleMock.new(appManager)
+          await deployer.acl.grantPermissionP(ANY_ENTITY, convictionVoting.address, await convictionVoting.CREATE_PROPOSALS_ROLE(), [createEqOraclePermissionParam(aclOracleAddr)])
+        })
+
+        it('should create a signaling proposal when allowed', async () => {
+          const addProposalReceipt = await convictionVoting.addSignalingProposal('Proposal 1', '0x')
+          const proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+          const { proposalStatus } = await convictionVoting.getProposal(proposalId)
+          assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
+        })
+
+        it('should revert when not allowed', async () => {
+          await assertRevert(convictionVoting.addSignalingProposal('Proposal 1', '0x', { from: user }), 'APP_AUTH_FAILED')
+        })
+      })
     })
 
     context('addProposal(title, link, requestedAmount, stableRequestAmount (false), beneficiary)', () => {
@@ -335,6 +355,24 @@ contract('ConvictionVoting', ([appManager, user, beneficiary, unknown]) => {
 
       it('reverts when zero request amount specified', async () => {
         await assertRevert(convictionVoting.addProposal('Proposal 1', '0x', bn(0), false, beneficiary), 'CV_REQUESTED_AMOUNT_ZERO')
+      })
+
+      describe('behind ACL oracle', () => {
+        beforeEach(async () => {
+          const { address: aclOracleAddr } = await ACLOracleMock.new(appManager)
+          await deployer.acl.grantPermissionP(ANY_ENTITY, convictionVoting.address, await convictionVoting.CREATE_PROPOSALS_ROLE(), [createEqOraclePermissionParam(aclOracleAddr)])
+        })
+
+        it('should create a proposal when allowed', async () => {
+          const addProposalReceipt = await convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, false, beneficiary)
+          const proposalId = getEventArgument(addProposalReceipt, 'ProposalAdded', 'id')
+          const { proposalStatus } = await convictionVoting.getProposal(proposalId)
+          assert.equal(proposalStatus, PROPOSAL_STATUS.ACTIVE, 'Incorrect proposal status')
+        })
+
+        it('should revert when not allowed', async () => {
+          await assertRevert(convictionVoting.addProposal('Proposal 1', '0x', requestedAmount, false, beneficiary, { from: user }), 'APP_AUTH_FAILED')
+        })
       })
 
       const assertProposalAndStakesCorrect =
