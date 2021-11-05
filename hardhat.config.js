@@ -46,7 +46,9 @@ module.exports = {
       {
         name: "Create proposals",
         id: "CREATE_PROPOSALS_ROLE",
-        params: [],
+        params: [
+          "Sender"
+        ],
       },
       {
         name: "Cancel proposals",
@@ -97,7 +99,7 @@ module.exports = {
     },
     rinkeby: {
       url: node_url("rinkeby"),
-      accounts: accounts("rinkeby"),
+      accounts: account("rinkeby"),
       ensRegistry: "0x98Df287B6C145399Aaa709692c8D308357bC085D",
     },
     ropsten: {
@@ -107,7 +109,7 @@ module.exports = {
     },
     xdai: {
       url: node_url("xdai"),
-      accounts: accounts("xdai"),
+      accounts: account("xdai"),
       ensRegistry: "0xaafca6b0c89521752e559650206d7c925fd0e530",
     },
     polygon: {
