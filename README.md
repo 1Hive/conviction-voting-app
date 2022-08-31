@@ -12,7 +12,7 @@ The code in this repository has not been audited.
 
 ## How to run Conviction Voting app locally
 
-The Conviction Voting template requires the use of [1Hive's Tokens app](https://github.com/1hive/token-manager-app), so please follow the instructions in the README to deploy the app in the local devchain. Many devchains can coexist in the same computer, make sure you are deploying the Tokens app in the same devchain that is going to be deployed Conviction Voting.
+The Conviction Voting template requires the use of [1Hive's Tokens app](https://github.com/1hive/token-manager-app), so please follow the instructions in the README to deploy the app in the local devchain. Many devchains can coexist on the same computer, make sure you are deploying the Tokens app in the same devchain that is going to be deployed Conviction Voting.
 
 To use the Conviction Voting application, you can simply do:
 
@@ -38,7 +38,7 @@ To deploy an organization you can use the [Aragon CLI](https://hack.aragon.org/d
 ```sh
 aragon dao install <dao-addr> conviction-voting.open.aragonpm.eth --app-init-args <org-token> <vault-addr> <funds-token> 9999599 2000000 20000 200000000000000000
 ```
-This are the initalization parameters you can use:
+These are the initialization parameters you can use:
 * **<org-token>**: The token address of the DAO's token. The supply for tokens with 18 decimals should not exceed 34,028,236,692, a supply bigger than that can cause errors ([more details](./docs/max-safes.md)).
 * **<vault-addr>**: The DAO's main vault/agent address. It can be `0x0000000000000000000000000000000000000000` to set it up for conviction signaling (without money allocation).
 * **<funds-token>**: The token address that is going to be allocated. The token must be in the vault/agent. It can `0x0000000000000000000000000000000000000000` to set it up for conviction signaling (without money allocation).
@@ -65,11 +65,11 @@ Our implementation of Conviction Voting as an Aragon application is intended to 
 
 Proposals can be submitted for consideration at any time and do not have an explicit expiration.
 
-A user can vote for a single proposal at a time, when they do their token-weighted balance adds conviction to that proposal. In this way we can think of voting for a proposal a bit like the emission of a signal directed towards a specific proposal, when the signal is moved it takes time to fully arrive on the new proposal, and at same time the remnants of the signal can still be felt at the previous proposal for some time after the source of the signal has been redirected.
+A user can vote for a single proposal at a time, when they do their token-weighted balance adds conviction to that proposal. In this way we can think of voting for a proposal a bit like the emission of a signal directed towards a specific proposal, when the signal is moved it takes time to fully arrive on the new proposal, and at the same time the remnants of the signal can still be felt at the previous proposal for some time after the source of the signal has been redirected.
 
-Proposals can be executed only if there is enough accumulated conviction. The threshold at which a proposal can be execute is dependent on the proportion of the funds requested relative to the available funds in the shared treasury. This relationship between the funds requested and available funds means that the threshold at which a proposal can be executed depends on the state of the system at any given time. As proposals pass and remove funds from the treasury, the remaining proposals will become harder to pass (because they now represent a larger proportion of the shared treasury), conversely, as new funds are added to the share treasury the threshold for passing existing proposals will decrease. This provides some natural self regulation to the spending rate of the organization relative to its income.
+Proposals can be executed only if there is enough accumulated conviction. The threshold at which a proposal can be executed is dependent on the proportion of the funds requested relative to the available funds in the shared treasury. This relationship between the funds requested and available funds means that the threshold at which a proposal can be executed depends on the state of the system at any given time. As proposals pass and remove funds from the treasury, the remaining proposals will become harder to pass (because they now represent a larger proportion of the shared treasury), conversely, as new funds are added to the shared treasury the threshold for passing existing proposals will decrease. This provides some natural self-regulation to the spending rate of the organization relative to its income.
 
-The time based accumulation forces voters to prioritize where they place their conviction and may encourage members to more effectively converge on a mutually acceptable compromise to most effectively leverage their influence on the DAOs fund allocations.
+The time-based accumulation forces voters to prioritize where they place their conviction and may encourage members to more effectively converge on a mutually acceptable compromise to most effectively leverage their influence on the DAOs fund allocations.
 
 ## Structure
 
@@ -114,7 +114,7 @@ If you discover something that could potentially impact security, please notify 
 
 ### Contributors
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+Thanks to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
